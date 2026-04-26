@@ -1,0 +1,369 @@
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <PubSubClient.h>
+#include <Wire.h>
+#include "Adafruit_TCS34725.h"
+#include <Adafruit_GFX.h>
+#include <Adafruit_ST7735.h>
+#include <SPI.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include <ArduinoJson.h>
+#include <time.h>
+
+// ---------------- WiFi ----------------
+const char* WIFI_SSID = "Spectraleaf";
+const char* WIFI_PASSWORD = "123456789";
+
+// ---------------- AWS IoT ----------------
+const char* AWS_IOT_ENDPOINT = "auu0agav8jgkz-ats.iot.ap-south-1.amazonaws.com";
+const int AWS_IOT_PORT = 8883;
+const char* MQTT_TOPIC = "tea/factory/DEV_01/data";
+const char* CLIENT_ID = "DEV001";
+
+// ---------------- Certificates ----------------
+static const char AWS_CERT_CA[] PROGMEM = R"EOF(
+-----BEGIN CERTIFICATE-----
+MIIDQTCCAimgAwIBAgITBmyfz5m/jAo54vB4ikPmljZbyjANBgkqhkiG9w0BAQsF
+ADA5MQswCQYDVQQGEwJVUzEPMA0GA1UEChMGQW1hem9uMRkwFwYDVQQDExBBbWF6
+b24gUm9vdCBDQSAxMB4XDTE1MDUyNjAwMDAwMFoXDTM4MDExNzAwMDAwMFowOTEL
+MAkGA1UEBhMCVVMxDzANBgNVBAoTBkFtYXpvbjEZMBcGA1UEAxMQQW1hem9uIFJv
+b3QgQ0EgMTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALJ4gHHKeNXj
+ca9HgFB0fW7Y14h29Jlo91ghYPl0hAEvrAIthtOgQ3pOsqTQNroBvo3bSMgHFzZM
+9O6II8c+6zf1tRn4SWiw3te5djgdYZ6k/oI2peVKVuRF4fn9tBb6dNqcmzU5L/qw
+IFAGbHrQgLKm+a/sRxmPUDgH3KKHOVj4utWp+UhnMJbulHheb4mjUcAwhmahRWa6
+VOujw5H5SNz/0egwLX0tdHA114gk957EWW67c4cX8jJGKLhD+rcdqsq08p8kDi1L
+93FcXmn/6pUCyziKrlA4b9v7LWIbxcceVOF34GfID5yHI9Y/QCB/IIDEgEw+OyQm
+jgSubJrIqg0CAwEAAaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC
+AYYwHQYDVR0OBBYEFIQYzIU07LwMlJQuCFmcx7IQTgoIMA0GCSqGSIb3DQEBCwUA
+A4IBAQCY8jdaQZChGsV2USggNiMOruYou6r4lK5IpDB/G/wkjUu0yKGX9rbxenDI
+U5PMCCjjmCXPI6T53iHTfIUJrU6adTrCC2qJeHZERxhlbI1Bjjt/msv0tadQ1wUs
+N+gDS63pYaACbvXy8MWy7Vu33PqUXHeeE6V/Uq2V8viTO96LXFvKWlJbYK8U90vv
+o/ufQJVtMVT8QtPHRh8jrdkPSHCa2XV4cdFyQzR1bldZwgJcJmApzyMZFo6IQ6XU
+5MsI+yMRQ+hDKXJioaldXgjUkK642M4UwtBV8ob2xJNDd2ZhwLnoQdeXeGADbkpy
+rqXRfboQnoZsG4q5WTP468SQvvG5
+-----END CERTIFICATE-----
+)EOF";
+
+static const char AWS_CERT_CRT[] PROGMEM = R"KEY(
+-----BEGIN CERTIFICATE-----
+MIIDWTCCAkGgAwIBAgIUb3UIMsIRfMNFOUGWat7Ymc6rvYswDQYJKoZIhvcNAQEL
+BQAwTTFLMEkGA1UECwxCQW1hem9uIFdlYiBTZXJ2aWNlcyBPPUFtYXpvbi5jb20g
+SW5jLiBMPVNlYXR0bGUgU1Q9V2FzaGluZ3RvbiBDPVVTMB4XDTI2MDIyMTE1NDU0
+N1oXDTQ5MTIzMTIzNTk1OVowHjEcMBoGA1UEAwwTQVdTIElvVCBDZXJ0aWZpY2F0
+ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKlpp5ZZmK1C+NNyj8o/
+tXMqBt4iQb7HGWJ0gnVmVqN0wQRam9UqBC0FAvRfxFoxz2et1KtoqD+Dt0RLh2Rd
++0rlxa9/Dz84tNVD7BSEseJmDrkaumHnF/yX/wwPKd8zza0KtwlFNoF/idMbuWOq
+sC8kJeqg+Y3soJWoXntP09x0QVzyD8aGQpag4iVjyjmz0OhG6wp+OhIH/fidqBti
+M2yMkRRkWpZlXbq32QfG5YneLfqKpNmPfAGk/Ig0PMsQWOsDXbDTZBsQ183FHr7Z
+W2dX855XQKQjGprHggGn/4cAV9QN5ZOWnKq0sUJK4xLYGCaJzFjpUsmHpSrAdQKg
+JwsCAwEAAaNgMF4wHwYDVR0jBBgwFoAUoZZdKJUx0k5jxAKDqUTriZhOi98wHQYD
+VR0OBBYEFD1t+T8NExE02/Oy2jT5MvsOsaw7MAwGA1UdEwEB/wQCMAAwDgYDVR0P
+AQH/BAQDAgeAMA0GCSqGSIb3DQEBCwUAA4IBAQALkX7u/pGKqJptJAX1Nsr6RUHA
+FWo3/idAcNmHwsZUwNKi7PtTKymKgdXrbG3jFZhrea0gUYboetSzeE1eRQ6psjCF
+5qZNsB8M+stnTvxfwIKZVzibCmowYwIptQL9xG2aD0BC6Mm3pNksQFZ9eScj3sNO
+EG+isGrnvwzJmfgCrwtrq9amF2bTO0tJU3UPn2rMvt0CDa/VG3PCGtQDyLs6BIwv
+5f+i6dnCSkzZXjTWpWX158bPBv4WJD+SGWdGAYh9DzgJWx/6PId6ZGSMz601biIv
+T/E/JSXgIb4ybEzOSOxii5qAZRCd7icrBq4ELYQPYC/1fxqpm/Uv+36POhmE
+-----END CERTIFICATE-----
+)KEY";
+
+static const char AWS_CERT_PRIVATE[] PROGMEM = R"KEY(
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEAqWmnllmYrUL403KPyj+1cyoG3iJBvscZYnSCdWZWo3TBBFqb
+1SoELQUC9F/EWjHPZ63Uq2ioP4O3REuHZF37SuXFr38PPzi01UPsFISx4mYOuRq6
+YecX/Jf/DA8p3zPNrQq3CUU2gX+J0xu5Y6qwLyQl6qD5jeyglahee0/T3HRBXPIP
+xoZClqDiJWPKObPQ6EbrCn46Egf9+J2oG2IzbIyRFGRalmVdurfZB8blid4t+oqk
+2Y98AaT8iDQ8yxBY6wNdsNNkGxDXzcUevtlbZ1fznldApCMamseCAaf/hwBX1A3l
+k5acqrSxQkrjEtgYJonMWOlSyYelKsB1AqAnCwIDAQABAoIBAQCll5Nq37rfqHXF
+YNZxz2IR5oN9/ygaTUxfsxiNnnGTJh1Anzxw2LfqNVrU+QLZUpSzd/NHdG34X0v0
+oor9rOtjI0Lerqh9mHURfGm3CJlDfZRolFqYNaV5jiyLYgsAlAc3XCDbG98SJ1LV
+meTVKdM60O+K7rvfYOr6Pe/UQowIj7btY21o5QsRsz0RpiOsXdc+mGYfX0w3m0EN
+dsrkLyTDJHeWQmh2atG5d+266DeKI6D8rgf/KZ2Y1rmMtuopP3gRkZWUmynGYDTQ
+Ra0+UpBXDJfh0xPkVSIaTDP/KpJ56SfvMlXHMe5O496kKdTVsEBqECU1XQsJojit
+pcBfFgYRAoGBANILseNYTRHE7VteTr4hdp9TwjgiGVfk+2susfJgZT6nHRaiGqrn
+mQ0HxHmKquT1jIiCdDZ0J81QxtedzRMoTxAqlm2HWGSrwHJNADvOltNv2fUt8t8L
+pRs6JYlOZNvupabUWz9y3sVGaisaSRX4qO0p2VvD5CFtK+mglwuSyr2ZAoGBAM56
+LO+kLQSf+laO/jsiH7XdTPmxAu5y9GzODbWI4dVWzO/uZLjybDH9fML1KbU1Gh78
+4peiIW2Y2kQnMGfWeAS56bXkF+xxMkaHlr4yRprOlAGBrB7HlayLSspp1vTJ0XFK
+yZyjcFRMHd7/jOm2vVUbYv12UtXsH/A+XrLbmchDAoGAWijg86g8dKsmAzko7Z3p
+kBxg2r1wSXUlom1JvrM34jvTVZrBfaip3pj98fnevybTauksPw9+4jeREo5Or7F2
+tobBSUR2YcgDdEyvE/zqatmxIffWL32NInHEGPsIegsnGcQ/Yq3JB77g5Z2Dz6WL
+xTlYbnZYXyzAU6k2DKa21ckCgYEAv70vG37vGztgYp85MTqYDe+q+rhJS5tOpfeX
+PXwWk2GewDQ2LpVYqfeGsxitmYvtbNdTqJIzzq3CCsYFqne8Tk9C29kr6jKYCG0D
+LC5N6JZrVRbQ+mhG8ssLMfqlVf5QU4+qt54CwxVIK/xOI/7BxVXAUDVf6S3z3spc
+cGWDYjcCgYBSHWPx4/nmdlVhLcuwM7+lHt7sbhsZi9TlEZnzNwdvwxvODwF0AYkw
+lGNt1iX9mrkHd5uuw/dLbyKV26mEV8NWBPq2IhLL+duXkzol4ldv+jrtBmrfK6cF
+1c2upPhyo/0gZiegrzkpAUAUAkphLfMyiuRKdJnZCkwECIHRPvhIKQ==
+-----END RSA PRIVATE KEY-----
+)KEY";
+
+// ---------------- TFT ----------------
+#define TFT_CS   5
+#define TFT_RST  4
+#define TFT_DC   2
+Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
+
+// ---------------- Sensors ----------------
+Adafruit_TCS34725 tcs = Adafruit_TCS34725();
+#define TEMP_PIN 16
+OneWire oneWire(TEMP_PIN);
+DallasTemperature tempSensor(&oneWire);
+const int mqPin = 34;
+
+// ---------------- Networking ----------------
+WiFiClientSecure net;
+PubSubClient client(net);
+
+// ---------------- Control ----------------
+bool messageSent = false;
+
+// ---------------- Time (Sri Lanka local) ----------------
+void syncTime() {
+  // Sri Lanka = UTC+05:30
+  configTime(5 * 3600, 30 * 60, "pool.ntp.org", "time.nist.gov");
+  Serial.print("Syncing Sri Lanka time");
+
+  time_t now = time(nullptr);
+  unsigned long startMs = millis();
+
+  while (now < 100000 && millis() - startMs < 20000) {
+    delay(500);
+    Serial.print(".");
+    now = time(nullptr);
+  }
+
+  Serial.println();
+
+  if (now >= 100000) {
+    Serial.println("Time synced (Sri Lanka)");
+  } else {
+    Serial.println("Time sync timeout");
+  }
+}
+
+String getTimestamp() {
+  time_t now = time(nullptr);
+  if (now < 100000) {
+    return "1970-01-01T00:00:00";
+  }
+
+  struct tm* timeinfo = localtime(&now);
+  char buffer[30];
+
+  // Sri Lanka local time, no 'Z'
+  strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%S", timeinfo);
+  return String(buffer);
+}
+
+String getDisplayTime() {
+  time_t now = time(nullptr);
+  if (now < 100000) {
+    return "Time Error";
+  }
+
+  struct tm* timeinfo = localtime(&now);
+  char buffer[40];
+
+  strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+  return String(buffer);
+}
+
+void showStatus(const String& line1, const String& line2 = "", const String& line3 = "") {
+  tft.fillScreen(ST77XX_BLACK);
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setTextSize(1);
+  tft.setCursor(0, 5);
+  tft.println(line1);
+  if (line2.length() > 0) tft.println(line2);
+  if (line3.length() > 0) tft.println(line3);
+}
+
+void showReadings(int gasValue, uint16_t r, uint16_t g, uint16_t b, float temperature, float colorValue, const String& publishState, const String& displayTime) {
+  tft.fillScreen(ST77XX_BLACK);
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setTextSize(1);
+  tft.setCursor(0, 0);
+
+  tft.print("MQ: ");
+  tft.println(gasValue);
+
+  tft.print("R:");
+  tft.print(r);
+  tft.print(" G:");
+  tft.print(g);
+  tft.print(" B:");
+  tft.println(b);
+
+  tft.print("Tmp: ");
+  if (temperature == DEVICE_DISCONNECTED_C) {
+    tft.println("Err");
+  } else {
+    tft.print(temperature, 1);
+    tft.println(" C");
+  }
+
+  tft.print("Col: ");
+  tft.print(colorValue, 1);
+  tft.println("%");
+
+  tft.print("AWS: ");
+  tft.println(publishState);
+
+  tft.println(displayTime);
+}
+
+void connectWiFi() {
+  showStatus("Connecting WiFi...");
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Connecting to WiFi");
+
+  unsigned long startMs = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - startMs < 20000) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println();
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("WiFi connected. ESP32 IP: ");
+    Serial.println(WiFi.localIP());
+    showStatus("WiFi Connected", WiFi.localIP().toString());
+  } else {
+    Serial.println("WiFi connection timeout");
+    showStatus("WiFi Failed");
+  }
+}
+
+bool connectAWS() {
+  showStatus("Connecting AWS...");
+  net.setCACert(AWS_CERT_CA);
+  net.setCertificate(AWS_CERT_CRT);
+  net.setPrivateKey(AWS_CERT_PRIVATE);
+
+  client.setServer(AWS_IOT_ENDPOINT, AWS_IOT_PORT);
+
+  Serial.print("Connecting to AWS IoT");
+
+  unsigned long startMs = millis();
+  while (!client.connected() && millis() - startMs < 20000) {
+    if (client.connect(CLIENT_ID)) {
+      Serial.println();
+      Serial.println("Connected to AWS IoT");
+      showStatus("AWS Connected");
+      return true;
+    } else {
+      Serial.print(".");
+      delay(2000);
+    }
+  }
+
+  Serial.println();
+  Serial.println("AWS connection timeout/failed");
+  showStatus("AWS Failed");
+  return false;
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  tft.initR(INITR_BLACKTAB);   // if white screen, try INITR_GREENTAB or INITR_REDTAB
+  tft.setRotation(1);
+  tft.setTextWrap(true);
+
+  showStatus("Starting test...");
+
+  if (!tcs.begin()) {
+    Serial.println("TCS34725 not found");
+    showStatus("TCS34725 Error");
+    while (1);
+  }
+
+  tempSensor.begin();
+
+  connectWiFi();
+  syncTime();
+  connectAWS();
+}
+
+void loop() {
+  if (messageSent) {
+    client.loop();
+    return;
+  }
+
+  client.loop();
+
+  // Read MQ sensor
+  int gasValue = analogRead(mqPin);
+
+  // Read color sensor
+  uint16_t r, g, b, c;
+  tcs.getRawData(&r, &g, &b, &c);
+
+  // Read temperature sensor
+  tempSensor.requestTemperatures();
+  float temperature = tempSensor.getTempCByIndex(0);
+
+  // Build numeric COLOR value
+  float colorValue = 0.0;
+  uint32_t total = (uint32_t)r + (uint32_t)g + (uint32_t)b;
+  if (total > 0) {
+    colorValue = ((float)r / (float)total) * 100.0f;
+  }
+
+  // Sri Lanka timestamp
+  String timestamp = getTimestamp();
+  String displayTime = getDisplayTime();
+
+  // Build JSON in required format
+  StaticJsonDocument<256> doc;
+  doc["DEVICE_ID"] = "DEV001";
+  doc["TIMESTAMP"] = timestamp;
+  doc["TYPE"] = "SENSOR";
+  doc["FACTORY_ID"] = "FAC001";
+  doc["BATCH_ID"] = "BAT001";
+  doc["COLOR"] = colorValue;
+  doc["TEMPERATURE"] = temperature;
+  doc["MQ135"] = gasValue;
+
+  char payload[256];
+  serializeJson(doc, payload);
+
+  // Serial output
+  Serial.println("Prepared JSON:");
+  Serial.println(payload);
+  Serial.print("Gas: ");
+  Serial.print(gasValue);
+  Serial.print(" | R: ");
+  Serial.print(r);
+  Serial.print(" G: ");
+  Serial.print(g);
+  Serial.print(" B: ");
+  Serial.print(b);
+  Serial.print(" | Temp: ");
+  Serial.print(temperature);
+  Serial.print(" C");
+  Serial.print(" | ColorValue: ");
+  Serial.print(colorValue, 1);
+  Serial.print(" | Time: ");
+  Serial.println(displayTime);
+
+  // Publish once
+  bool ok = false;
+  if (client.connected()) {
+    ok = client.publish(MQTT_TOPIC, payload);
+  }
+
+  if (ok) {
+    Serial.println("Publish status: SUCCESS");
+    showReadings(gasValue, r, g, b, temperature, colorValue, "SUCCESS", displayTime);
+  } else {
+    Serial.println("Publish status: FAILED");
+    showReadings(gasValue, r, g, b, temperature, colorValue, "FAILED", displayTime);
+  }
+
+  messageSent = true;
+}
