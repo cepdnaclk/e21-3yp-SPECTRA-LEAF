@@ -18,6 +18,15 @@ function originFromHost(value?: string | null) {
 
 const BACKEND_PORT = 5000;
 
+const isDevBuild = typeof __DEV__ !== 'undefined' && __DEV__;
+
+function normalizeApiBaseUrl(value?: string | null) {
+  if (!value) return null;
+  const trimmed = value.trim().replace(/\/+$/, '');
+  if (!trimmed) return null;
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+}
+
 function backendOriginFromHost(value?: string | null) {
   if (!value) return null;
   const stripped = value.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
@@ -67,31 +76,40 @@ function getExpoManifestOrigin() {
   );
 }
 
+function getConfiguredApiBaseURL() {
+  const constants = Constants as any;
+  return normalizeApiBaseUrl(
+    constants.expoConfig?.extra?.apiBaseUrl ||
+    constants.manifest2?.extra?.expoClient?.extra?.apiBaseUrl ||
+    constants.manifest?.extra?.apiBaseUrl ||
+    process.env.EXPO_PUBLIC_API_BASE_URL
+  );
+}
+
+const configuredBaseURL = getConfiguredApiBaseURL();
+
 function getApiBaseURL() {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     return `${window.location.origin}/api`;
   }
 
-  const lanHost = getExpoLanHost();
-  const lanBackend = backendOriginFromHost(lanHost);
-  if (lanBackend) {
-    return `${lanBackend}/api`;
-  }
-
-  const constants = Constants as any;
-  const configuredBaseURL =
-    constants.expoConfig?.extra?.apiBaseUrl ||
-    constants.manifest2?.extra?.expoClient?.extra?.apiBaseUrl ||
-    constants.manifest?.extra?.apiBaseUrl ||
-    process.env.EXPO_PUBLIC_API_BASE_URL;
-
   if (configuredBaseURL) {
     return configuredBaseURL;
   }
 
+  const lanHost = getExpoLanHost();
+  const lanBackend = backendOriginFromHost(lanHost);
+  if (isDevBuild && lanBackend) {
+    return `${lanBackend}/api`;
+  }
+
   const nativeOrigin = getExpoManifestOrigin() || getNativeDevServerOrigin();
-  if (nativeOrigin && Platform.OS === 'web') {
+  if (isDevBuild && nativeOrigin && Platform.OS === 'web') {
     return `${nativeOrigin}/api`;
+  }
+
+  if (!isDevBuild) {
+    return null;
   }
 
   return Platform.OS === 'android'
@@ -100,7 +118,7 @@ function getApiBaseURL() {
 }
 
 export const api = axios.create({
-  baseURL: getApiBaseURL(),
+  baseURL: getApiBaseURL() ?? undefined,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -108,6 +126,19 @@ export const api = axios.create({
 });
 
 console.log('[API baseURL]', api.defaults.baseURL);
+
+api.interceptors.request.use(config => {
+  const url = config.url ?? '';
+  const hasAbsoluteUrl = /^https?:\/\//i.test(url);
+  if (!hasAbsoluteUrl && !config.baseURL && !api.defaults.baseURL) {
+    return Promise.reject(
+      new Error(
+        'Mobile API URL is not configured. Set EXPO_PUBLIC_API_BASE_URL to a public backend URL and rebuild the APK.'
+      )
+    );
+  }
+  return config;
+});
 
 api.interceptors.response.use(
   response => response,
@@ -118,6 +149,8 @@ api.interceptors.response.use(
         ? `http://10.0.2.2:${BACKEND_PORT}/api`
         : `http://localhost:${BACKEND_PORT}/api`;
     if (
+      isDevBuild &&
+      !configuredBaseURL &&
       !error.config?._retriedWithTunnel &&
       error.message === 'Network Error' &&
       error.config?.baseURL !== fallbackBaseURL
@@ -171,9 +204,11 @@ export function normalizeReading(raw: any): SensorReading {
     deviceId: stringOrEmpty(raw?.deviceId ?? raw?.DEVICE_ID),
     factoryId: stringOrEmpty(raw?.factoryId ?? raw?.FACTORY_ID),
     batchId: stringOrEmpty(raw?.batchId ?? raw?.BATCH_ID),
-    color: numberOrNull(raw?.color ?? raw?.COLOR),
     temperature: numberOrNull(raw?.temperature ?? raw?.TEMPERATURE),
-    mq135: numberOrNull(raw?.mq135 ?? raw?.MQ135),
+    rgRatio: numberOrNull(raw?.rgRatio ?? raw?.RG_RATIO),
+    mq137: numberOrNull(raw?.mq137 ?? raw?.MQ137),
+    tgs2620: numberOrNull(raw?.tgs2620 ?? raw?.TGS2620),
+    tgs822: numberOrNull(raw?.tgs822 ?? raw?.TGS822),
   };
 }
 
@@ -182,8 +217,10 @@ export function normalizeBatch(raw: any): BatchListItem {
     batchId: stringOrEmpty(raw?.batchId ?? raw?.BATCH_ID),
     lastTimestamp: stringOrEmpty(raw?.lastTimestamp ?? raw?.TIMESTAMP),
     latestTemperature: numberOrNull(raw?.latestTemperature ?? raw?.temperature ?? raw?.TEMPERATURE),
-    latestColor: numberOrNull(raw?.latestColor ?? raw?.color ?? raw?.COLOR),
-    latestMq135: numberOrNull(raw?.latestMq135 ?? raw?.mq135 ?? raw?.MQ135),
+    latestRgRatio: numberOrNull(raw?.latestRgRatio ?? raw?.rgRatio ?? raw?.RG_RATIO),
+    latestMq137: numberOrNull(raw?.latestMq137 ?? raw?.mq137 ?? raw?.MQ137),
+    latestTgs2620: numberOrNull(raw?.latestTgs2620 ?? raw?.tgs2620 ?? raw?.TGS2620),
+    latestTgs822: numberOrNull(raw?.latestTgs822 ?? raw?.tgs822 ?? raw?.TGS822),
     glp: numberOrNull(raw?.glp ?? raw?.GLP),
     price: numberOrNull(raw?.price ?? raw?.PRICE),
   };
@@ -211,8 +248,10 @@ export function normalizeGraphs(payload: any, fallbackBatchId: string): BatchGra
   return {
     batchId: stringOrEmpty(raw?.batchId ?? raw?.BATCH_ID) || fallbackBatchId,
     temperature: normalizeGraphPoints(raw?.temperature),
-    color: normalizeGraphPoints(raw?.color),
-    mq135: normalizeGraphPoints(raw?.mq135),
+    rgRatio: normalizeGraphPoints(raw?.rgRatio),
+    mq137: normalizeGraphPoints(raw?.mq137),
+    tgs2620: normalizeGraphPoints(raw?.tgs2620),
+    tgs822: normalizeGraphPoints(raw?.tgs822),
   };
 }
 

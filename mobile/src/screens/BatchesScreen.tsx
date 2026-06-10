@@ -78,8 +78,10 @@ export default function BatchesScreen() {
             </View>
             <View style={[styles.row, { marginTop: theme.spacing.sm }]}>
               <Pill label={`T ${fmt(b.latestTemperature)}°C`} />
-              <Pill label={`MQ ${fmt(b.latestMq135, 0)}`} />
-              <Pill label={`C ${fmt(b.latestColor, 0)}`} />
+              <Pill label={`RG ${fmt(b.latestRgRatio)}`} />
+              <Pill label={`MQ137 ${fmt(b.latestMq137, 0)}`} />
+              <Pill label={`TGS2620 ${fmt(b.latestTgs2620, 0)}`} />
+              <Pill label={`TGS822 ${fmt(b.latestTgs822, 0)}`} />
               {b.glp != null ? <Pill label={`GLP ${b.glp}%`} /> : null}
               {b.price != null ? <Pill label={fmtCurrency(b.price)} /> : null}
             </View>

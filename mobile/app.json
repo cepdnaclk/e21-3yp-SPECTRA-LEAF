@@ -12,12 +12,22 @@
       "resizeMode": "contain",
       "backgroundColor": "#0f5132"
     },
-    "assetBundlePatterns": ["**/*"],
-    "ios": { "supportsTablet": true },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
     "android": {
+      "package": "com.spectraleaf.officer",
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/images/Logo.png",
         "backgroundColor": "#0f5132"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "44a82f5d-a691-4fad-beff-1e881651b5c4"
       }
     }
   }

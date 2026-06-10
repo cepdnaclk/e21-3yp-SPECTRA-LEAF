@@ -97,6 +97,13 @@ export default function FactoryScreen() {
               <Badge label="Completed" variant="completed" />
             )}
           </View>
+          <View style={[styles.sensorRow, { marginTop: theme.spacing.sm }]}>
+            <Pill label={`T ${fmtValue(b.latestTemperature)}°C`} />
+            <Pill label={`RG ${fmtValue(b.latestRgRatio)}`} />
+            <Pill label={`MQ137 ${fmtValue(b.latestMq137, 0)}`} />
+            <Pill label={`TGS2620 ${fmtValue(b.latestTgs2620, 0)}`} />
+            <Pill label={`TGS822 ${fmtValue(b.latestTgs822, 0)}`} />
+          </View>
         </Card>
       ))}
 
@@ -112,6 +119,7 @@ const styles = StyleSheet.create({
   muted: { color: theme.colors.textMuted, fontSize: theme.font.small },
   row: { flexDirection: 'row' },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sensorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   section: {
     fontSize: theme.font.h3,
     fontWeight: '700',
@@ -120,4 +128,29 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   itemTitle: { fontSize: theme.font.body, fontWeight: '700', color: theme.colors.text },
+  pill: {
+    backgroundColor: '#eef4f0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginRight: 6,
+    marginTop: 4,
+  },
+  pillText: { color: theme.colors.primaryDark, fontSize: theme.font.tiny, fontWeight: '600' },
 });
+
+function fmtValue(value: number | null | undefined, digits = 1) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
+  return Number(value).toLocaleString(undefined, {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+}
+
+function Pill({ label }: { label: string }) {
+  return (
+    <View style={styles.pill}>
+      <Text style={styles.pillText}>{label}</Text>
+    </View>
+  );
+}

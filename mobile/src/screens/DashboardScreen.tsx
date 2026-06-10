@@ -14,7 +14,6 @@ import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
-import MetricCard from '../components/MetricCard';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
@@ -22,7 +21,7 @@ import Loading from '../components/Loading';
 import { useAuthStore } from '../store/authStore';
 import { useFactoryBatches, useFactoryReadings } from '../hooks/useReadings';
 import { api, getErrorMessage } from '../lib/api';
-import { fmtDate, fmtNumber } from '../lib/format';
+import { fmtCurrency, fmtDate, fmtNumber } from '../lib/format';
 import { theme } from '../theme';
 import { BatchListItem } from '../types';
 
@@ -87,14 +86,12 @@ export default function DashboardScreen() {
     if (!batchId.trim()) { Alert.alert('Missing Batch ID', 'Enter a batch ID.'); return; }
     setSubmitting(true);
     try {
-      await api.post('/sensor', {
-        DEVICE_ID: (deviceId.trim() || 'DEV001').toUpperCase(),
-        TIMESTAMP:  new Date().toISOString(),
-        FACTORY_ID: factoryId,
-        BATCH_ID:   batchId.trim().toUpperCase(),
-        TEMPERATURE: Number(targetTemperature) || 28.5,
-        MQ135: 0,
-        COLOR: 0,
+      await api.post('/batches/public', {
+        deviceId: (deviceId.trim() || 'DEV001').toUpperCase(),
+        factoryId,
+        batchId: batchId.trim().toUpperCase(),
+        targetTemperature: Number(targetTemperature) || 28.5,
+        estimatedHours: Number(estimatedHours) || 8,
       });
       setStartOpen(false);
       setBatchId('');
@@ -229,10 +226,14 @@ export default function DashboardScreen() {
               <View style={styles.batchStats}>
                 <BatchStat label="Temperature"
                   value={activeBatch.latestTemperature != null ? `${fmt(activeBatch.latestTemperature)} °C` : '—'} />
-                <BatchStat label="MQ135 ppm"
-                  value={activeBatch.latestMq135 != null ? fmt(activeBatch.latestMq135, 0) : '—'} />
-                <BatchStat label="Color"
-                  value={activeBatch.latestColor != null ? fmt(activeBatch.latestColor, 0) : '—'} />
+                <BatchStat label="RG Ratio"
+                  value={activeBatch.latestRgRatio != null ? fmt(activeBatch.latestRgRatio) : '—'} />
+                <BatchStat label="MQ137"
+                  value={activeBatch.latestMq137 != null ? fmt(activeBatch.latestMq137, 0) : '—'} />
+                <BatchStat label="TGS2620"
+                  value={activeBatch.latestTgs2620 != null ? fmt(activeBatch.latestTgs2620, 0) : '—'} />
+                <BatchStat label="TGS822"
+                  value={activeBatch.latestTgs822 != null ? fmt(activeBatch.latestTgs822, 0) : '—'} />
               </View>
               <Button
                 title="Set GLP & Complete"
@@ -280,8 +281,10 @@ export default function DashboardScreen() {
                   </View>
                   <View style={[styles.row, { marginTop: theme.spacing.sm }]}>
                     <Pill label={`T ${fmt(b.latestTemperature)}°C`} />
-                    <Pill label={`MQ ${fmt(b.latestMq135, 0)}`} />
-                    <Pill label={`C ${fmt(b.latestColor, 0)}`} />
+                    <Pill label={`RG ${fmt(b.latestRgRatio)}`} />
+                    <Pill label={`MQ137 ${fmt(b.latestMq137, 0)}`} />
+                    <Pill label={`TGS2620 ${fmt(b.latestTgs2620, 0)}`} />
+                    <Pill label={`TGS822 ${fmt(b.latestTgs822, 0)}`} />
                     {b.glp != null ? <Pill label={`GLP ${b.glp}%`} accent /> : null}
                   </View>
                 </Card>
@@ -294,7 +297,6 @@ export default function DashboardScreen() {
       {/* ══════════════ SENSORS TAB ══════════════ */}
       {activeTab === 'sensors' && (
         <>
-          {/* 3 large sensor cards */}
           <SensorCard
             label="Temperature"
             value={latest?.temperature ?? null}
@@ -306,23 +308,44 @@ export default function DashboardScreen() {
             timestamp={latest?.timestamp}
           />
           <SensorCard
-            label="MQ135 Gas"
-            value={latest?.mq135 ?? null}
-            unit="ppm"
-            icon="cloud"
+            label="RG Ratio"
+            value={latest?.rgRatio ?? null}
+            unit=""
+            icon="analytics"
             color={theme.colors.accent}
             bg="#e1eefd"
+            deviceId={latest?.deviceId}
+            timestamp={latest?.timestamp}
+          />
+          <SensorCard
+            label="MQ137"
+            value={latest?.mq137 ?? null}
+            unit=""
+            icon="cloud"
+            color="#d97706"
+            bg="#fef3c7"
             digits={0}
             deviceId={latest?.deviceId}
             timestamp={latest?.timestamp}
           />
           <SensorCard
-            label="Color Index"
-            value={latest?.color ?? null}
+            label="TGS2620"
+            value={latest?.tgs2620 ?? null}
             unit=""
-            icon="color-palette"
-            color="#d97706"
-            bg="#fef3c7"
+            icon="pulse"
+            color={theme.colors.danger}
+            bg="#fee2e2"
+            digits={0}
+            deviceId={latest?.deviceId}
+            timestamp={latest?.timestamp}
+          />
+          <SensorCard
+            label="TGS822"
+            value={latest?.tgs822 ?? null}
+            unit=""
+            icon="radio"
+            color={theme.colors.primary}
+            bg="#e6f5ec"
             digits={0}
             deviceId={latest?.deviceId}
             timestamp={latest?.timestamp}
@@ -350,8 +373,10 @@ export default function DashboardScreen() {
                   <Text style={styles.readingTime}>{fmtDate(r.timestamp)}</Text>
                   <View style={styles.readingPills}>
                     <Pill label={`${fmt(r.temperature)}°C`} />
-                    <Pill label={`${fmt(r.mq135, 0)} ppm`} />
-                    <Pill label={`C ${fmt(r.color, 0)}`} />
+                    <Pill label={`RG ${fmt(r.rgRatio)}`} />
+                    <Pill label={`MQ137 ${fmt(r.mq137, 0)}`} />
+                    <Pill label={`TGS2620 ${fmt(r.tgs2620, 0)}`} />
+                    <Pill label={`TGS822 ${fmt(r.tgs822, 0)}`} />
                   </View>
                 </View>
               ))}
@@ -370,7 +395,7 @@ export default function DashboardScreen() {
                 <Text style={styles.eyebrow}>Most Selling</Text>
                 <Text style={styles.cardTitle}>Top {pricedBatches.length} priced batches</Text>
                 <Text style={styles.muted}>
-                  Combined revenue Rs {totalRevenue.toLocaleString()}
+                  Combined revenue {fmtCurrency(totalRevenue)}
                 </Text>
               </View>
               {pricedBatches[0] && (
@@ -381,7 +406,7 @@ export default function DashboardScreen() {
                   <Text style={styles.eyebrow}>Top Batch</Text>
                   <Text style={styles.topBatchId}>{pricedBatches[0].batchId}</Text>
                   <Text style={styles.topBatchPrice}>
-                    Rs {(pricedBatches[0].price ?? 0).toLocaleString()}
+                    {fmtCurrency(pricedBatches[0].price ?? 0)}
                   </Text>
                 </View>
               )}
@@ -410,7 +435,7 @@ export default function DashboardScreen() {
                     <View style={{ flex: 1, marginLeft: theme.spacing.md }}>
                       <Text style={styles.batchId}>{b.batchId}</Text>
                       <Text style={styles.priceText}>
-                        Rs {(b.price ?? 0).toLocaleString()}
+                        {fmtCurrency(b.price ?? 0)}
                       </Text>
                     </View>
                     <Text style={styles.muted}>{fmtDate(b.lastTimestamp)?.split(' ')[0]}</Text>
@@ -418,7 +443,10 @@ export default function DashboardScreen() {
                   <View style={[styles.miniStatRow, { marginTop: theme.spacing.md }]}>
                     <MiniStat label="GLP"  value={b.glp != null ? `${b.glp}%` : '—'} />
                     <MiniStat label="Temp" value={b.latestTemperature != null ? `${fmt(b.latestTemperature)}°` : '—'} />
-                    <MiniStat label="MQ"   value={b.latestMq135 != null ? fmt(b.latestMq135, 0) : '—'} />
+                    <MiniStat label="RG"   value={b.latestRgRatio != null ? fmt(b.latestRgRatio) : '—'} />
+                    <MiniStat label="MQ137" value={b.latestMq137 != null ? fmt(b.latestMq137, 0) : '—'} />
+                    <MiniStat label="TGS2620" value={b.latestTgs2620 != null ? fmt(b.latestTgs2620, 0) : '—'} />
+                    <MiniStat label="TGS822" value={b.latestTgs822 != null ? fmt(b.latestTgs822, 0) : '—'} />
                   </View>
                 </Card>
               </Pressable>
@@ -455,10 +483,13 @@ export default function DashboardScreen() {
                   </View>
                   <View style={[styles.row, { marginTop: theme.spacing.sm }]}>
                     <Pill label={`T ${fmt(b.latestTemperature)}°C`} />
-                    <Pill label={`MQ ${fmt(b.latestMq135, 0)}`} />
+                    <Pill label={`RG ${fmt(b.latestRgRatio)}`} />
+                    <Pill label={`MQ137 ${fmt(b.latestMq137, 0)}`} />
+                    <Pill label={`TGS2620 ${fmt(b.latestTgs2620, 0)}`} />
+                    <Pill label={`TGS822 ${fmt(b.latestTgs822, 0)}`} />
                     {b.glp != null ? <Pill label={`GLP ${b.glp}%`} accent /> : null}
                     {b.price != null ? (
-                      <Pill label={`Rs ${(b.price).toLocaleString()}`} accent />
+                      <Pill label={fmtCurrency(b.price)} accent />
                     ) : null}
                   </View>
                 </Card>
@@ -744,11 +775,11 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   batchStats: {
-    flexDirection: 'row', marginTop: theme.spacing.lg,
+    flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, marginTop: theme.spacing.lg,
     borderTopWidth: 1, borderTopColor: theme.colors.border,
     paddingTop: theme.spacing.md,
   },
-  batchStat: { flex: 1, alignItems: 'center' },
+  batchStat: { flexGrow: 1, flexBasis: '30%', alignItems: 'center' },
   batchStatLabel: { fontSize: theme.font.tiny, color: theme.colors.textMuted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   batchStatValue: { fontSize: theme.font.h3, fontWeight: '700', color: theme.colors.text, marginTop: 4 },
 

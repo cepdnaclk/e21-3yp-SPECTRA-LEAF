@@ -44,10 +44,15 @@ export default function SensorsScreen() {
       <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
         <MetricCard label="Temperature" value={fmt(latest?.temperature)} unit="°C" accent={theme.colors.primary} />
         <View style={{ width: theme.spacing.md }} />
-        <MetricCard label="MQ135" value={fmt(latest?.mq135, 0)} unit="ppm" />
+        <MetricCard label="RG Ratio" value={fmt(latest?.rgRatio)} />
       </View>
       <View style={[styles.row, { marginTop: theme.spacing.md }]}>
-        <MetricCard label="Color" value={fmt(latest?.color, 0)} />
+        <MetricCard label="MQ137" value={fmt(latest?.mq137, 0)} />
+        <View style={{ width: theme.spacing.md }} />
+        <MetricCard label="TGS2620" value={fmt(latest?.tgs2620, 0)} />
+      </View>
+      <View style={[styles.row, { marginTop: theme.spacing.md }]}>
+        <MetricCard label="TGS822" value={fmt(latest?.tgs822, 0)} />
         <View style={{ width: theme.spacing.md }} />
         <MetricCard label="Device" value={latest?.deviceId || '—'} />
       </View>
@@ -69,8 +74,10 @@ export default function SensorsScreen() {
           <Text style={styles.muted}>Batch: {r.batchId || '—'}</Text>
           <View style={[styles.row, { marginTop: 6 }]}>
             <Stat label="Temp" value={`${fmt(r.temperature)}°C`} />
-            <Stat label="MQ135" value={fmt(r.mq135, 0)} />
-            <Stat label="Color" value={fmt(r.color, 0)} />
+            <Stat label="RG" value={fmt(r.rgRatio)} />
+            <Stat label="MQ137" value={fmt(r.mq137, 0)} />
+            <Stat label="TGS2620" value={fmt(r.tgs2620, 0)} />
+            <Stat label="TGS822" value={fmt(r.tgs822, 0)} />
           </View>
         </Card>
       ))}
@@ -101,7 +108,7 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.xl,
     marginBottom: theme.spacing.md,
   },
-  row: { flexDirection: 'row' },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between' },
   timestamp: { color: theme.colors.text, fontWeight: '600', fontSize: theme.font.small },
   stat: {
@@ -110,6 +117,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: theme.radius.md,
     marginRight: 6,
+    marginBottom: 6,
   },
   statLabel: { color: theme.colors.textMuted, fontSize: theme.font.tiny },
   statValue: { color: theme.colors.primaryDark, fontWeight: '700', fontSize: theme.font.small },

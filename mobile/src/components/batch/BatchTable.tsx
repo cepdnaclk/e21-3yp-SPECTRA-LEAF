@@ -55,7 +55,7 @@ export function BatchTable({ batches, search, onRowClick, actionColumn }: Props)
     return arr;
   }, [batches, sortKey, sortDir]);
 
-  const colCount = 7 + (actionColumn ? 1 : 0);
+  const colCount = 10 + (actionColumn ? 1 : 0);
 
   return (
     <Table>
@@ -67,8 +67,10 @@ export function BatchTable({ batches, search, onRowClick, actionColumn }: Props)
           Last Seen
         </Th>
         <Th>Temperature</Th>
-        <Th>Color</Th>
-        <Th>MQ135</Th>
+        <Th>RG Ratio</Th>
+        <Th>MQ137</Th>
+        <Th>TGS2620</Th>
+        <Th>TGS822</Th>
         <Th onClick={() => toggle('glp')} active={sortKey === 'glp'} dir={sortDir}>
           GLP %
         </Th>
@@ -93,10 +95,16 @@ export function BatchTable({ batches, search, onRowClick, actionColumn }: Props)
               {b.latestTemperature !== null ? `${b.latestTemperature?.toFixed(1)} °C` : '—'}
             </Td>
             <Td className="tabular text-xs">
-              {b.latestColor !== null ? b.latestColor : '—'}
+              {b.latestRgRatio !== null ? b.latestRgRatio?.toFixed(1) : '—'}
             </Td>
             <Td className="tabular text-xs">
-              {b.latestMq135 !== null ? b.latestMq135?.toFixed(0) : '—'}
+              {b.latestMq137 !== null ? b.latestMq137?.toFixed(0) : '—'}
+            </Td>
+            <Td className="tabular text-xs">
+              {b.latestTgs2620 !== null ? b.latestTgs2620?.toFixed(0) : '—'}
+            </Td>
+            <Td className="tabular text-xs">
+              {b.latestTgs822 !== null ? b.latestTgs822?.toFixed(0) : '—'}
             </Td>
             <Td className="tabular">
               {b.glp !== null && b.glp !== undefined ? `${b.glp}%` : '—'}

@@ -81,14 +81,24 @@ export default function BatchDetailScreen() {
         {gLoading ? <Loading /> : <MiniChart points={graphs?.temperature || []} color={theme.colors.danger} />}
       </Card>
 
-      <Text style={styles.section}>MQ135</Text>
+      <Text style={styles.section}>RG Ratio</Text>
       <Card>
-        {gLoading ? <Loading /> : <MiniChart points={graphs?.mq135 || []} color={theme.colors.info} />}
+        {gLoading ? <Loading /> : <MiniChart points={graphs?.rgRatio || []} color={theme.colors.warning} />}
       </Card>
 
-      <Text style={styles.section}>Color</Text>
+      <Text style={styles.section}>MQ137</Text>
       <Card>
-        {gLoading ? <Loading /> : <MiniChart points={graphs?.color || []} color={theme.colors.primary} />}
+        {gLoading ? <Loading /> : <MiniChart points={graphs?.mq137 || []} color={theme.colors.info} />}
+      </Card>
+
+      <Text style={styles.section}>TGS2620</Text>
+      <Card>
+        {gLoading ? <Loading /> : <MiniChart points={graphs?.tgs2620 || []} color={theme.colors.danger} />}
+      </Card>
+
+      <Text style={styles.section}>TGS822</Text>
+      <Card>
+        {gLoading ? <Loading /> : <MiniChart points={graphs?.tgs822 || []} color={theme.colors.primary} />}
       </Card>
 
       <Text style={styles.section}>Recent Temperature Points</Text>

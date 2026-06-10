@@ -11,5 +11,12 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx"]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": [
+    "src/legacy-next-app/**/*",
+    "src/components/charts/**/*",
+    "src/components/layout/**/*",
+    "src/hooks/useAuth.ts",
+    "src/middleware.ts"
+  ]
 }

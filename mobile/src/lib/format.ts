@@ -13,9 +13,9 @@ export function fmtDate(iso?: string | null) {
 
 export function fmtCurrency(value?: number | null) {
   if (value === undefined || value === null) return '—';
-  return `$${value.toLocaleString(undefined, {
+  return `LKR ${value.toLocaleString('en-LK', {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 0,
   })}`;
 }
 
