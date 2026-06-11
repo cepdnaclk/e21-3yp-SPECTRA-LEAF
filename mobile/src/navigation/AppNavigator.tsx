@@ -45,11 +45,11 @@ const Tab       = createBottomTabNavigator<TabParamList>();
 type IconName = keyof typeof Ionicons.glyphMap;
 
 const TAB_ICONS: Record<keyof TabParamList, IconName> = {
-  Dashboard: 'home',
-  Sensors:   'pulse',
-  Batches:   'card',
-  Factory:   'business',
-  Profile:   'settings-sharp',
+  Dashboard: 'home-outline',
+  Sensors:   'pulse-outline',
+  Batches:   'albums-outline',
+  Factory:   'business-outline',
+  Profile:   'person-circle-outline',
 };
 
 /* -------- Floating pill tab bar (matches the reference image) -------- */
@@ -139,7 +139,7 @@ const tabStyles = StyleSheet.create({
   activeBubble: {
     width: 46,
     height: 46,
-    borderRadius: 17,
+    borderRadius: 16,
     backgroundColor: theme.colors.panelGreen,
     alignItems: 'center',
     justifyContent: 'center',
@@ -156,7 +156,7 @@ function MainTabs() {
         headerStyle: { backgroundColor: theme.colors.background },
         headerShadowVisible: false,
         headerTintColor: theme.colors.text,
-        headerTitleStyle: { fontWeight: '700', color: theme.colors.text },
+        headerTitleStyle: { fontWeight: '900', color: theme.colors.text },
       }}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
@@ -183,7 +183,7 @@ function AppNavigator() {
         headerStyle: { backgroundColor: theme.colors.background },
         headerShadowVisible: false,
         headerTintColor: theme.colors.text,
-        headerTitleStyle: { fontWeight: '700', color: theme.colors.text },
+        headerTitleStyle: { fontWeight: '900', color: theme.colors.text },
       }}
     >
       <AppStack.Screen name="Tabs"        component={MainTabs}         options={{ headerShown: false }} />

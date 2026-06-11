@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Card from './Card';
 import { theme } from '../theme';
 
@@ -14,31 +15,58 @@ export default function MetricCard({ label, value, unit, accent }: Props) {
   const display = value === null || value === undefined || value === '' ? '—' : String(value);
   const tone = getTone(accent);
   return (
-    <Card style={[styles.card, { backgroundColor: tone.bg, borderColor: tone.border }]}>
-      <View style={[styles.accent, { backgroundColor: tone.fg }]} />
-      <Text style={[styles.label, { color: tone.muted }]}>{label}</Text>
-      <View style={styles.valueRow}>
-        <Text style={[styles.value, { color: tone.fg }]}>{display}</Text>
-        {unit ? <Text style={[styles.unit, { color: tone.muted }]}>{unit}</Text> : null}
-      </View>
+    <Card padded={false} style={[styles.card, { borderColor: tone.border }]}>
+      <LinearGradient colors={tone.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.inner}>
+        <View style={[styles.accent, { backgroundColor: tone.fg }]} />
+        <Text style={[styles.label, { color: tone.muted }]}>{label}</Text>
+        <View style={styles.valueRow}>
+          <Text style={[styles.value, { color: tone.fg }]}>{display}</Text>
+          {unit ? <Text style={[styles.unit, { color: tone.muted }]}>{unit}</Text> : null}
+        </View>
+      </LinearGradient>
     </Card>
   );
 }
 
 function getTone(accent?: string) {
   if (accent === theme.colors.warning) {
-    return { bg: theme.colors.panelAmber, border: '#FDE68A', fg: '#B45309', muted: '#92400E' };
+    return {
+      border: '#111111',
+      fg: '#FFFFFF',
+      muted: theme.colors.darkMuted,
+      gradient: ['#050505', '#171717'] as const,
+    };
   }
   if (accent === theme.colors.danger) {
-    return { bg: theme.colors.panelRed, border: '#FECACA', fg: '#B91C1C', muted: '#991B1B' };
+    return {
+      border: '#FECACA',
+      fg: '#B91C1C',
+      muted: '#991B1B',
+      gradient: ['rgba(254,242,242,0.98)', 'rgba(255,228,230,0.78)'] as const,
+    };
   }
   if (accent === theme.colors.info || accent === theme.colors.accent) {
-    return { bg: theme.colors.panelBlue, border: '#BFDBFE', fg: '#1D4ED8', muted: '#1E40AF' };
+    return {
+      border: '#111111',
+      fg: '#FFFFFF',
+      muted: theme.colors.darkMuted,
+      gradient: ['#050505', '#202020'] as const,
+    };
   }
   if (accent === theme.colors.primary || accent === theme.colors.success) {
-    return { bg: theme.colors.panelGreen, border: '#86EFAC', fg: theme.colors.primaryDark, muted: '#166534' };
+    return {
+      border: '#86EFAC',
+      fg: theme.colors.primaryDark,
+      muted: '#166534',
+      gradient: ['rgba(220,252,231,0.98)', 'rgba(187,247,208,0.76)'] as const,
+    };
   }
-  return { bg: theme.colors.surface, border: 'rgba(255,255,255,0.74)', fg: theme.colors.text, muted: theme.colors.textMuted };
+  return {
+    border: theme.colors.border,
+    fg: theme.colors.text,
+    muted: theme.colors.textMuted,
+    gradient: ['#FFFFFF', '#F7F8FA'] as const,
+  };
 }
 
 const styles = StyleSheet.create({
@@ -47,6 +75,10 @@ const styles = StyleSheet.create({
     minWidth: 0,
     overflow: 'hidden',
     minHeight: 122,
+  },
+  inner: {
+    flex: 1,
+    padding: 18,
   },
   accent: {
     width: 38,

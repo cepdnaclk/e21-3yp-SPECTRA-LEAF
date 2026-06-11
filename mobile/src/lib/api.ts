@@ -89,12 +89,12 @@ function getConfiguredApiBaseURL() {
 const configuredBaseURL = getConfiguredApiBaseURL();
 
 function getApiBaseURL() {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    return `${window.location.origin}/api`;
-  }
-
   if (configuredBaseURL) {
     return configuredBaseURL;
+  }
+
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    return `${window.location.origin}/api`;
   }
 
   const lanHost = getExpoLanHost();

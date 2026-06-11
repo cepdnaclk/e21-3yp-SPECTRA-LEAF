@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
   title: {
     color: theme.colors.text,
     fontSize: theme.font.body,
-    fontWeight: '700',
+    fontWeight: '900',
     marginBottom: theme.spacing.xs,
   },
   msg: {

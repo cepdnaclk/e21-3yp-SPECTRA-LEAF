@@ -6,6 +6,7 @@ import Card from '../components/Card';
 import Badge from '../components/Badge';
 import EmptyState from '../components/EmptyState';
 import Loading from '../components/Loading';
+import ScreenBackground from '../components/ScreenBackground';
 import { useAuthStore } from '../store/authStore';
 import { useFactoryBatches } from '../hooks/useReadings';
 import { fmtCurrency, fmtDate, fmtNumber } from '../lib/format';
@@ -31,6 +32,7 @@ export default function BatchesScreen() {
   };
 
   return (
+    <ScreenBackground>
     <SafeAreaView style={styles.scroll} edges={['top']}>
     <ScrollView
       style={styles.scroll}
@@ -96,6 +98,7 @@ export default function BatchesScreen() {
       <View style={{ height: theme.spacing.xxl }} />
     </ScrollView>
     </SafeAreaView>
+    </ScreenBackground>
   );
 }
 
@@ -108,7 +111,7 @@ function Pill({ label }: { label: string }) {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { flex: 1, backgroundColor: 'transparent' },
   content: {
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.md,
@@ -119,9 +122,14 @@ const styles = StyleSheet.create({
   },
   headerCard: {
     backgroundColor: theme.colors.dark,
-    borderRadius: theme.radius.xl,
+    borderRadius: 36,
     padding: theme.spacing.xl,
     marginBottom: theme.spacing.lg,
+    shadowColor: theme.colors.shadow,
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 18 },
+    elevation: 9,
   },
   title: {
     fontSize: 30,
@@ -152,7 +160,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
     marginTop: 4,
     borderWidth: 1,
-    borderColor: 'rgba(226,232,240,0.75)',
+    borderColor: theme.colors.border,
   },
-  pillText: { color: theme.colors.primaryDark, fontSize: theme.font.tiny, fontWeight: '600' },
+  pillText: { color: theme.colors.textSecondary, fontSize: theme.font.tiny, fontWeight: '800' },
 });

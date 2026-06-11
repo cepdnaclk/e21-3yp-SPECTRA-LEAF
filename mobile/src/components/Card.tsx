@@ -17,16 +17,17 @@ export default function Card({ style, padded = true, children, ...rest }: Props)
 const styles = StyleSheet.create({
   card: {
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
+    borderRadius: theme.radius.xl,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.74)',
+    borderColor: theme.colors.border,
+    overflow: 'hidden',
     shadowColor: theme.colors.shadow,
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 5,
+    shadowOpacity: 0.07,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 14 },
+    elevation: 3,
   },
   padded: {
-    padding: 18,
+    padding: 20,
   },
 });

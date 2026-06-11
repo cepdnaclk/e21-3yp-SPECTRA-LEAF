@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
 import MetricCard from '../components/MetricCard';
 import EmptyState from '../components/EmptyState';
 import Loading from '../components/Loading';
+import ScreenBackground from '../components/ScreenBackground';
 import { useAuthStore } from '../store/authStore';
 import { useFactoryReadings } from '../hooks/useReadings';
 import { fmtDate, fmtNumber } from '../lib/format';
@@ -28,6 +30,7 @@ export default function SensorsScreen() {
   const latest = readings[0];
 
   return (
+    <ScreenBackground>
     <SafeAreaView style={styles.scroll} edges={['top']}>
     <ScrollView
       style={styles.scroll}
@@ -39,10 +42,15 @@ export default function SensorsScreen() {
         <Text style={styles.headerMuted}>Auto-refresh every 15s · Factory {factoryId}</Text>
       </View>
 
-      {error ? (
-        <Card style={{ marginTop: theme.spacing.md, borderColor: theme.colors.danger }}>
-          <Text style={{ color: theme.colors.danger }}>{error}</Text>
-        </Card>
+      {error && readings.length === 0 ? (
+        <Pressable onPress={onRefresh} style={styles.errorBanner}>
+          <Ionicons name="cloud-offline-outline" size={20} color={theme.colors.danger} />
+          <View style={{ flex: 1, marginLeft: theme.spacing.sm }}>
+            <Text style={styles.errorTitle}>Could not reach server</Text>
+            <Text style={styles.errorMsg}>{error}</Text>
+          </View>
+          <Text style={styles.retryText}>Retry</Text>
+        </Pressable>
       ) : null}
 
       <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
@@ -51,9 +59,9 @@ export default function SensorsScreen() {
         <MetricCard label="RG Ratio" value={fmt(latest?.rgRatio)} accent={theme.colors.info} />
       </View>
       <View style={[styles.row, { marginTop: theme.spacing.md }]}>
-        <MetricCard label="MQ137" value={fmt(latest?.mq137, 0)} accent={theme.colors.warning} />
+        <MetricCard label="MQ137" value={fmt(latest?.mq137, 0)} accent={theme.colors.info} />
         <View style={{ width: theme.spacing.md }} />
-        <MetricCard label="TGS2620" value={fmt(latest?.tgs2620, 0)} accent={theme.colors.danger} />
+        <MetricCard label="TGS2620" value={fmt(latest?.tgs2620, 0)} accent={theme.colors.info} />
       </View>
       <View style={[styles.row, { marginTop: theme.spacing.md }]}>
         <MetricCard label="TGS822" value={fmt(latest?.tgs822, 0)} accent={theme.colors.primary} />
@@ -89,6 +97,7 @@ export default function SensorsScreen() {
       <View style={{ height: theme.spacing.xxl }} />
     </ScrollView>
     </SafeAreaView>
+    </ScreenBackground>
   );
 }
 
@@ -102,7 +111,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { flex: 1, backgroundColor: 'transparent' },
   content: {
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.md,
@@ -113,9 +122,14 @@ const styles = StyleSheet.create({
   },
   headerCard: {
     backgroundColor: theme.colors.dark,
-    borderRadius: theme.radius.xl,
+    borderRadius: 36,
     padding: theme.spacing.xl,
     marginBottom: theme.spacing.lg,
+    shadowColor: theme.colors.shadow,
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 18 },
+    elevation: 9,
   },
   title: {
     fontSize: 30,
@@ -126,16 +140,29 @@ const styles = StyleSheet.create({
   },
   headerMuted: { color: theme.colors.darkMuted, fontSize: theme.font.small, lineHeight: 19, marginTop: 6 },
   muted: { color: theme.colors.textMuted, fontSize: theme.font.small, lineHeight: 19 },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: 24,
+    padding: theme.spacing.md,
+    marginTop: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.danger,
+  },
+  errorTitle: { fontSize: theme.font.small, fontWeight: '900', color: theme.colors.danger },
+  errorMsg: { fontSize: theme.font.tiny, color: theme.colors.danger, marginTop: 2 },
+  retryText: { fontSize: theme.font.small, fontWeight: '800', color: theme.colors.primary },
   section: {
     fontSize: theme.font.h3,
-    fontWeight: '700',
+    fontWeight: '900',
     color: theme.colors.text,
     marginTop: theme.spacing.xl,
     marginBottom: theme.spacing.md,
   },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  timestamp: { color: theme.colors.text, fontWeight: '600', fontSize: theme.font.small },
+  timestamp: { color: theme.colors.text, fontWeight: '900', fontSize: theme.font.small },
   readingCard: {
     marginBottom: theme.spacing.md,
     backgroundColor: theme.colors.surface,
@@ -151,5 +178,5 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(226,232,240,0.75)',
   },
   statLabel: { color: theme.colors.textMuted, fontSize: theme.font.tiny },
-  statValue: { color: theme.colors.primaryDark, fontWeight: '700', fontSize: theme.font.small },
+  statValue: { color: theme.colors.primaryDark, fontWeight: '900', fontSize: theme.font.small },
 });

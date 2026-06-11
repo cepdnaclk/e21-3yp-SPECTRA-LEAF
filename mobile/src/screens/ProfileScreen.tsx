@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
+import ScreenBackground from '../components/ScreenBackground';
 import { useAuthStore } from '../store/authStore';
 import { theme } from '../theme';
 
@@ -32,6 +33,7 @@ export default function ProfileScreen() {
   };
 
   return (
+    <ScreenBackground>
     <SafeAreaView style={styles.scroll} edges={['top']}>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       <Card style={styles.profileCard}>
@@ -114,6 +116,7 @@ export default function ProfileScreen() {
       <View style={{ height: theme.spacing.xxl }} />
     </ScrollView>
     </SafeAreaView>
+    </ScreenBackground>
   );
 }
 
@@ -145,7 +148,7 @@ function Field({ label, value, editing, onChangeText, keyboardType }: FieldProps
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { flex: 1, backgroundColor: 'transparent' },
   content: {
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.md,
@@ -156,7 +159,13 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     backgroundColor: theme.colors.dark,
-    borderColor: theme.colors.darkSoft,
+    borderColor: theme.colors.dark,
+    borderRadius: 36,
+    shadowColor: theme.colors.shadow,
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 18 },
+    elevation: 9,
   },
   header: { flexDirection: 'row', alignItems: 'center' },
   avatar: {
@@ -171,7 +180,7 @@ const styles = StyleSheet.create({
   muted: { color: theme.colors.darkMuted, fontSize: theme.font.small, lineHeight: 19 },
   section: {
     fontSize: theme.font.h3,
-    fontWeight: '700',
+    fontWeight: '900',
     color: theme.colors.text,
     marginTop: theme.spacing.xl,
     marginBottom: theme.spacing.md,
@@ -179,24 +188,24 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row' },
   field: {
     padding: theme.spacing.md,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.chip,
+    borderRadius: 18,
+    backgroundColor: theme.colors.surfaceSoft,
     marginBottom: theme.spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(226,232,240,0.72)',
+    borderColor: theme.colors.border,
   },
   fieldLabel: {
     color: theme.colors.textMuted,
     fontSize: theme.font.small,
     marginBottom: 4,
-    fontWeight: '600',
+    fontWeight: '900',
   },
   fieldValue: { color: theme.colors.text, fontSize: theme.font.body, fontWeight: '800' },
   input: {
     height: 48,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    borderRadius: theme.radius.md,
+    borderRadius: 18,
     paddingHorizontal: 14,
     color: theme.colors.text,
     backgroundColor: theme.colors.surfaceSoft,

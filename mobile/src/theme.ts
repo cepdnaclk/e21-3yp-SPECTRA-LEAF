@@ -1,55 +1,45 @@
-// Mobile palette mirrors the web officer dashboard tokens defined in
-// frontend/src/app/globals.css so the two apps feel like one product.
 export const theme = {
   colors: {
-    // Surfaces
-    background: '#C9D8CF',   // sage mobile canvas derived from the web base
-    backgroundSoft: '#EAF2ED',
-    surface: '#FFFFFF',      // --bg-surface / --bg-elevated
-    surfaceSoft: '#F8FAF9',
-    subtle: '#F1F5F4',       // --bg-subtle (chips, hover)
-    chip: '#EEF4F0',
-    panelGreen: '#DCFCE7',
-    panelBlue: '#EFF6FF',
-    panelAmber: '#FFFBEB',
-    panelRed: '#FEF2F2',
+    background: '#FFFFFF',
+    backgroundSoft: '#F2F3F5',
+    surface: '#FFFFFF',
+    surfaceSoft: '#F7F8FA',
+    subtle: '#EEF0F2',
+    chip: '#F4F5F6',
+    panelGreen: '#EAFBF1',
+    panelBlue: '#F4F5F6',
+    panelAmber: '#F7F8FA',
+    panelRed: '#FFF1F1',
 
-    // Borders
-    border: '#E2E8F0',
-    borderActive: '#CBD5E1',
+    border: '#E5E7EB',
+    borderActive: '#111111',
 
-    // Primary (green-600 family)
-    primary: '#15803D',
-    primaryDark: '#166534',
-    primaryLight: '#22C55E',
-    primarySoft: '#F0FDF4',
-    primaryBorder: '#86EFAC',
+    primary: '#18A558',
+    primaryDark: '#087A3A',
+    primaryLight: '#34D178',
+    primarySoft: '#EAFBF1',
+    primaryBorder: '#B9ECCD',
 
-    // Secondary (blue-500)
-    accent: '#3B82F6',
-    accentSoft: '#EFF6FF',
+    accent: '#111111',
+    accentSoft: '#F4F5F6',
 
-    // Text
-    text: '#0F172A',
-    textSecondary: '#334155',
-    textMuted: '#64748B',
+    text: '#0A0A0A',
+    textSecondary: '#393D42',
+    textMuted: '#858B93',
 
-    // Status
-    danger: '#EF4444',
-    dangerSoft: '#FEF2F2',
-    warning: '#F59E0B',
-    warningSoft: '#FFFBEB',
-    success: '#15803D',
-    info: '#3B82F6',
+    danger: '#E5484D',
+    dangerSoft: '#FFF1F1',
+    warning: '#0A0A0A',
+    warningSoft: '#F7F8FA',
+    success: '#18A558',
+    info: '#111111',
 
-    // Dark surfaces (used by the floating active nav bubble + dark sidebar look)
-    dark: '#1D1D20',
-    darkSoft: '#2A292D',
-    darkPanel: '#242326',
-    darkMuted: '#A0A6AF',
+    dark: '#050505',
+    darkSoft: '#171717',
+    darkPanel: '#0C0C0D',
+    darkMuted: '#B8BDC4',
 
-    // Shadows
-    shadow: '#0F172A',
+    shadow: '#000000',
   },
   spacing: {
     xs: 4,
@@ -61,9 +51,9 @@ export const theme = {
   },
   radius: {
     sm: 8,
-    md: 12,
-    lg: 18,
-    xl: 24,
+    md: 14,
+    lg: 22,
+    xl: 32,
     pill: 999,
   },
   font: {

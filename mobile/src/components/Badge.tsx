@@ -11,9 +11,9 @@ interface Props {
 
 const palette: Record<Variant, { bg: string; fg: string }> = {
   live: { bg: theme.colors.primarySoft, fg: theme.colors.primaryDark },
-  ongoing: { bg: theme.colors.warningSoft, fg: '#B45309' },
+  ongoing: { bg: theme.colors.dark, fg: '#FFFFFF' },
   completed: { bg: theme.colors.primarySoft, fg: theme.colors.primaryDark },
-  priced: { bg: theme.colors.accentSoft, fg: '#1D4ED8' },
+  priced: { bg: theme.colors.accentSoft, fg: theme.colors.dark },
   neutral: { bg: theme.colors.subtle, fg: theme.colors.textSecondary },
 };
 
@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: 'rgba(226,232,240,0.72)',
+    borderColor: theme.colors.border,
   },
   text: {
     fontSize: 12,

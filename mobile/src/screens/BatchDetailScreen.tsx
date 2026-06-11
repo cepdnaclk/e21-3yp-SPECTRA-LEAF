@@ -6,6 +6,7 @@ import Card from '../components/Card';
 import MetricCard from '../components/MetricCard';
 import Loading from '../components/Loading';
 import EmptyState from '../components/EmptyState';
+import ScreenBackground from '../components/ScreenBackground';
 import { useBatchGraphs, useBatchSummary } from '../hooks/useBatch';
 import { fmtCurrency, fmtDate, fmtNumber } from '../lib/format';
 import { theme } from '../theme';
@@ -50,6 +51,7 @@ export default function BatchDetailScreen() {
   const { graphs, loading: gLoading, error: gError } = useBatchGraphs(batchId);
 
   return (
+    <ScreenBackground>
     <SafeAreaView style={styles.scroll} edges={['top']}>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       <View style={styles.headerCard}>
@@ -82,7 +84,7 @@ export default function BatchDetailScreen() {
 
       <Text style={styles.section}>Temperature</Text>
       <Card>
-        {gLoading ? <Loading /> : <MiniChart points={graphs?.temperature || []} color={theme.colors.danger} />}
+        {gLoading ? <Loading /> : <MiniChart points={graphs?.temperature || []} color={theme.colors.primary} />}
       </Card>
 
       <Text style={styles.section}>RG Ratio</Text>
@@ -92,12 +94,12 @@ export default function BatchDetailScreen() {
 
       <Text style={styles.section}>MQ137</Text>
       <Card>
-        {gLoading ? <Loading /> : <MiniChart points={graphs?.mq137 || []} color={theme.colors.info} />}
+        {gLoading ? <Loading /> : <MiniChart points={graphs?.mq137 || []} color={theme.colors.dark} />}
       </Card>
 
       <Text style={styles.section}>TGS2620</Text>
       <Card>
-        {gLoading ? <Loading /> : <MiniChart points={graphs?.tgs2620 || []} color={theme.colors.danger} />}
+        {gLoading ? <Loading /> : <MiniChart points={graphs?.tgs2620 || []} color={theme.colors.dark} />}
       </Card>
 
       <Text style={styles.section}>TGS822</Text>
@@ -130,11 +132,12 @@ export default function BatchDetailScreen() {
       <View style={{ height: theme.spacing.xxl }} />
     </ScrollView>
     </SafeAreaView>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { flex: 1, backgroundColor: 'transparent' },
   content: {
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.md,
@@ -145,9 +148,14 @@ const styles = StyleSheet.create({
   },
   headerCard: {
     backgroundColor: theme.colors.dark,
-    borderRadius: theme.radius.xl,
+    borderRadius: 36,
     padding: theme.spacing.xl,
     marginBottom: theme.spacing.lg,
+    shadowColor: theme.colors.shadow,
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 18 },
+    elevation: 9,
   },
   title: {
     fontSize: 30,
@@ -159,32 +167,32 @@ const styles = StyleSheet.create({
   muted: { color: theme.colors.textMuted, fontSize: theme.font.small, lineHeight: 19 },
   section: {
     fontSize: theme.font.h3,
-    fontWeight: '700',
+    fontWeight: '900',
     color: theme.colors.text,
     marginTop: theme.spacing.xl,
     marginBottom: theme.spacing.md,
   },
   row: { flexDirection: 'row' },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  value: { fontWeight: '700', color: theme.colors.text },
+  value: { fontWeight: '900', color: theme.colors.text },
   bars: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    height: 68,
-    gap: 3,
-    marginBottom: 8,
+    height: 78,
+    gap: 4,
+    marginBottom: 12,
   },
   bar: {
     flex: 1,
     minWidth: 4,
-    borderRadius: 999,
+    borderRadius: 8,
   },
   backButton: {
     alignSelf: 'flex-start',
     marginBottom: theme.spacing.md,
     minHeight: 40,
     paddingHorizontal: 14,
-    borderRadius: theme.radius.pill,
+    borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.10)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.16)',

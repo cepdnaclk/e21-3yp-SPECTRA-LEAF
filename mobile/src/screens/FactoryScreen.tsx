@@ -6,6 +6,7 @@ import MetricCard from '../components/MetricCard';
 import Badge from '../components/Badge';
 import Loading from '../components/Loading';
 import EmptyState from '../components/EmptyState';
+import ScreenBackground from '../components/ScreenBackground';
 import { useAuthStore } from '../store/authStore';
 import { useFactoryBatches, useFactoryReadings } from '../hooks/useReadings';
 import { fmtDate } from '../lib/format';
@@ -40,6 +41,7 @@ export default function FactoryScreen() {
   const completed = batches.length - ongoing;
 
   return (
+    <ScreenBackground>
     <SafeAreaView style={styles.scroll} edges={['top']}>
     <ScrollView
       style={styles.scroll}
@@ -57,7 +59,7 @@ export default function FactoryScreen() {
         <MetricCard label="Devices" value={devices.length} accent={theme.colors.info} />
       </View>
       <View style={[styles.row, { marginTop: theme.spacing.md }]}>
-        <MetricCard label="Ongoing" value={ongoing} accent={theme.colors.warning} />
+        <MetricCard label="Ongoing" value={ongoing} accent={theme.colors.info} />
         <View style={{ width: theme.spacing.md }} />
         <MetricCard label="Completed" value={completed} accent={theme.colors.success} />
       </View>
@@ -114,11 +116,12 @@ export default function FactoryScreen() {
       <View style={{ height: theme.spacing.xxl }} />
     </ScrollView>
     </SafeAreaView>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { flex: 1, backgroundColor: 'transparent' },
   content: {
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.md,
@@ -129,9 +132,14 @@ const styles = StyleSheet.create({
   },
   headerCard: {
     backgroundColor: theme.colors.dark,
-    borderRadius: theme.radius.xl,
+    borderRadius: 36,
     padding: theme.spacing.xl,
     marginBottom: theme.spacing.lg,
+    shadowColor: theme.colors.shadow,
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 18 },
+    elevation: 9,
   },
   title: {
     fontSize: 30,
@@ -147,7 +155,7 @@ const styles = StyleSheet.create({
   sensorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   section: {
     fontSize: theme.font.h3,
-    fontWeight: '700',
+    fontWeight: '900',
     color: theme.colors.text,
     marginTop: theme.spacing.xl,
     marginBottom: theme.spacing.md,
@@ -164,9 +172,9 @@ const styles = StyleSheet.create({
     marginRight: 6,
     marginTop: 4,
     borderWidth: 1,
-    borderColor: 'rgba(226,232,240,0.75)',
+    borderColor: theme.colors.border,
   },
-  pillText: { color: theme.colors.primaryDark, fontSize: theme.font.tiny, fontWeight: '600' },
+  pillText: { color: theme.colors.textSecondary, fontSize: theme.font.tiny, fontWeight: '800' },
 });
 
 function fmtValue(value: number | null | undefined, digits = 1) {

@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
   Modal,
-  ImageBackground,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -13,13 +12,13 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
 import Loading from '../components/Loading';
+import ScreenBackground from '../components/ScreenBackground';
 import { useAuthStore } from '../store/authStore';
 import { useFactoryBatches, useFactoryReadings } from '../hooks/useReadings';
 import { api, getErrorMessage } from '../lib/api';
@@ -28,8 +27,6 @@ import { theme } from '../theme';
 import { BatchListItem } from '../types';
 
 type Tab = 'overview' | 'sensors' | 'batches';
-
-const leafBackground = require('../assets/images/auth/leaf1.jpg');
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview', label: 'Overview' },
@@ -130,18 +127,7 @@ export default function DashboardScreen() {
   };
 
   return (
-    <ImageBackground
-      source={leafBackground}
-      style={styles.backgroundImage}
-      imageStyle={styles.backgroundPhoto}
-      blurRadius={3}
-      resizeMode="cover"
-    >
-    <LinearGradient
-      colors={['rgba(201,216,207,0.36)', 'rgba(234,242,237,0.66)', 'rgba(248,250,249,0.88)']}
-      locations={[0, 0.46, 1]}
-      style={styles.backgroundOverlay}
-    >
+    <ScreenBackground>
     <SafeAreaView style={styles.scroll} edges={['top']}>
     <ScrollView
       style={styles.scroll}
@@ -240,12 +226,12 @@ export default function DashboardScreen() {
             <MiniGraph
               label="RG Ratio"
               values={trendReadings.map(r => r.rgRatio)}
-              color={theme.colors.accent}
+              color={theme.colors.primaryLight}
             />
             <MiniGraph
               label="MQ137"
               values={trendReadings.map(r => r.mq137)}
-              color={theme.colors.warning}
+              color="#FFFFFF"
               digits={0}
             />
           </Card>
@@ -357,7 +343,7 @@ export default function DashboardScreen() {
             value={latest?.rgRatio ?? null}
             unit=""
             icon="analytics"
-            color={theme.colors.accent}
+            color={theme.colors.dark}
             bg={theme.colors.accentSoft}
             deviceId={latest?.deviceId}
             timestamp={latest?.timestamp}
@@ -367,7 +353,7 @@ export default function DashboardScreen() {
             value={latest?.mq137 ?? null}
             unit=""
             icon="cloud"
-            color={theme.colors.warning}
+            color={theme.colors.dark}
             bg={theme.colors.warningSoft}
             digits={0}
             deviceId={latest?.deviceId}
@@ -378,8 +364,8 @@ export default function DashboardScreen() {
             value={latest?.tgs2620 ?? null}
             unit=""
             icon="pulse"
-            color={theme.colors.danger}
-            bg={theme.colors.dangerSoft}
+            color={theme.colors.dark}
+            bg={theme.colors.accentSoft}
             digits={0}
             deviceId={latest?.deviceId}
             timestamp={latest?.timestamp}
@@ -635,8 +621,7 @@ export default function DashboardScreen() {
       </Modal>
     </ScrollView>
     </SafeAreaView>
-    </LinearGradient>
-    </ImageBackground>
+    </ScreenBackground>
   );
 }
 
@@ -792,9 +777,6 @@ function Pill({ label, accent }: { label: string; accent?: boolean }) {
 /* ─────────────────── Styles ─────────────────── */
 
 const styles = StyleSheet.create({
-  backgroundImage: { flex: 1, backgroundColor: theme.colors.background },
-  backgroundPhoto: { opacity: 1 },
-  backgroundOverlay: { flex: 1 },
   scroll: { flex: 1, backgroundColor: 'transparent' },
   content: {
     paddingHorizontal: theme.spacing.lg,
@@ -807,22 +789,22 @@ const styles = StyleSheet.create({
 
   // Header
   headerCard: {
-    backgroundColor: 'rgba(29,29,32,0.76)',
-    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.dark,
+    borderRadius: 36,
     padding: theme.spacing.xl,
     marginBottom: theme.spacing.lg,
     shadowColor: theme.colors.shadow,
-    shadowOpacity: 0.26,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 14 },
-    elevation: 8,
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 18 },
+    elevation: 9,
   },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: theme.spacing.xl,
   },
   hello: {
-    color: theme.colors.darkMuted,
+    color: theme.colors.primaryLight,
     fontSize: theme.font.small,
     fontWeight: '800',
     textTransform: 'uppercase',
@@ -834,13 +816,13 @@ const styles = StyleSheet.create({
   // Error banner
   errorBanner: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: theme.colors.dangerSoft,
-    borderRadius: theme.radius.lg, padding: theme.spacing.md,
-    marginBottom: theme.spacing.lg, borderWidth: 1, borderColor: '#FECACA',
+    backgroundColor: theme.colors.surface,
+    borderRadius: 24, padding: theme.spacing.md,
+    marginBottom: theme.spacing.lg, borderWidth: 1, borderColor: theme.colors.danger,
   },
-  errorTitle: { fontSize: theme.font.small, fontWeight: '700', color: theme.colors.danger },
+  errorTitle: { fontSize: theme.font.small, fontWeight: '900', color: theme.colors.danger },
   errorMsg:   { fontSize: theme.font.tiny, color: theme.colors.danger, marginTop: 2 },
-  retryText:  { fontSize: theme.font.small, fontWeight: '700', color: theme.colors.primary },
+  retryText:  { fontSize: theme.font.small, fontWeight: '900', color: theme.colors.primary },
 
   // Page title + tabs
   pageTitle: {
@@ -852,36 +834,40 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    gap: theme.spacing.sm,
+    gap: theme.spacing.xs,
     marginBottom: theme.spacing.xl,
+    padding: 6,
+    borderRadius: 22,
+    backgroundColor: theme.colors.surfaceSoft,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   tab: {
     flex: 1,
-    minHeight: 42,
+    minHeight: 44,
     paddingVertical: 10,
     paddingHorizontal: theme.spacing.sm,
-    borderRadius: theme.radius.md,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
   },
   tabActive: {
     backgroundColor: theme.colors.dark,
     borderColor: theme.colors.dark,
     shadowColor: theme.colors.shadow,
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
     elevation: 4,
   },
-  tabLabel:       { fontSize: theme.font.small, fontWeight: '600', color: theme.colors.textMuted },
+  tabLabel:       { fontSize: theme.font.small, fontWeight: '900', color: theme.colors.textMuted },
   tabLabelActive: { color: '#FFFFFF' },
 
   // Section headers
   sectionTitle: {
-    fontSize: theme.font.h3, fontWeight: '700', color: theme.colors.text,
+    fontSize: theme.font.h3, fontWeight: '900', color: theme.colors.text,
     marginTop: theme.spacing.xl, marginBottom: 2,
   },
   sectionSub: {
@@ -891,19 +877,19 @@ const styles = StyleSheet.create({
 
   // Perf tiles (Overview)
   tilesRow: { flexDirection: 'row', gap: theme.spacing.sm },
-  perfTile: { flex: 1, padding: theme.spacing.md, minWidth: 0 },
+  perfTile: { flex: 1, padding: theme.spacing.md, minWidth: 0, minHeight: 126 },
   perfTileIcon: {
-    width: 40, height: 40, borderRadius: 14,
+    width: 42, height: 42, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
     marginBottom: theme.spacing.sm,
     backgroundColor: 'rgba(255,255,255,0.82)',
   },
   perfTileValue: {
-    fontSize: 18, fontWeight: '800', color: theme.colors.text,
+    fontSize: 18, fontWeight: '900', color: theme.colors.text,
   },
   perfTileLabel: {
     fontSize: theme.font.tiny, color: theme.colors.textMuted,
-    fontWeight: '600', marginTop: 2,
+    fontWeight: '800', marginTop: 2,
   },
   perfTileSub: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 },
   perfTileSubText: { fontSize: theme.font.tiny, color: theme.colors.textMuted, flex: 1 },
@@ -914,8 +900,8 @@ const styles = StyleSheet.create({
 
   // Active batch card (Overview)
   graphPanel: {
-    backgroundColor: 'rgba(29,29,32,0.92)',
-    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: theme.colors.dark,
+    borderColor: theme.colors.dark,
     marginBottom: theme.spacing.sm,
   },
   graphPanelHeader: {
@@ -982,7 +968,7 @@ const styles = StyleSheet.create({
     fontSize: theme.font.tiny,
   },
   featureCard: {
-    backgroundColor: theme.colors.primarySoft,
+    backgroundColor: theme.colors.surface,
     borderColor: theme.colors.primaryBorder,
   },
   emptyActionCard: {
@@ -991,7 +977,7 @@ const styles = StyleSheet.create({
   },
   batchIconWrap: {
     width: 46, height: 46, borderRadius: 16,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.primarySoft,
     alignItems: 'center', justifyContent: 'center',
   },
   batchStats: {
@@ -1000,8 +986,8 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.md,
   },
   batchStat: { flexGrow: 1, flexBasis: '30%', alignItems: 'center' },
-  batchStatLabel: { fontSize: theme.font.tiny, color: theme.colors.textMuted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  batchStatValue: { fontSize: theme.font.h3, fontWeight: '700', color: theme.colors.text, marginTop: 4 },
+  batchStatLabel: { fontSize: theme.font.tiny, color: theme.colors.textMuted, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0 },
+  batchStatValue: { fontSize: theme.font.h3, fontWeight: '900', color: theme.colors.text, marginTop: 4 },
 
   // Sensor cards (Sensors tab)
   sensorCard: { marginBottom: theme.spacing.md },
@@ -1009,17 +995,17 @@ const styles = StyleSheet.create({
     width: 48, height: 48, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
   },
-  sensorValue: { fontSize: 40, fontWeight: '800', marginTop: theme.spacing.md },
-  sensorUnit:  { fontSize: 18, fontWeight: '600' },
-  sensorLabel: { fontSize: theme.font.body, color: theme.colors.textMuted, fontWeight: '600', marginTop: 4 },
+  sensorValue: { fontSize: 40, fontWeight: '900', marginTop: theme.spacing.md },
+  sensorUnit:  { fontSize: 18, fontWeight: '900' },
+  sensorLabel: { fontSize: theme.font.body, color: theme.colors.textMuted, fontWeight: '900', marginTop: 4 },
   sensorDevice:{ fontSize: theme.font.tiny, color: theme.colors.textMuted, marginTop: 4 },
 
   // Reading detail & history
-  cardTitle: { fontSize: theme.font.h3, fontWeight: '700', color: theme.colors.text, marginBottom: theme.spacing.md },
+  cardTitle: { fontSize: theme.font.h3, fontWeight: '900', color: theme.colors.text, marginBottom: theme.spacing.md },
   detailGrid: { gap: theme.spacing.sm },
   detailRow:  { flexDirection: 'row', justifyContent: 'space-between' },
-  detailLabel:{ fontSize: theme.font.small, color: theme.colors.textMuted, fontWeight: '600' },
-  detailValue:{ fontSize: theme.font.small, color: theme.colors.text, fontWeight: '700' },
+  detailLabel:{ fontSize: theme.font.small, color: theme.colors.textMuted, fontWeight: '800' },
+  detailValue:{ fontSize: theme.font.small, color: theme.colors.text, fontWeight: '900' },
   readingRow: { paddingVertical: theme.spacing.sm },
   readingRowBorder: { borderTopWidth: 1, borderTopColor: theme.colors.border },
   readingTime:{ fontSize: theme.font.tiny, color: theme.colors.textMuted, marginBottom: 4 },
@@ -1027,11 +1013,11 @@ const styles = StyleSheet.create({
 
   // Batches tab
   summaryCard: {
-    backgroundColor: theme.colors.panelBlue,
-    borderColor: '#BFDBFE',
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
   },
   eyebrow: {
-    fontSize: 10, fontWeight: '700', letterSpacing: 1,
+    fontSize: 10, fontWeight: '900', letterSpacing: 0,
     textTransform: 'uppercase', color: theme.colors.textMuted,
     marginBottom: 4,
   },
@@ -1042,43 +1028,43 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 4,
   },
-  topBatchId:   { fontSize: theme.font.body, fontWeight: '700', color: theme.colors.text },
-  topBatchPrice:{ fontSize: theme.font.small, fontWeight: '700', color: theme.colors.primary },
+  topBatchId:   { fontSize: theme.font.body, fontWeight: '900', color: theme.colors.text },
+  topBatchPrice:{ fontSize: theme.font.small, fontWeight: '900', color: theme.colors.primary },
   rankBadge: {
     minWidth: 32, height: 32, borderRadius: 8,
     backgroundColor: theme.colors.primarySoft,
     alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: 6,
   },
-  rankText:   { fontSize: theme.font.small, fontWeight: '800', color: theme.colors.primaryDark },
-  priceText:  { fontSize: theme.font.small, fontWeight: '700', color: theme.colors.primary, marginTop: 2 },
+  rankText:   { fontSize: theme.font.small, fontWeight: '900', color: theme.colors.primaryDark },
+  priceText:  { fontSize: theme.font.small, fontWeight: '900', color: theme.colors.primary, marginTop: 2 },
   miniStatRow:{ flexDirection: 'row', flexWrap: 'wrap', borderTopWidth: 1, borderTopColor: theme.colors.border, paddingTop: theme.spacing.md, gap: theme.spacing.lg },
   miniStat:   {},
-  miniStatLabel:{ fontSize: 10, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', color: theme.colors.textMuted },
-  miniStatValue:{ fontSize: theme.font.small, fontWeight: '700', color: theme.colors.text, marginTop: 2 },
+  miniStatLabel:{ fontSize: 10, fontWeight: '900', letterSpacing: 0, textTransform: 'uppercase', color: theme.colors.textMuted },
+  miniStatValue:{ fontSize: theme.font.small, fontWeight: '900', color: theme.colors.text, marginTop: 2 },
 
   // Shared
   batchCard: { marginBottom: theme.spacing.md },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  batchId: { fontSize: theme.font.body, fontWeight: '700', color: theme.colors.text },
+  batchId: { fontSize: theme.font.body, fontWeight: '900', color: theme.colors.text },
   pill: {
     backgroundColor: theme.colors.chip,
     paddingHorizontal: 10, paddingVertical: 6,
     borderRadius: 999, marginRight: 4, marginTop: 4,
     borderWidth: 1,
-    borderColor: 'rgba(226,232,240,0.75)',
+    borderColor: theme.colors.border,
   },
   pillAccent: { backgroundColor: theme.colors.primarySoft, borderColor: theme.colors.primaryBorder },
-  pillText:       { fontSize: theme.font.tiny, fontWeight: '600', color: theme.colors.textMuted },
+  pillText:       { fontSize: theme.font.tiny, fontWeight: '800', color: theme.colors.textMuted },
   pillTextAccent: { color: theme.colors.primaryDark },
 
   // Modals
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(15,23,42,0.38)', justifyContent: 'flex-end' },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.38)', justifyContent: 'flex-end' },
   modalCard: {
     backgroundColor: theme.colors.surface,
-    borderTopLeftRadius: theme.radius.xl,
-    borderTopRightRadius: theme.radius.xl,
+    borderTopLeftRadius: 34,
+    borderTopRightRadius: 34,
     padding: theme.spacing.xl,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -1087,14 +1073,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: theme.spacing.md,
   },
-  modalTitle: { fontSize: theme.font.h3, fontWeight: '700', color: theme.colors.text },
+  modalTitle: { fontSize: theme.font.h3, fontWeight: '900', color: theme.colors.text },
   label: {
     color: theme.colors.textMuted, fontSize: theme.font.small,
-    marginBottom: 4, marginTop: 8, fontWeight: '600',
+    marginBottom: 4, marginTop: 8, fontWeight: '900',
   },
   input: {
-    height: 48, borderWidth: 1, borderColor: theme.colors.border,
-    borderRadius: theme.radius.md, paddingHorizontal: 14,
+    height: 52, borderWidth: 1, borderColor: theme.colors.border,
+    borderRadius: 18, paddingHorizontal: 14,
     color: theme.colors.text, backgroundColor: theme.colors.surfaceSoft,
   },
   disabledInput: { backgroundColor: theme.colors.subtle, color: theme.colors.textMuted },
