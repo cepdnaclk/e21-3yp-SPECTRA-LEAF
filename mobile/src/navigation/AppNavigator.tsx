@@ -95,10 +95,10 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             >
               {focused ? (
                 <View style={tabStyles.activeBubble}>
-                  <Ionicons name={iconName} size={22} color={theme.colors.primaryLight} />
+                  <Ionicons name={iconName} size={22} color={theme.colors.primary} />
                 </View>
               ) : (
-                <Ionicons name={iconName} size={22} color={theme.colors.textMuted} />
+                <Ionicons name={iconName} size={22} color={theme.colors.darkMuted} />
               )}
             </Pressable>
           );
@@ -118,30 +118,29 @@ const tabStyles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.dark,
     borderRadius: theme.radius.pill,
-    paddingHorizontal: 10,
-    height: 64,
+    paddingHorizontal: 9,
+    height: 68,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    // soft elevation
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.10,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
+    borderColor: theme.colors.darkSoft,
+    shadowColor: theme.colors.shadow,
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 14 },
+    elevation: 12,
   },
   item: {
-    width: 56,
-    height: 56,
+    width: 55,
+    height: 60,
     alignItems: 'center',
     justifyContent: 'center',
   },
   activeBubble: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: theme.colors.dark,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -154,7 +153,7 @@ function MainTabs() {
     <Tab.Navigator
       tabBar={props => <FloatingTabBar {...props} />}
       screenOptions={{
-        headerStyle: { backgroundColor: theme.colors.surface },
+        headerStyle: { backgroundColor: theme.colors.background },
         headerShadowVisible: false,
         headerTintColor: theme.colors.text,
         headerTitleStyle: { fontWeight: '700', color: theme.colors.text },
@@ -181,7 +180,7 @@ function AppNavigator() {
   return (
     <AppStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: theme.colors.surface },
+        headerStyle: { backgroundColor: theme.colors.background },
         headerShadowVisible: false,
         headerTintColor: theme.colors.text,
         headerTitleStyle: { fontWeight: '700', color: theme.colors.text },

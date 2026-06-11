@@ -21,12 +21,16 @@ function normalizeApiBaseUrl(value) {
   return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
 }
 
+const DEFAULT_API_BASE_URL = 'https://ptao6erh2gi2z32eqy5rjj4gfu0pksbi.lambda-url.ap-south-1.on.aws/api';
+
 module.exports = ({ config }) => ({
   ...config,
   extra: {
     ...config.extra,
     apiBaseUrl: normalizeApiBaseUrl(
-      process.env.EXPO_PUBLIC_API_BASE_URL || readDotEnvValue('EXPO_PUBLIC_API_BASE_URL')
+      process.env.EXPO_PUBLIC_API_BASE_URL ||
+        readDotEnvValue('EXPO_PUBLIC_API_BASE_URL') ||
+        DEFAULT_API_BASE_URL
     ),
   },
 });

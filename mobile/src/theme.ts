@@ -3,9 +3,12 @@
 export const theme = {
   colors: {
     // Surfaces
-    background: '#F8FAF9',   // --bg-base
+    background: '#EEF2F0',   // soft mobile canvas, derived from --bg-base
+    backgroundSoft: '#F8FAF9',
     surface: '#FFFFFF',      // --bg-surface / --bg-elevated
+    surfaceSoft: '#FAFCFB',
     subtle: '#F1F5F4',       // --bg-subtle (chips, hover)
+    chip: '#F4F7F6',
 
     // Borders
     border: '#E2E8F0',
@@ -16,6 +19,7 @@ export const theme = {
     primaryDark: '#166534',
     primaryLight: '#22C55E',
     primarySoft: '#F0FDF4',
+    primaryBorder: '#86EFAC',
 
     // Secondary (blue-500)
     accent: '#3B82F6',
@@ -35,8 +39,12 @@ export const theme = {
     info: '#3B82F6',
 
     // Dark surfaces (used by the floating active nav bubble + dark sidebar look)
-    dark: '#0B0D11',
-    darkSoft: '#15181E',
+    dark: '#17191D',
+    darkSoft: '#22252B',
+    darkMuted: '#8B92A0',
+
+    // Shadows
+    shadow: '#0F172A',
   },
   spacing: {
     xs: 4,
@@ -47,10 +55,10 @@ export const theme = {
     xxl: 32,
   },
   radius: {
-    sm: 6,
-    md: 10,
-    lg: 14,
-    xl: 20,
+    sm: 10,
+    md: 18,
+    lg: 28,
+    xl: 34,
     pill: 999,
   },
   font: {

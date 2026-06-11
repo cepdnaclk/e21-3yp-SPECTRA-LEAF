@@ -14,6 +14,7 @@ export default function MetricCard({ label, value, unit, accent }: Props) {
   const display = value === null || value === undefined || value === '' ? '—' : String(value);
   return (
     <Card style={styles.card}>
+      <View style={[styles.accent, accent ? { backgroundColor: accent } : null]} />
       <Text style={styles.label}>{label}</Text>
       <View style={styles.valueRow}>
         <Text style={[styles.value, accent ? { color: accent } : null]}>{display}</Text>
@@ -27,6 +28,15 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     minWidth: 0,
+    overflow: 'hidden',
+    minHeight: 112,
+  },
+  accent: {
+    width: 38,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: theme.colors.primarySoft,
+    marginBottom: theme.spacing.md,
   },
   label: {
     color: theme.colors.textMuted,

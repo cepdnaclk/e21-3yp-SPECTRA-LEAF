@@ -36,7 +36,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
-        <StatusBar style="light" />
+        <StatusBar style="auto" />
         <View style={styles.root}>
           <RootNavigator />
         </View>

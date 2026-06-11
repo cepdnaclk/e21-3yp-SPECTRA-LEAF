@@ -114,9 +114,16 @@ export default function FactoryScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.colors.background },
-  content: { padding: theme.spacing.lg, paddingBottom: theme.spacing.xxl * 2 },
-  title: { fontSize: theme.font.h1, fontWeight: '800', color: theme.colors.text },
-  muted: { color: theme.colors.textMuted, fontSize: theme.font.small },
+  content: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
+    paddingBottom: 132,
+    width: '100%',
+    maxWidth: 460,
+    alignSelf: 'center',
+  },
+  title: { fontSize: 24, fontWeight: '900', color: theme.colors.text },
+  muted: { color: theme.colors.textMuted, fontSize: theme.font.small, lineHeight: 19 },
   row: { flexDirection: 'row' },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sensorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
@@ -129,12 +136,14 @@ const styles = StyleSheet.create({
   },
   itemTitle: { fontSize: theme.font.body, fontWeight: '700', color: theme.colors.text },
   pill: {
-    backgroundColor: '#eef4f0',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    backgroundColor: theme.colors.chip,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 999,
     marginRight: 6,
     marginTop: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(226,232,240,0.75)',
   },
   pillText: { color: theme.colors.primaryDark, fontSize: theme.font.tiny, fontWeight: '600' },
 });

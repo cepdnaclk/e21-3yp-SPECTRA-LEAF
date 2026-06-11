@@ -32,7 +32,7 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-      <Card>
+      <Card style={styles.profileCard}>
         <View style={styles.header}>
           <View style={styles.avatar}>
             <Ionicons name="person" size={32} color="#fff" />
@@ -143,18 +143,29 @@ function Field({ label, value, editing, onChangeText, keyboardType }: FieldProps
 
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.colors.background },
-  content: { padding: theme.spacing.lg, paddingBottom: theme.spacing.xxl * 2 },
+  content: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
+    paddingBottom: 132,
+    width: '100%',
+    maxWidth: 460,
+    alignSelf: 'center',
+  },
+  profileCard: {
+    backgroundColor: theme.colors.primarySoft,
+    borderColor: theme.colors.primaryBorder,
+  },
   header: { flexDirection: 'row', alignItems: 'center' },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 62,
+    height: 62,
+    borderRadius: 22,
     backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  name: { fontSize: theme.font.h3, fontWeight: '800', color: theme.colors.text },
-  muted: { color: theme.colors.textMuted, fontSize: theme.font.small },
+  name: { fontSize: 20, fontWeight: '900', color: theme.colors.text },
+  muted: { color: theme.colors.textMuted, fontSize: theme.font.small, lineHeight: 19 },
   section: {
     fontSize: theme.font.h3,
     fontWeight: '700',
@@ -176,12 +187,12 @@ const styles = StyleSheet.create({
   },
   fieldValue: { color: theme.colors.text, fontSize: theme.font.body },
   input: {
-    height: 40,
+    height: 48,
     borderWidth: 1,
     borderColor: theme.colors.border,
     borderRadius: theme.radius.md,
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     color: theme.colors.text,
-    backgroundColor: '#fbfdfc',
+    backgroundColor: theme.colors.surfaceSoft,
   },
 });

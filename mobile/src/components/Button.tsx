@@ -50,22 +50,36 @@ export default function Button({
 
 const styles = StyleSheet.create({
   base: {
-    height: 46,
-    borderRadius: theme.radius.md,
+    minHeight: 52,
+    borderRadius: theme.radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: theme.spacing.lg,
   },
-  primary: { backgroundColor: theme.colors.primary },
+  primary: {
+    backgroundColor: theme.colors.primary,
+    shadowColor: theme.colors.primaryDark,
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
+  },
   secondary: {
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
-  danger: { backgroundColor: theme.colors.danger },
+  danger: {
+    backgroundColor: theme.colors.danger,
+    shadowColor: theme.colors.danger,
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 2,
+  },
   ghost: { backgroundColor: 'transparent' },
   disabled: { opacity: 0.5 },
-  text: { fontSize: theme.font.body, fontWeight: '700' },
+  text: { fontSize: theme.font.body, fontWeight: '800' },
 });
 
 const textStyles = StyleSheet.create({

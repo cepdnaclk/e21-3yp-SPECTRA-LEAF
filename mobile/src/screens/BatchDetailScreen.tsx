@@ -130,9 +130,16 @@ export default function BatchDetailScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.colors.background },
-  content: { padding: theme.spacing.lg, paddingBottom: theme.spacing.xxl * 2 },
-  title: { fontSize: theme.font.h1, fontWeight: '800', color: theme.colors.text },
-  muted: { color: theme.colors.textMuted, fontSize: theme.font.small },
+  content: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
+    paddingBottom: 132,
+    width: '100%',
+    maxWidth: 460,
+    alignSelf: 'center',
+  },
+  title: { fontSize: 24, fontWeight: '900', color: theme.colors.text },
+  muted: { color: theme.colors.textMuted, fontSize: theme.font.small, lineHeight: 19 },
   section: {
     fontSize: theme.font.h3,
     fontWeight: '700',
@@ -146,18 +153,25 @@ const styles = StyleSheet.create({
   bars: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    height: 60,
+    height: 68,
     gap: 3,
     marginBottom: 8,
   },
   bar: {
     flex: 1,
     minWidth: 4,
-    borderRadius: 2,
+    borderRadius: 999,
   },
   backButton: {
     alignSelf: 'flex-start',
     marginBottom: theme.spacing.md,
+    minHeight: 40,
+    paddingHorizontal: 14,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    justifyContent: 'center',
   },
   backText: {
     fontSize: theme.font.body,
