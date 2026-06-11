@@ -15,7 +15,7 @@ interface AuthStore {
 
 const defaultProfile: OfficerProfile = {
   displayName: 'Factory Officer',
-  email: 'officer@spectraleaf.local',
+  email: 'officer@spectraleaf.io',
   phone: '+94 70 000 0000',
   shift: 'Day Shift',
   factoryId: OFFICER_FACTORY_ID,

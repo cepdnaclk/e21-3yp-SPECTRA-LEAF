@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
@@ -30,13 +31,16 @@ export default function BatchesScreen() {
   };
 
   return (
+    <SafeAreaView style={styles.scroll} edges={['top']}>
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Text style={styles.title}>Batch History</Text>
-      <Text style={styles.muted}>All batches · Factory {factoryId}</Text>
+      <View style={styles.headerCard}>
+        <Text style={styles.title}>Batch History</Text>
+        <Text style={styles.headerMuted}>All batches · Factory {factoryId}</Text>
+      </View>
 
       {error ? (
         <Card style={{ marginTop: theme.spacing.md, borderColor: theme.colors.danger }}>
@@ -59,7 +63,7 @@ export default function BatchesScreen() {
           key={b.batchId}
           onPress={() => navigation.navigate('BatchDetail', { batchId: b.batchId })}
         >
-          <Card style={{ marginBottom: theme.spacing.md }}>
+          <Card style={styles.batchCard}>
             <View style={styles.rowBetween}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.batchId}>{b.batchId}</Text>
@@ -91,6 +95,7 @@ export default function BatchesScreen() {
 
       <View style={{ height: theme.spacing.xxl }} />
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -112,11 +117,33 @@ const styles = StyleSheet.create({
     maxWidth: 460,
     alignSelf: 'center',
   },
-  title: { fontSize: 24, fontWeight: '900', color: theme.colors.text },
+  headerCard: {
+    backgroundColor: theme.colors.dark,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
+  },
+  title: {
+    fontSize: 30,
+    lineHeight: 34,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
+  },
+  headerMuted: { color: theme.colors.darkMuted, fontSize: theme.font.small, lineHeight: 19, marginTop: 6 },
   muted: { color: theme.colors.textMuted, fontSize: theme.font.small, lineHeight: 19 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  batchId: { fontSize: theme.font.body, fontWeight: '700', color: theme.colors.text },
+  batchCard: {
+    marginBottom: theme.spacing.md,
+    backgroundColor: theme.colors.surface,
+  },
+  batchId: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: theme.colors.text,
+    textTransform: 'uppercase',
+  },
   pill: {
     backgroundColor: theme.colors.chip,
     paddingHorizontal: 10,

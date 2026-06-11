@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -31,11 +32,12 @@ export default function ProfileScreen() {
   };
 
   return (
+    <SafeAreaView style={styles.scroll} edges={['top']}>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       <Card style={styles.profileCard}>
         <View style={styles.header}>
           <View style={styles.avatar}>
-            <Ionicons name="person" size={32} color="#fff" />
+            <Ionicons name="person" size={32} color={theme.colors.primary} />
           </View>
           <View style={{ flex: 1, marginLeft: theme.spacing.md }}>
             <Text style={styles.name}>{profile.displayName}</Text>
@@ -111,6 +113,7 @@ export default function ProfileScreen() {
       <Button title="Sign Out" variant="danger" onPress={onSignOut} />
       <View style={{ height: theme.spacing.xxl }} />
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -152,20 +155,20 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   profileCard: {
-    backgroundColor: theme.colors.primarySoft,
-    borderColor: theme.colors.primaryBorder,
+    backgroundColor: theme.colors.dark,
+    borderColor: theme.colors.darkSoft,
   },
   header: { flexDirection: 'row', alignItems: 'center' },
   avatar: {
     width: 62,
     height: 62,
     borderRadius: 22,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.panelGreen,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  name: { fontSize: 20, fontWeight: '900', color: theme.colors.text },
-  muted: { color: theme.colors.textMuted, fontSize: theme.font.small, lineHeight: 19 },
+  name: { fontSize: 22, fontWeight: '900', color: '#FFFFFF' },
+  muted: { color: theme.colors.darkMuted, fontSize: theme.font.small, lineHeight: 19 },
   section: {
     fontSize: theme.font.h3,
     fontWeight: '700',
@@ -175,9 +178,12 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row' },
   field: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.chip,
+    marginBottom: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(226,232,240,0.72)',
   },
   fieldLabel: {
     color: theme.colors.textMuted,
@@ -185,7 +191,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontWeight: '600',
   },
-  fieldValue: { color: theme.colors.text, fontSize: theme.font.body },
+  fieldValue: { color: theme.colors.text, fontSize: theme.font.body, fontWeight: '800' },
   input: {
     height: 48,
     borderWidth: 1,

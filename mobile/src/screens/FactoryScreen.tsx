@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Card from '../components/Card';
 import MetricCard from '../components/MetricCard';
 import Badge from '../components/Badge';
@@ -39,18 +40,21 @@ export default function FactoryScreen() {
   const completed = batches.length - ongoing;
 
   return (
+    <SafeAreaView style={styles.scroll} edges={['top']}>
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Text style={styles.title}>Factory {factoryId}</Text>
-      <Text style={styles.muted}>Operational overview</Text>
+      <View style={styles.headerCard}>
+        <Text style={styles.title}>Factory {factoryId}</Text>
+        <Text style={styles.headerMuted}>Operational overview</Text>
+      </View>
 
       <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
-        <MetricCard label="Total Batches" value={batches.length} />
+        <MetricCard label="Total Batches" value={batches.length} accent={theme.colors.primary} />
         <View style={{ width: theme.spacing.md }} />
-        <MetricCard label="Devices" value={devices.length} />
+        <MetricCard label="Devices" value={devices.length} accent={theme.colors.info} />
       </View>
       <View style={[styles.row, { marginTop: theme.spacing.md }]}>
         <MetricCard label="Ongoing" value={ongoing} accent={theme.colors.warning} />
@@ -66,7 +70,7 @@ export default function FactoryScreen() {
         </Card>
       ) : null}
       {devices.map(d => (
-        <Card key={d.deviceId} style={{ marginBottom: theme.spacing.sm }}>
+        <Card key={d.deviceId} style={styles.listCard}>
           <View style={styles.rowBetween}>
             <View>
               <Text style={styles.itemTitle}>{d.deviceId}</Text>
@@ -85,7 +89,7 @@ export default function FactoryScreen() {
         </Card>
       ) : null}
       {batches.slice(0, 6).map(b => (
-        <Card key={b.batchId} style={{ marginBottom: theme.spacing.sm }}>
+        <Card key={b.batchId} style={styles.listCard}>
           <View style={styles.rowBetween}>
             <View style={{ flex: 1 }}>
               <Text style={styles.itemTitle}>{b.batchId}</Text>
@@ -109,6 +113,7 @@ export default function FactoryScreen() {
 
       <View style={{ height: theme.spacing.xxl }} />
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -122,7 +127,20 @@ const styles = StyleSheet.create({
     maxWidth: 460,
     alignSelf: 'center',
   },
-  title: { fontSize: 24, fontWeight: '900', color: theme.colors.text },
+  headerCard: {
+    backgroundColor: theme.colors.dark,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
+  },
+  title: {
+    fontSize: 30,
+    lineHeight: 34,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
+  },
+  headerMuted: { color: theme.colors.darkMuted, fontSize: theme.font.small, lineHeight: 19, marginTop: 6 },
   muted: { color: theme.colors.textMuted, fontSize: theme.font.small, lineHeight: 19 },
   row: { flexDirection: 'row' },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -134,7 +152,10 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.xl,
     marginBottom: theme.spacing.md,
   },
-  itemTitle: { fontSize: theme.font.body, fontWeight: '700', color: theme.colors.text },
+  listCard: {
+    marginBottom: theme.spacing.md,
+  },
+  itemTitle: { fontSize: 18, fontWeight: '900', color: theme.colors.text },
   pill: {
     backgroundColor: theme.colors.chip,
     paddingHorizontal: 10,

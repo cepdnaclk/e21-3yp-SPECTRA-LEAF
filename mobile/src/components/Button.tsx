@@ -50,7 +50,7 @@ export default function Button({
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 52,
+    minHeight: 54,
     borderRadius: theme.radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   secondary: {
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: 'rgba(15,23,42,0.10)',
   },
   danger: {
     backgroundColor: theme.colors.danger,
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   },
   ghost: { backgroundColor: 'transparent' },
   disabled: { opacity: 0.5 },
-  text: { fontSize: theme.font.body, fontWeight: '800' },
+  text: { fontSize: theme.font.body, fontWeight: '900' },
 });
 
 const textStyles = StyleSheet.create({

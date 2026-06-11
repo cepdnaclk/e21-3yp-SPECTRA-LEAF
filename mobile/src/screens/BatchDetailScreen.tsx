@@ -1,5 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import Card from '../components/Card';
 import MetricCard from '../components/MetricCard';
@@ -49,11 +50,14 @@ export default function BatchDetailScreen() {
   const { graphs, loading: gLoading, error: gError } = useBatchGraphs(batchId);
 
   return (
+    <SafeAreaView style={styles.scroll} edges={['top']}>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <Text style={styles.backText}>← Back</Text>
-      </TouchableOpacity>
-      <Text style={styles.title}>{batchId}</Text>
+      <View style={styles.headerCard}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backText}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>{batchId}</Text>
+      </View>
       {sLoading ? <Loading /> : null}
       {sError ? (
         <Card style={{ borderColor: theme.colors.danger }}>
@@ -62,12 +66,12 @@ export default function BatchDetailScreen() {
       ) : null}
 
       <View style={[styles.row, { marginTop: theme.spacing.md }]}>
-        <MetricCard label="Factory" value={summary?.factoryId || '—'} />
+        <MetricCard label="Factory" value={summary?.factoryId || '—'} accent={theme.colors.info} />
         <View style={{ width: theme.spacing.md }} />
         <MetricCard label="GLP" value={summary?.glp ?? '—'} unit="%" accent={theme.colors.primary} />
       </View>
       <View style={[styles.row, { marginTop: theme.spacing.md }]}>
-        <MetricCard label="Price" value={fmtCurrency(summary?.price)} />
+        <MetricCard label="Price" value={fmtCurrency(summary?.price)} accent={theme.colors.warning} />
         <View style={{ width: theme.spacing.md }} />
         <MetricCard
           label="Status"
@@ -125,6 +129,7 @@ export default function BatchDetailScreen() {
 
       <View style={{ height: theme.spacing.xxl }} />
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -138,7 +143,19 @@ const styles = StyleSheet.create({
     maxWidth: 460,
     alignSelf: 'center',
   },
-  title: { fontSize: 24, fontWeight: '900', color: theme.colors.text },
+  headerCard: {
+    backgroundColor: theme.colors.dark,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
+  },
+  title: {
+    fontSize: 30,
+    lineHeight: 34,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
+  },
   muted: { color: theme.colors.textMuted, fontSize: theme.font.small, lineHeight: 19 },
   section: {
     fontSize: theme.font.h3,
@@ -168,14 +185,14 @@ const styles = StyleSheet.create({
     minHeight: 40,
     paddingHorizontal: 14,
     borderRadius: theme.radius.pill,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: 'rgba(255,255,255,0.10)',
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: 'rgba(255,255,255,0.16)',
     justifyContent: 'center',
   },
   backText: {
     fontSize: theme.font.body,
-    color: theme.colors.primary,
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
 });

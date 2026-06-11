@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Card from '../components/Card';
 import MetricCard from '../components/MetricCard';
 import EmptyState from '../components/EmptyState';
@@ -27,13 +28,16 @@ export default function SensorsScreen() {
   const latest = readings[0];
 
   return (
+    <SafeAreaView style={styles.scroll} edges={['top']}>
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Text style={styles.title}>Live Sensors</Text>
-      <Text style={styles.muted}>Auto-refresh every 15s · Factory {factoryId}</Text>
+      <View style={styles.headerCard}>
+        <Text style={styles.title}>Live Sensors</Text>
+        <Text style={styles.headerMuted}>Auto-refresh every 15s · Factory {factoryId}</Text>
+      </View>
 
       {error ? (
         <Card style={{ marginTop: theme.spacing.md, borderColor: theme.colors.danger }}>
@@ -44,17 +48,17 @@ export default function SensorsScreen() {
       <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
         <MetricCard label="Temperature" value={fmt(latest?.temperature)} unit="°C" accent={theme.colors.primary} />
         <View style={{ width: theme.spacing.md }} />
-        <MetricCard label="RG Ratio" value={fmt(latest?.rgRatio)} />
+        <MetricCard label="RG Ratio" value={fmt(latest?.rgRatio)} accent={theme.colors.info} />
       </View>
       <View style={[styles.row, { marginTop: theme.spacing.md }]}>
-        <MetricCard label="MQ137" value={fmt(latest?.mq137, 0)} />
+        <MetricCard label="MQ137" value={fmt(latest?.mq137, 0)} accent={theme.colors.warning} />
         <View style={{ width: theme.spacing.md }} />
-        <MetricCard label="TGS2620" value={fmt(latest?.tgs2620, 0)} />
+        <MetricCard label="TGS2620" value={fmt(latest?.tgs2620, 0)} accent={theme.colors.danger} />
       </View>
       <View style={[styles.row, { marginTop: theme.spacing.md }]}>
-        <MetricCard label="TGS822" value={fmt(latest?.tgs822, 0)} />
+        <MetricCard label="TGS822" value={fmt(latest?.tgs822, 0)} accent={theme.colors.primary} />
         <View style={{ width: theme.spacing.md }} />
-        <MetricCard label="Device" value={latest?.deviceId || '—'} />
+        <MetricCard label="Device" value={latest?.deviceId || '—'} accent={theme.colors.info} />
       </View>
 
       <Text style={styles.section}>Recent Readings</Text>
@@ -66,7 +70,7 @@ export default function SensorsScreen() {
       ) : null}
 
       {readings.map((r, i) => (
-        <Card key={`${r.timestamp}-${i}`} style={{ marginBottom: theme.spacing.sm }}>
+        <Card key={`${r.timestamp}-${i}`} style={styles.readingCard}>
           <View style={styles.rowBetween}>
             <Text style={styles.timestamp}>{fmtDate(r.timestamp)}</Text>
             <Text style={styles.muted}>{r.deviceId}</Text>
@@ -84,6 +88,7 @@ export default function SensorsScreen() {
 
       <View style={{ height: theme.spacing.xxl }} />
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -106,7 +111,20 @@ const styles = StyleSheet.create({
     maxWidth: 460,
     alignSelf: 'center',
   },
-  title: { fontSize: 24, fontWeight: '900', color: theme.colors.text },
+  headerCard: {
+    backgroundColor: theme.colors.dark,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
+  },
+  title: {
+    fontSize: 30,
+    lineHeight: 34,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
+  },
+  headerMuted: { color: theme.colors.darkMuted, fontSize: theme.font.small, lineHeight: 19, marginTop: 6 },
   muted: { color: theme.colors.textMuted, fontSize: theme.font.small, lineHeight: 19 },
   section: {
     fontSize: theme.font.h3,
@@ -118,6 +136,10 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   timestamp: { color: theme.colors.text, fontWeight: '600', fontSize: theme.font.small },
+  readingCard: {
+    marginBottom: theme.spacing.md,
+    backgroundColor: theme.colors.surface,
+  },
   stat: {
     backgroundColor: theme.colors.chip,
     paddingHorizontal: 10,

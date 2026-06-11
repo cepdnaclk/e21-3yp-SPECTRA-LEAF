@@ -37,6 +37,7 @@ const slides = [
 ];
 
 const logo = require('../assets/images/Logo.png');
+const officerEmail = 'officer@spectraleaf.io';
 
 type LoginPage = 'intro' | 'login';
 
@@ -44,7 +45,7 @@ export default function LoginScreen() {
   const signIn = useAuthStore(s => s.signIn);
   const [page, setPage] = useState<LoginPage>('intro');
   const [slide, setSlide] = useState(0);
-  const [email, setEmail] = useState('officer@spectraleaf.io');
+  const [email, setEmail] = useState(officerEmail);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
@@ -63,9 +64,10 @@ export default function LoginScreen() {
 
   return (
     <ImageBackground
-      source={page === 'intro' ? slides[slide].image : slides[1].image}
+      source={page === 'intro' ? slides[slide].image : authImages.fermentation}
       style={styles.background}
       resizeMode="cover"
+      blurRadius={page === 'intro' ? 0 : 3}
     >
       <SafeAreaView style={styles.safe}>
         {page === 'intro' ? (
@@ -183,8 +185,8 @@ function LoginPageView({
 }: LoginPageViewProps) {
   return (
     <LinearGradient
-      colors={['rgba(3, 20, 12, 0.44)', 'rgba(3, 20, 12, 0.16)', 'rgba(245, 247, 246, 0.50)']}
-      locations={[0, 0.34, 1]}
+      colors={['rgba(3, 20, 12, 0.18)', 'rgba(3, 20, 12, 0.28)', 'rgba(201,216,207,0.38)']}
+      locations={[0, 0.42, 1]}
       style={styles.overlay}
     >
       <KeyboardAvoidingView
@@ -235,18 +237,6 @@ function LoginPageView({
               rightIcon={showPassword ? 'eye-outline' : 'eye-off-outline'}
               onRightPress={() => setShowPassword(!showPassword)}
             />
-
-            <Text style={styles.label}>Role</Text>
-            <View style={styles.roleCard}>
-              <View style={styles.radioOuter}>
-                <View style={styles.radioInner} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.roleTitle}>Factory Officer</Text>
-                <Text style={styles.roleSub}>Monitor sensors · edit GLP</Text>
-              </View>
-              <Ionicons name="flask-outline" size={22} color={theme.colors.primary} />
-            </View>
 
             <Pressable
               onPress={() => setRemember(!remember)}
@@ -361,16 +351,18 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   introPanel: {
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 28,
+    backgroundColor: theme.colors.dark,
+    borderRadius: 34,
     padding: 24,
     shadowColor: '#03140c',
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.28,
+    shadowRadius: 26,
+    shadowOffset: { width: 0, height: 16 },
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
   },
-  introTitle: { color: theme.colors.primary, fontSize: 23, fontWeight: '900', marginBottom: 9 },
-  introText: { color: theme.colors.textMuted, fontSize: theme.font.body, lineHeight: 22 },
+  introTitle: { color: '#FFFFFF', fontSize: 23, fontWeight: '900', marginBottom: 9 },
+  introText: { color: theme.colors.darkMuted, fontSize: theme.font.body, lineHeight: 22 },
   nextButton: {
     height: 52,
     borderRadius: 26,
@@ -388,8 +380,8 @@ const styles = StyleSheet.create({
     maxWidth: 460,
     alignSelf: 'center',
     paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingTop: 12,
+    paddingBottom: 18,
   },
   topActions: {
     flexDirection: 'row',
@@ -405,10 +397,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   loginHero: {
-    minHeight: 132,
+    minHeight: 150,
     justifyContent: 'flex-end',
-    paddingBottom: 12,
-    paddingHorizontal: 8,
+    paddingBottom: 18,
+    paddingHorizontal: 12,
   },
   loginKicker: {
     color: 'rgba(255,255,255,0.78)',
@@ -426,17 +418,17 @@ const styles = StyleSheet.create({
     maxWidth: 320,
   },
   formSheet: {
-    borderRadius: 28,
-    backgroundColor: theme.colors.surfaceSoft,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 18,
+    borderRadius: theme.radius.xl,
+    backgroundColor: 'rgba(248,250,249,0.94)',
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 20,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: 'rgba(255,255,255,0.72)',
     shadowColor: '#03140c',
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.24,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 16 },
   },
   sheetHandle: {
     width: 42,
@@ -457,8 +449,8 @@ const styles = StyleSheet.create({
   },
   forgotText: { color: theme.colors.primary, fontSize: theme.font.small, fontWeight: '800', marginBottom: 8 },
   inputWrap: {
-    height: 48,
-    borderRadius: 14,
+    height: 50,
+    borderRadius: theme.radius.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
@@ -473,30 +465,6 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontSize: theme.font.body,
   },
-  roleCard: {
-    minHeight: 62,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.primarySoft,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  radioOuter: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  radioInner: { width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.primary },
-  roleTitle: { color: theme.colors.primaryDark, fontSize: theme.font.body, fontWeight: '900' },
-  roleSub: { color: '#7a8fa4', fontSize: theme.font.tiny, marginTop: 2 },
   rememberRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   checkbox: {
     width: 17,

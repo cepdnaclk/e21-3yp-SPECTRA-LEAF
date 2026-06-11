@@ -3,12 +3,16 @@
 export const theme = {
   colors: {
     // Surfaces
-    background: '#EEF2F0',   // soft mobile canvas, derived from --bg-base
-    backgroundSoft: '#F8FAF9',
+    background: '#C9D8CF',   // sage mobile canvas derived from the web base
+    backgroundSoft: '#EAF2ED',
     surface: '#FFFFFF',      // --bg-surface / --bg-elevated
-    surfaceSoft: '#FAFCFB',
+    surfaceSoft: '#F8FAF9',
     subtle: '#F1F5F4',       // --bg-subtle (chips, hover)
-    chip: '#F4F7F6',
+    chip: '#EEF4F0',
+    panelGreen: '#DCFCE7',
+    panelBlue: '#EFF6FF',
+    panelAmber: '#FFFBEB',
+    panelRed: '#FEF2F2',
 
     // Borders
     border: '#E2E8F0',
@@ -39,9 +43,10 @@ export const theme = {
     info: '#3B82F6',
 
     // Dark surfaces (used by the floating active nav bubble + dark sidebar look)
-    dark: '#17191D',
-    darkSoft: '#22252B',
-    darkMuted: '#8B92A0',
+    dark: '#1D1D20',
+    darkSoft: '#2A292D',
+    darkPanel: '#242326',
+    darkMuted: '#A0A6AF',
 
     // Shadows
     shadow: '#0F172A',
@@ -55,10 +60,10 @@ export const theme = {
     xxl: 32,
   },
   radius: {
-    sm: 10,
-    md: 18,
-    lg: 28,
-    xl: 34,
+    sm: 8,
+    md: 12,
+    lg: 18,
+    xl: 24,
     pill: 999,
   },
   font: {

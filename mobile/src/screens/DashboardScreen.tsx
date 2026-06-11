@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   Modal,
+  ImageBackground,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -12,6 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
@@ -26,6 +28,8 @@ import { theme } from '../theme';
 import { BatchListItem } from '../types';
 
 type Tab = 'overview' | 'sensors' | 'batches';
+
+const leafBackground = require('../assets/images/auth/leaf1.jpg');
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview', label: 'Overview' },
@@ -73,6 +77,7 @@ export default function DashboardScreen() {
     [batches]
   );
   const totalRevenue  = pricedBatches.reduce((s, b) => s + (b.price ?? 0), 0);
+  const trendReadings = useMemo(() => readings.slice(0, 18).reverse(), [readings]);
 
   const loading = readingsLoading && batchesLoading && readings.length === 0 && batches.length === 0;
 
@@ -125,6 +130,18 @@ export default function DashboardScreen() {
   };
 
   return (
+    <ImageBackground
+      source={leafBackground}
+      style={styles.backgroundImage}
+      imageStyle={styles.backgroundPhoto}
+      blurRadius={3}
+      resizeMode="cover"
+    >
+    <LinearGradient
+      colors={['rgba(201,216,207,0.36)', 'rgba(234,242,237,0.66)', 'rgba(248,250,249,0.88)']}
+      locations={[0, 0.46, 1]}
+      style={styles.backgroundOverlay}
+    >
     <SafeAreaView style={styles.scroll} edges={['top']}>
     <ScrollView
       style={styles.scroll}
@@ -132,13 +149,16 @@ export default function DashboardScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       {/* ── Header ── */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.hello}>Welcome back</Text>
-          <Text style={styles.name}>{displayName}</Text>
-          <Text style={styles.muted}>Factory {factoryId} · Officer</Text>
+      <View style={styles.headerCard}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.hello}>Welcome back</Text>
+            <Text style={styles.name}>{displayName}</Text>
+            <Text style={styles.headerSub}>Factory {factoryId} · Officer</Text>
+          </View>
+          <Badge label="Live" variant="live" />
         </View>
-        <Badge label="Live" variant="live" />
+        <Text style={styles.pageTitle}>Live Dashboard</Text>
       </View>
 
       {loading ? <Loading /> : null}
@@ -154,9 +174,6 @@ export default function DashboardScreen() {
           <Text style={styles.retryText}>Retry</Text>
         </Pressable>
       ) : null}
-
-      {/* ── Live Dashboard label ── */}
-      <Text style={styles.pageTitle}>Live Dashboard</Text>
 
       {/* ── Tab bar ── */}
       <View style={styles.tabBar}>
@@ -205,6 +222,34 @@ export default function DashboardScreen() {
             />
           </View>
 
+          <Text style={styles.sectionTitle}>Sensor Trends</Text>
+          <Card style={styles.graphPanel}>
+            <View style={styles.graphPanelHeader}>
+              <View>
+                <Text style={styles.graphTitle}>Live Reading Graphs</Text>
+                <Text style={styles.graphSub}>{trendReadings.length} latest samples</Text>
+              </View>
+              <Badge label="Live" variant="live" />
+            </View>
+            <MiniGraph
+              label="Temperature"
+              values={trendReadings.map(r => r.temperature)}
+              color={theme.colors.primaryLight}
+              unit="°C"
+            />
+            <MiniGraph
+              label="RG Ratio"
+              values={trendReadings.map(r => r.rgRatio)}
+              color={theme.colors.accent}
+            />
+            <MiniGraph
+              label="MQ137"
+              values={trendReadings.map(r => r.mq137)}
+              color={theme.colors.warning}
+              digits={0}
+            />
+          </Card>
+
           {/* Active fermentation banner */}
           <Text style={styles.sectionTitle}>Active Fermentation</Text>
           {activeBatch ? (
@@ -242,7 +287,7 @@ export default function DashboardScreen() {
               />
             </Card>
           ) : (
-            <Card>
+            <Card style={styles.emptyActionCard}>
               <EmptyState
                 title="No active batch"
                 message="Start a new fermentation batch to begin monitoring."
@@ -389,7 +434,7 @@ export default function DashboardScreen() {
       {activeTab === 'batches' && (
         <>
           {/* Top selling summary header */}
-          <Card>
+          <Card style={styles.summaryCard}>
             <View style={styles.rowBetween}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.eyebrow}>Most Selling</Text>
@@ -590,6 +635,8 @@ export default function DashboardScreen() {
       </Modal>
     </ScrollView>
     </SafeAreaView>
+    </LinearGradient>
+    </ImageBackground>
   );
 }
 
@@ -603,8 +650,8 @@ function PerfTile({
   iconBg: string; iconFg: string; live?: boolean;
 }) {
   return (
-    <Card style={styles.perfTile}>
-      <View style={[styles.perfTileIcon, { backgroundColor: iconBg }]}>
+    <Card style={[styles.perfTile, { backgroundColor: iconBg }]}>
+      <View style={styles.perfTileIcon}>
         <Ionicons name={icon} size={18} color={iconFg} />
       </View>
       <Text style={styles.perfTileValue}>{value}</Text>
@@ -674,6 +721,66 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function MiniGraph({
+  label,
+  values,
+  color,
+  unit = '',
+  digits = 1,
+}: {
+  label: string;
+  values: Array<number | null | undefined>;
+  color: string;
+  unit?: string;
+  digits?: number;
+}) {
+  const clean = values
+    .map(v => Number(v))
+    .filter(v => Number.isFinite(v));
+  const recent = clean.slice(-18);
+  const min = recent.length ? Math.min(...recent) : 0;
+  const max = recent.length ? Math.max(...recent) : 0;
+  const range = max - min || 1;
+  const last = recent[recent.length - 1];
+
+  return (
+    <View style={styles.miniGraph}>
+      <View style={styles.graphRowTop}>
+        <Text style={styles.miniGraphLabel}>{label}</Text>
+        <Text style={styles.miniGraphValue}>
+          {last === undefined ? '—' : fmtNumber(last, digits)}{last !== undefined ? unit : ''}
+        </Text>
+      </View>
+      {recent.length === 0 ? (
+        <Text style={styles.graphEmpty}>No graph data</Text>
+      ) : (
+        <View style={styles.graphBars}>
+          {recent.map((v, i) => {
+            const height = 8 + ((v - min) / range) * 42;
+            return (
+              <View
+                key={`${label}-${i}`}
+                style={[
+                  styles.graphBar,
+                  {
+                    height,
+                    backgroundColor: color,
+                    opacity: 0.38 + (i / Math.max(recent.length - 1, 1)) * 0.62,
+                  },
+                ]}
+              />
+            );
+          })}
+        </View>
+      )}
+      <View style={styles.graphStats}>
+        <Text style={styles.graphStatText}>min {fmtNumber(min, digits)}</Text>
+        <Text style={styles.graphStatText}>max {fmtNumber(max, digits)}</Text>
+      </View>
+    </View>
+  );
+}
+
 function Pill({ label, accent }: { label: string; accent?: boolean }) {
   return (
     <View style={[styles.pill, accent && styles.pillAccent]}>
@@ -685,7 +792,10 @@ function Pill({ label, accent }: { label: string; accent?: boolean }) {
 /* ─────────────────── Styles ─────────────────── */
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: theme.colors.background },
+  backgroundImage: { flex: 1, backgroundColor: theme.colors.background },
+  backgroundPhoto: { opacity: 1 },
+  backgroundOverlay: { flex: 1 },
+  scroll: { flex: 1, backgroundColor: 'transparent' },
   content: {
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.md,
@@ -696,12 +806,29 @@ const styles = StyleSheet.create({
   },
 
   // Header
+  headerCard: {
+    backgroundColor: 'rgba(29,29,32,0.76)',
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
+    shadowColor: theme.colors.shadow,
+    shadowOpacity: 0.26,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 14 },
+    elevation: 8,
+  },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: theme.spacing.xl,
   },
-  hello: { color: theme.colors.textMuted, fontSize: theme.font.small },
-  name:  { color: theme.colors.text, fontSize: 22, fontWeight: '900' },
+  hello: {
+    color: theme.colors.darkMuted,
+    fontSize: theme.font.small,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  name:  { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
+  headerSub: { color: theme.colors.darkMuted, fontSize: theme.font.small, lineHeight: 19 },
   muted: { color: theme.colors.textMuted, fontSize: theme.font.small, lineHeight: 19 },
 
   // Error banner
@@ -717,8 +844,11 @@ const styles = StyleSheet.create({
 
   // Page title + tabs
   pageTitle: {
-    fontSize: 24, fontWeight: '900', color: theme.colors.text,
-    marginBottom: theme.spacing.md,
+    fontSize: 30,
+    lineHeight: 34,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
   },
   tabBar: {
     flexDirection: 'row',
@@ -730,7 +860,7 @@ const styles = StyleSheet.create({
     minHeight: 42,
     paddingVertical: 10,
     paddingHorizontal: theme.spacing.sm,
-    borderRadius: theme.radius.pill,
+    borderRadius: theme.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.colors.surface,
@@ -766,6 +896,7 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
     marginBottom: theme.spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.82)',
   },
   perfTileValue: {
     fontSize: 18, fontWeight: '800', color: theme.colors.text,
@@ -782,8 +913,80 @@ const styles = StyleSheet.create({
   },
 
   // Active batch card (Overview)
+  graphPanel: {
+    backgroundColor: 'rgba(29,29,32,0.92)',
+    borderColor: 'rgba(255,255,255,0.12)',
+    marginBottom: theme.spacing.sm,
+  },
+  graphPanelHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: theme.spacing.md,
+  },
+  graphTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  graphSub: {
+    color: theme.colors.darkMuted,
+    fontSize: theme.font.small,
+    marginTop: 2,
+  },
+  miniGraph: {
+    paddingVertical: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.10)',
+  },
+  graphRowTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.sm,
+  },
+  miniGraphLabel: {
+    color: theme.colors.darkMuted,
+    fontSize: theme.font.small,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  miniGraphValue: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  graphBars: {
+    height: 54,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  graphBar: {
+    flex: 1,
+    minWidth: 5,
+    borderRadius: 2,
+  },
+  graphEmpty: {
+    color: theme.colors.darkMuted,
+    fontSize: theme.font.small,
+    paddingVertical: theme.spacing.md,
+  },
+  graphStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: theme.spacing.sm,
+  },
+  graphStatText: {
+    color: theme.colors.darkMuted,
+    fontSize: theme.font.tiny,
+  },
   featureCard: {
     backgroundColor: theme.colors.primarySoft,
+    borderColor: theme.colors.primaryBorder,
+  },
+  emptyActionCard: {
+    backgroundColor: theme.colors.panelGreen,
     borderColor: theme.colors.primaryBorder,
   },
   batchIconWrap: {
@@ -823,6 +1026,10 @@ const styles = StyleSheet.create({
   readingPills:{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
 
   // Batches tab
+  summaryCard: {
+    backgroundColor: theme.colors.panelBlue,
+    borderColor: '#BFDBFE',
+  },
   eyebrow: {
     fontSize: 10, fontWeight: '700', letterSpacing: 1,
     textTransform: 'uppercase', color: theme.colors.textMuted,

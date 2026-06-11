@@ -118,29 +118,29 @@ const tabStyles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.dark,
+    backgroundColor: '#1A1A1D',
     borderRadius: theme.radius.pill,
-    paddingHorizontal: 9,
-    height: 68,
+    paddingHorizontal: 7,
+    height: 64,
     borderWidth: 1,
-    borderColor: theme.colors.darkSoft,
+    borderColor: '#2F3034',
     shadowColor: theme.colors.shadow,
-    shadowOpacity: 0.28,
+    shadowOpacity: 0.34,
     shadowRadius: 24,
-    shadowOffset: { width: 0, height: 14 },
+    shadowOffset: { width: 0, height: 16 },
     elevation: 12,
   },
   item: {
     width: 55,
-    height: 60,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
   },
   activeBubble: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: theme.colors.surface,
+    width: 46,
+    height: 46,
+    borderRadius: 17,
+    backgroundColor: theme.colors.panelGreen,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -160,10 +160,10 @@ function MainTabs() {
       }}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Sensors"   component={SensorsScreen} />
-      <Tab.Screen name="Batches"   component={BatchesScreen} />
-      <Tab.Screen name="Factory"   component={FactoryScreen} />
-      <Tab.Screen name="Profile"   component={ProfileScreen} />
+      <Tab.Screen name="Sensors"   component={SensorsScreen}   options={{ headerShown: false }} />
+      <Tab.Screen name="Batches"   component={BatchesScreen}   options={{ headerShown: false }} />
+      <Tab.Screen name="Factory"   component={FactoryScreen}   options={{ headerShown: false }} />
+      <Tab.Screen name="Profile"   component={ProfileScreen}   options={{ headerShown: false }} />
     </Tab.Navigator>
   );
 }
@@ -187,7 +187,7 @@ function AppNavigator() {
       }}
     >
       <AppStack.Screen name="Tabs"        component={MainTabs}         options={{ headerShown: false }} />
-      <AppStack.Screen name="BatchDetail" component={BatchDetailScreen} options={{ title: 'Batch Detail' }} />
+      <AppStack.Screen name="BatchDetail" component={BatchDetailScreen} options={{ headerShown: false }} />
     </AppStack.Navigator>
   );
 }
