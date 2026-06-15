@@ -63,5 +63,5 @@ export function useFactoryBatches(factoryId: string, pollMs = 30000) {
     };
   }, [fetchOnce, pollMs]);
 
-  return { batches, loading, error, refresh: fetchOnce };
+  return { batches, setBatches, loading, error, refresh: fetchOnce };
 }

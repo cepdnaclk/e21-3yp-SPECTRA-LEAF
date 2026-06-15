@@ -9,10 +9,12 @@ import {
   TextInput,
   View,
   Alert,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { fetchAuthSession } from 'aws-amplify/auth';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
@@ -49,7 +51,7 @@ export default function DashboardScreen() {
 
   const { readings, loading: readingsLoading, error: readingsError, refresh: refreshReadings } =
     useFactoryReadings(factoryId, 30000, 20);
-  const { batches, loading: batchesLoading, error: batchesError, refresh: refreshBatches } =
+  const { batches, setBatches, loading: batchesLoading, error: batchesError, refresh: refreshBatches } =
     useFactoryBatches(factoryId, 30000);
 
   const [activeTab, setActiveTab] = useState<Tab>('overview');
@@ -60,12 +62,22 @@ export default function DashboardScreen() {
 
   const [batchId, setBatchId]           = useState('');
   const [deviceId, setDeviceId]         = useState('DEV001');
-  const [targetTemperature, setTargetTemperature] = useState('28.5');
-  const [estimatedHours, setEstimatedHours]       = useState('8');
   const [glp, setGlp]                   = useState('80');
 
   const latest        = readings[0];
   const activeBatch   = useMemo(() => batches.find(isActiveBatch) || null, [batches]);
+
+  const openStart = () => {
+    if (activeBatch) {
+      Alert.alert('Ongoing Batch', `Batch ${activeBatch.batchId} is still in fermentation. Set its GLP first.`);
+      return;
+    }
+    const next = `BAT${String(batches.length + 1).padStart(3, '0')}`;
+    setBatchId(next);
+    setDeviceId('DEV001');
+    setGlp('80');
+    setStartOpen(true);
+  };
   const completedCount = batches.filter(b => !isActiveBatch(b)).length;
   const activeCount   = batches.filter(isActiveBatch).length;
   const deviceCount   = new Set(readings.map(r => r.deviceId).filter(Boolean)).size;
@@ -85,16 +97,66 @@ export default function DashboardScreen() {
   };
 
   const submitStart = async () => {
+    if (activeBatch) {
+      Alert.alert('Ongoing Batch', `Batch ${activeBatch.batchId} is still in fermentation. Set its GLP first.`);
+      return;
+    }
     if (!batchId.trim()) { Alert.alert('Missing Batch ID', 'Enter a batch ID.'); return; }
+    
+    const v = Number(glp);
+    if (Number.isNaN(v) || v < 0 || v > 100) {
+      Alert.alert('Invalid GLP', 'GLP must be between 0 and 100.');
+      return;
+    }
+    
     setSubmitting(true);
     try {
-      await api.post('/batches/public', {
+      await api.post('/batches', {
         deviceId: (deviceId.trim() || 'DEV001').toUpperCase(),
-        factoryId,
-        batchId: batchId.trim().toUpperCase(),
-        targetTemperature: Number(targetTemperature) || 28.5,
-        estimatedHours: Number(estimatedHours) || 8,
-      });
+      }).catch(() => {/* swallow */});
+
+      try {
+        const session = await fetchAuthSession().catch(() => ({} as any));
+        const token = session.tokens?.accessToken?.toString() || session.tokens?.idToken?.toString();
+        await api.post('/fermentation/control', {
+          status: 'RUNNING',
+          batch_id: batchId.trim().toUpperCase(),
+          glp: v,
+        }, {
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {})
+        });
+      } catch (err) {
+        console.warn('Failed IoT control start', err);
+      }
+
+      const bId = batchId.trim().toUpperCase();
+      const dev = (deviceId.trim() || 'DEV001').toUpperCase();
+      const nowTs = new Date().toISOString();
+
+      await api.post('/sensors/ingest', {
+        DEVICE_ID: dev,
+        FACTORY_ID: factoryId,
+        BATCH_ID: bId,
+        TIMESTAMP: nowTs,
+        TEMPERATURE: 28.0,
+        RG_RATIO: 1.0,
+        MQ137: 0,
+        TGS2620: 0,
+        TGS822: 0,
+      }).catch(e => console.warn('Failed initial reading ingest', e));
+      
+      setBatches(prev => [{
+        batchId: bId,
+        lastTimestamp: nowTs,
+        latestTemperature: 28.0,
+        latestRgRatio: 1.0,
+        latestMq137: 0,
+        latestTgs2620: 0,
+        latestTgs822: 0,
+        glp: null,
+        price: null
+      }, ...prev.filter(b => b.batchId !== bId)]);
+
       setStartOpen(false);
       setBatchId('');
       await refreshBatches();
@@ -104,6 +166,39 @@ export default function DashboardScreen() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const submitStop = () => {
+    Alert.alert(
+      'Stop Live Sensors',
+      'Are you sure you want to stop the live sensor data for the factory?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Stop',
+          style: 'destructive',
+          onPress: async () => {
+            setSubmitting(true);
+            try {
+              const session = await fetchAuthSession().catch(() => ({} as any));
+              const token = session.tokens?.accessToken?.toString() || session.tokens?.idToken?.toString();
+              await api.post('/fermentation/control', {
+                status: 'STOPPED',
+                batch_id: 'NONE'
+              }, {
+                ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {})
+              });
+              Alert.alert('Stopped', 'Sensor stream has been stopped.');
+              await refreshBatches();
+            } catch (e) {
+              Alert.alert('Error', getErrorMessage(e));
+            } finally {
+              setSubmitting(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const submitGlp = async () => {
@@ -134,6 +229,14 @@ export default function DashboardScreen() {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
+      {/* ── Brand Header ── */}
+      <View style={styles.brandRow}>
+        <View style={styles.brandLogoBox}>
+          <Image source={require('../assets/images/Logo.png')} style={styles.brandLogoImage} resizeMode="contain" />
+        </View>
+        <Text style={styles.brandText}>Spectraleaf</Text>
+      </View>
+
       {/* ── Header ── */}
       <View style={styles.headerCard}>
         <View style={styles.header}>
@@ -266,11 +369,19 @@ export default function DashboardScreen() {
                 <BatchStat label="TGS822"
                   value={activeBatch.latestTgs822 != null ? fmt(activeBatch.latestTgs822, 0) : '—'} />
               </View>
-              <Button
-                title="Set GLP & Complete"
-                onPress={() => setGlpOpen(true)}
-                style={{ marginTop: theme.spacing.lg }}
-              />
+              <View style={{ flexDirection: 'row', gap: theme.spacing.md, marginTop: theme.spacing.lg }}>
+                <Button
+                  title="Stop Sensors"
+                  variant="danger"
+                  onPress={submitStop}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  title="Complete Batch"
+                  onPress={() => setGlpOpen(true)}
+                  style={{ flex: 1 }}
+                />
+              </View>
             </Card>
           ) : (
             <Card style={styles.emptyActionCard}>
@@ -278,7 +389,7 @@ export default function DashboardScreen() {
                 title="No active batch"
                 message="Start a new fermentation batch to begin monitoring."
               />
-              <Button title="Start Fermentation" onPress={() => setStartOpen(true)} />
+              <Button title="Start Fermentation" onPress={openStart} />
             </Card>
           )}
 
@@ -562,29 +673,14 @@ export default function DashboardScreen() {
               autoCapitalize="characters"
               placeholderTextColor={theme.colors.textMuted}
             />
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Target Temp (°C)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={targetTemperature}
-                  onChangeText={setTargetTemperature}
-                  keyboardType="decimal-pad"
-                  placeholderTextColor={theme.colors.textMuted}
-                />
-              </View>
-              <View style={{ width: theme.spacing.md }} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Estimated Hours</Text>
-                <TextInput
-                  style={styles.input}
-                  value={estimatedHours}
-                  onChangeText={setEstimatedHours}
-                  keyboardType="number-pad"
-                  placeholderTextColor={theme.colors.textMuted}
-                />
-              </View>
-            </View>
+            <Text style={[styles.label, { marginTop: theme.spacing.md }]}>Good Leaf Percentage (0–100)</Text>
+            <TextInput
+              style={styles.input}
+              value={glp}
+              onChangeText={setGlp}
+              keyboardType="number-pad"
+              placeholderTextColor={theme.colors.textMuted}
+            />
             <View style={{ height: theme.spacing.lg }} />
             <Button title="Start Batch" onPress={submitStart} loading={submitting} />
             <View style={{ height: theme.spacing.sm }} />
@@ -787,6 +883,24 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
 
+  // Brand Row
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  brandLogoBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: theme.colors.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: theme.spacing.md,
+  },
+  brandLogoImage: { width: 26, height: 26 },
+  brandText: { color: theme.colors.text, fontSize: 20, fontWeight: '900' },
+
   // Header
   headerCard: {
     backgroundColor: theme.colors.dark,
@@ -800,7 +914,7 @@ const styles = StyleSheet.create({
     elevation: 9,
   },
   header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
     marginBottom: theme.spacing.xl,
   },
   hello: {

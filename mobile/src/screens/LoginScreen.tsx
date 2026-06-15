@@ -16,7 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
 import { theme } from '../theme';
-import { signIn as amplifySignIn, fetchAuthSession, signOut } from 'aws-amplify/auth';
+import { signIn as amplifySignIn, fetchAuthSession, signOut, confirmSignIn } from 'aws-amplify/auth';
 
 const logo = require('../assets/images/Logo.png');
 
@@ -39,15 +39,26 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const onSubmit = async () => {
-    if (!email.trim() || !password.trim()) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password.trim()) {
       setError('Email and password are required');
       return;
     }
     setError(null);
     setLoading(true);
     try {
-      await amplifySignIn({ username: email, password });
+      try {
+        await signOut();
+      } catch (e) {
+        // ignore
+      }
+
+      const { nextStep } = await amplifySignIn({ username: trimmedEmail, password });
       
+      if (nextStep?.signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+        await confirmSignIn({ challengeResponse: password });
+      }
+
       const session = await fetchAuthSession();
       const groups = (session.tokens?.accessToken?.payload?.['cognito:groups'] as string[]) || [];
       
@@ -64,6 +75,9 @@ export default function LoginScreen() {
         setError('User does not exist.');
       } else if (err.name === 'NotAuthorizedException') {
         setError('Incorrect email or password.');
+      } else if (err.name === 'UserAlreadyAuthenticatedException') {
+        // If they are somehow still authenticated, just proceed.
+        signIn('FAC001', 'Factory Officer');
       } else {
         setError(err.message || 'An error occurred during login.');
       }

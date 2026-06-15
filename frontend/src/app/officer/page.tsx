@@ -172,11 +172,6 @@ export default function OfficerDashboard() {
         console.error('Failed to trigger IoT control', e);
       });
 
-      // Tertiary: Save the initial GLP to the database
-      await api.put(`/batches/${newBatchId.trim()}/glp`, { factoryId, glp: newGlp }).catch((e) => {
-        console.error('Failed to save GLP to database', e);
-      });
-
       setStartOpen(false);
       await reloadBatches();
     } catch (e: any) {

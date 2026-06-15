@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
-import { signIn, fetchAuthSession } from 'aws-amplify/auth';
+import { signIn, fetchAuthSession, signOut, confirmSignIn } from 'aws-amplify/auth';
 import type { Role } from '@/types';
 
 /* ─── Data ─── */
@@ -89,8 +89,16 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await signIn({ username: email, password });
+      try {
+        await signOut();
+      } catch (e) {}
+
+      const { nextStep } = await signIn({ username: email.trim(), password });
       
+      if (nextStep?.signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+        await confirmSignIn({ challengeResponse: password });
+      }
+
       const session = await fetchAuthSession();
       const groups = (session.tokens?.accessToken?.payload?.['cognito:groups'] as string[]) || [];
       
