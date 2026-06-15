@@ -9,15 +9,16 @@ import {
   Text,
   TextInput,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
 import { theme } from '../theme';
+import { signIn as amplifySignIn, fetchAuthSession, signOut } from 'aws-amplify/auth';
 
 const logo = require('../assets/images/Logo.png');
-const officerEmail = 'officer@spectraleaf.io';
 
 type LoginPage = 'intro' | 'login';
 
@@ -30,13 +31,45 @@ const highlights = [
 export default function LoginScreen() {
   const signIn = useAuthStore(s => s.signIn);
   const [page, setPage] = useState<LoginPage>('intro');
-  const [email, setEmail] = useState(officerEmail);
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = () => {
-    signIn('FAC001', 'Factory Officer');
+  const onSubmit = async () => {
+    if (!email.trim() || !password.trim()) {
+      setError('Email and password are required');
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      await amplifySignIn({ username: email, password });
+      
+      const session = await fetchAuthSession();
+      const groups = (session.tokens?.accessToken?.payload?.['cognito:groups'] as string[]) || [];
+      
+      if (groups.includes('General_Manager') || groups.includes('Factory_Manager')) {
+        await signOut();
+        setError('Unauthorized: This app is restricted to Factory Officers only.');
+        setLoading(false);
+        return;
+      }
+
+      signIn('FAC001', 'Factory Officer');
+    } catch (err: any) {
+      if (err.name === 'UserNotFoundException') {
+        setError('User does not exist.');
+      } else if (err.name === 'NotAuthorizedException') {
+        setError('Incorrect email or password.');
+      } else {
+        setError(err.message || 'An error occurred during login.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,6 +91,8 @@ export default function LoginScreen() {
               setPassword={setPassword}
               setRemember={setRemember}
               setShowPassword={setShowPassword}
+              loading={loading}
+              error={error}
               onBack={() => setPage('intro')}
               onSubmit={onSubmit}
             />
@@ -140,6 +175,8 @@ interface LoginPageViewProps {
   setPassword: (value: string) => void;
   setRemember: (value: boolean) => void;
   setShowPassword: (value: boolean) => void;
+  loading: boolean;
+  error: string | null;
   onBack: () => void;
   onSubmit: () => void;
 }
@@ -153,6 +190,8 @@ function LoginPageView({
   setPassword,
   setRemember,
   setShowPassword,
+  loading,
+  error,
   onBack,
   onSubmit,
 }: LoginPageViewProps) {
@@ -210,9 +249,21 @@ function LoginPageView({
           <Text style={styles.rememberText}>Remember me</Text>
         </Pressable>
 
-        <Pressable onPress={onSubmit} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
-          <Text style={styles.primaryButtonText}>Log In</Text>
-          <Ionicons name="log-in-outline" size={19} color="#FFFFFF" />
+        {error ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
+        <Pressable disabled={loading} onPress={onSubmit} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed, loading && { opacity: 0.7 }]}>
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <>
+              <Text style={styles.primaryButtonText}>Log In</Text>
+              <Ionicons name="log-in-outline" size={19} color="#FFFFFF" />
+            </>
+          )}
         </Pressable>
       </View>
     </>
@@ -280,18 +331,18 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 460,
     alignSelf: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.xxl,
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: theme.spacing.sm,
+    paddingBottom: theme.spacing.lg,
   },
   loginScroll: {
     flexGrow: 1,
     width: '100%',
     maxWidth: 460,
     alignSelf: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.xxl,
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: theme.spacing.sm,
+    paddingBottom: theme.spacing.lg,
   },
   brandRow: {
     flexDirection: 'row',
@@ -311,9 +362,9 @@ const styles = StyleSheet.create({
   brandText: { color: theme.colors.text, fontSize: 20, fontWeight: '900' },
   brandSub: { color: theme.colors.textMuted, fontSize: theme.font.small, marginTop: 2 },
   heroCard: {
-    borderRadius: 38,
-    padding: 24,
-    minHeight: 330,
+    borderRadius: 30,
+    padding: 18,
+    minHeight: 260,
     justifyContent: 'space-between',
     shadowColor: theme.colors.shadow,
     shadowOpacity: 0.22,
@@ -352,10 +403,10 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: '#FFFFFF',
-    fontSize: 36,
-    lineHeight: 41,
+    fontSize: 28,
+    lineHeight: 34,
     fontWeight: '900',
-    marginTop: 40,
+    marginTop: 24,
   },
   heroText: {
     color: theme.colors.darkMuted,
@@ -366,22 +417,22 @@ const styles = StyleSheet.create({
   heroGrid: {
     flexDirection: 'row',
     gap: theme.spacing.sm,
-    marginTop: 24,
+    marginTop: 16,
   },
   heroTile: {
     flex: 1,
     minWidth: 0,
-    borderRadius: 20,
+    borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.09)',
-    padding: 12,
+    padding: 8,
   },
   heroTileValue: { color: '#FFFFFF', fontSize: theme.font.small, fontWeight: '900', marginTop: 8 },
   heroTileLabel: { color: theme.colors.darkMuted, fontSize: theme.font.tiny, marginTop: 3 },
   whitePanel: {
     backgroundColor: theme.colors.surface,
-    borderRadius: 34,
-    padding: 22,
-    marginTop: theme.spacing.xl,
+    borderRadius: 28,
+    padding: 18,
+    marginTop: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
     shadowColor: theme.colors.shadow,
@@ -390,34 +441,34 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 14 },
     elevation: 3,
   },
-  panelTitle: { color: theme.colors.text, fontSize: 22, fontWeight: '900', marginBottom: theme.spacing.md },
+  panelTitle: { color: theme.colors.text, fontSize: 18, fontWeight: '900', marginBottom: theme.spacing.sm },
   featureRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
   },
   featureIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 16,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     backgroundColor: theme.colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: theme.spacing.md,
+    marginRight: theme.spacing.sm,
   },
   featureTitle: { color: theme.colors.text, fontSize: theme.font.body, fontWeight: '900' },
   featureText: { color: theme.colors.textMuted, fontSize: theme.font.small, lineHeight: 19, marginTop: 3 },
   primaryButton: {
-    minHeight: 58,
-    borderRadius: 18,
+    minHeight: 50,
+    borderRadius: 14,
     backgroundColor: theme.colors.dark,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: theme.spacing.lg,
+    marginTop: theme.spacing.md,
   },
   primaryButtonText: { color: '#FFFFFF', fontSize: theme.font.body, fontWeight: '900' },
   loginTop: {
@@ -513,5 +564,7 @@ const styles = StyleSheet.create({
   },
   checkboxOn: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   rememberText: { color: theme.colors.textMuted, fontSize: theme.font.small, fontWeight: '800' },
+  errorBox: { marginTop: 16, padding: 12, backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' },
+  errorText: { color: '#ef4444', fontSize: theme.font.small, fontWeight: '600', textAlign: 'center' },
   pressed: { opacity: 0.86, transform: [{ scale: 0.99 }] },
 });

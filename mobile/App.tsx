@@ -1,5 +1,7 @@
 // Must be first import for gesture handler web support
 import 'react-native-gesture-handler';
+import 'react-native-get-random-values';
+import './src/lib/amplify-config';
 
 import React, { Component, ReactNode } from 'react';
 import { StatusBar } from 'expo-status-bar';
