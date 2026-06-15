@@ -15,4 +15,7 @@ router.get('/:batchId/summary', getSummary);
 router.put('/:batchId/glp', updateGlp);
 router.put('/:batchId/price', updatePrice);
 
+// Dummy create endpoint to silence 404 errors during local demo mode
+router.post('/', (req, res) => res.status(201).json({ success: true, message: 'Mock batch created' }));
+
 module.exports = router;

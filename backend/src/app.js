@@ -7,6 +7,7 @@ const sensorRoutes = require('./routes/sensorRoutes');
 const batchRoutes = require('./routes/batchRoutes');
 const factoryRoutes = require('./routes/factoryRoutes');
 const generalRoutes = require('./routes/generalRoutes');
+const fermentationRoutes = require('./routes/fermentationRoutes');
 
 const app = express();
 const corsOrigins = process.env.CORS_ORIGIN
@@ -83,6 +84,7 @@ app.use('/api/sensor', sensorRoutes);
 app.use('/api/batches', batchRoutes);
 app.use('/api/factories', factoryRoutes);
 app.use('/api/general', generalRoutes);
+app.use('/api/fermentation', fermentationRoutes);
 
 // ─── 404 ─────────────────────────────────────────────────────────────────────
 app.use((_req, res) => {

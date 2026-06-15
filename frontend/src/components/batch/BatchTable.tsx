@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import { Table, Thead, Th, Tr, Td } from '@/components/ui/Table';
 import { fmtDate, fmtCurrency } from '@/lib/utils';
 import type { BatchListItem } from '@/types';
+import { api } from '@/lib/api';
+import { fetchAuthSession } from 'aws-amplify/auth';
 
 type SortKey = 'batchId' | 'lastTimestamp' | 'glp' | 'price';
 type SortDir = 'asc' | 'desc';
@@ -87,9 +89,15 @@ export function BatchTable({ batches, search, onRowClick, actionColumn }: Props)
             </td>
           </tr>
         )}
-        {sorted.map((b) => (
-          <Tr key={b.batchId} onClick={onRowClick ? () => onRowClick(b) : undefined}>
-            <Td className="font-mono text-xs">{highlight(b.batchId, search)}</Td>
+        {sorted.map((b) => {
+          const isActive = b.glp === null || b.glp === undefined;
+          return (
+          <Tr key={b.batchId} onClick={onRowClick ? () => onRowClick(b) : undefined} className={isActive ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}>
+            <Td className="font-mono text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <span>{highlight(b.batchId, search)}</span>
+              </div>
+            </Td>
             <Td className="text-text-secondary text-xs">{fmtDate(b.lastTimestamp)}</Td>
             <Td className="tabular text-xs">
               {b.latestTemperature != null ? `${b.latestTemperature.toFixed(1)} °C` : '—'}
@@ -116,7 +124,7 @@ export function BatchTable({ batches, search, onRowClick, actionColumn }: Props)
               </Td>
             )}
           </Tr>
-        ))}
+        )})}
       </tbody>
     </Table>
   );

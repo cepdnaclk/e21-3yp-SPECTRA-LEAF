@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { api } from '@/lib/api';
+import { fetchAuthSession } from 'aws-amplify/auth';
 import { useAuthStore } from '@/store/auth.store';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -49,8 +50,7 @@ export default function OfficerDashboard() {
   const [startOpen, setStartOpen] = useState(false);
   const [newBatchId, setNewBatchId] = useState('');
   const [newDeviceId, setNewDeviceId] = useState('DEV001');
-  const [targetTemp, setTargetTemp] = useState(28.5);
-  const [estDuration, setEstDuration] = useState(8);
+  const [newGlp, setNewGlp] = useState(70);
   const [starting, setStarting] = useState(false);
   const [startErr, setStartErr] = useState<string | null>(null);
 
@@ -134,8 +134,7 @@ export default function OfficerDashboard() {
     const next = `BAT${String(batches.length + 1).padStart(3, '0')}`;
     setNewBatchId(next);
     setNewDeviceId('DEV001');
-    setTargetTemp(28.5);
-    setEstDuration(8);
+    setNewGlp(70);
     setStartErr(null);
     setStartOpen(true);
   }
@@ -152,16 +151,58 @@ export default function OfficerDashboard() {
     setStarting(true);
     setStartErr(null);
     try {
-      // Optimistic: try the create endpoint; tolerate failure for demo backends
-      await api.post('/batches/public', {
-        batchId: newBatchId.trim(),
-        factoryId,
+      // Primary: try the create endpoint
+      await api.post('/batches', {
         deviceId: newDeviceId,
       }).catch(() => {/* swallow — surface success in UI for demo */});
+
+      const session = await fetchAuthSession().catch(() => ({}));
+      console.log("Auth session object:", session);
+      const token = session.tokens?.accessToken?.toString() || session.tokens?.idToken?.toString();
+      console.log("Token attached:", token);
+
+      // Secondary: IoT Control endpoint
+      await api.post('/fermentation/control', {
+        status: 'RUNNING',
+        batch_id: newBatchId.trim(),
+        glp: newGlp,
+      }, {
+        ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {})
+      }).catch((e) => {
+        console.error('Failed to trigger IoT control', e);
+      });
+
+      // Tertiary: Save the initial GLP to the database
+      await api.put(`/batches/${newBatchId.trim()}/glp`, { factoryId, glp: newGlp }).catch((e) => {
+        console.error('Failed to save GLP to database', e);
+      });
+
       setStartOpen(false);
       await reloadBatches();
     } catch (e: any) {
       setStartErr(e.response?.data?.error ?? e.response?.data?.message ?? 'Failed to start');
+    } finally {
+      setStarting(false);
+    }
+  }
+
+  async function handleStopFermentation() {
+    if (!window.confirm("Are you sure you want to stop the live sensor data for the factory?")) return;
+    
+    setStarting(true);
+    try {
+      const session = await fetchAuthSession().catch(() => ({}));
+      const token = session.tokens?.accessToken?.toString() || session.tokens?.idToken?.toString();
+      await api.post('/fermentation/control', {
+        status: "STOPPED",
+        batch_id: "NONE"
+      }, {
+        ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {})
+      });
+      await reloadBatches();
+    } catch (e: any) {
+      console.error('Failed to stop fermentation', e);
+      alert('Failed to stop fermentation');
     } finally {
       setStarting(false);
     }
@@ -199,17 +240,30 @@ export default function OfficerDashboard() {
           <DateRangeButton>Last 30 days</DateRangeButton>
           <FilterButton />
           <Button
+            onClick={handleStopFermentation}
+            disabled={starting}
+            variant="danger"
+            title="Stop Live Sensors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="6" y="6" width="12" height="12" />
+            </svg>
+            Stop Live Sensors
+          </Button>
+
+          <Button
             onClick={openStart}
-            disabled={!!activeBatch}
+            disabled={!!activeBatch || starting}
             title={activeBatch
-              ? `${activeBatch.batchId} is still in fermentation`
+              ? `Stop fermentation for ${activeBatch.batchId}`
               : 'Start a new fermentation batch'}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 5v14M5 12h14"/>
             </svg>
-            {activeBatch ? 'Batch In Progress' : 'Start Fermentation'}
+            {starting ? 'Starting...' : 'Start Fermentation'}
           </Button>
         </>
       }
@@ -648,29 +702,23 @@ export default function OfficerDashboard() {
           <div className="grid grid-cols-2 gap-3">
             <Field label="Batch ID" value={newBatchId} onChange={setNewBatchId} mono />
             <Field label="Factory" value={factoryId || ''} onChange={() => {}} disabled mono />
-            <Field label="Device" value={newDeviceId} onChange={setNewDeviceId} mono />
-            <Field
-              label="Estimated Hours"
-              value={String(estDuration)}
-              onChange={(v) => setEstDuration(Number(v) || 0)}
-              type="number"
-            />
+            <Field label="Device" value={newDeviceId} onChange={setNewDeviceId} mono disabled />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="eyebrow">Target Temperature</span>
+              <span className="eyebrow">Good Leaf Percentage</span>
               <span className="font-mono font-semibold text-accent-primary text-[15px]">
-                {targetTemp.toFixed(1)} °C
+                {newGlp}%
               </span>
             </div>
             <input
-              type="range" min={20} max={35} step={0.1} value={targetTemp}
-              onChange={(e) => setTargetTemp(parseFloat(e.target.value))}
+              type="range" min={0} max={100} step={1} value={newGlp}
+              onChange={(e) => setNewGlp(parseInt(e.target.value, 10))}
               className="w-full accent-[var(--accent-primary)]"
             />
             <div className="flex justify-between text-[10px] text-text-muted mt-1 tabular">
-              <span>20°</span><span>27.5°</span><span>35°</span>
+              <span>0%</span><span>50%</span><span>100%</span>
             </div>
           </div>
 

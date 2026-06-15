@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.565.0",
+    "@aws-sdk/client-iot-data-plane": "^3.1068.0",
     "@aws-sdk/lib-dynamodb": "^3.565.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
