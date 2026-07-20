@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spectra Leaf — IIoT Tea Fermentation Monitoring</title>
+  <meta name="description" content="Spectra Leaf is an AWS-powered IIoT platform that digitizes tea fermentation monitoring using multi-channel sensor arrays, replacing subjective human assessment with real-time scientific data.">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Spectra Leaf — Digitizing the Tea Fermentation Sweet Spot">
+  <meta property="og:description" content="An IIoT platform for real-time tea fermentation monitoring using ESP32 sensor arrays and serverless AWS architecture.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://cepdnaclk.github.io/e21-3yp-SPECTRA-LEAF/">
+  <meta property="og:image" content="https://cepdnaclk.github.io/e21-3yp-SPECTRA-LEAF/assets/images/hero-bg.jpg">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="assets/images/logo.jpg">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- NAVIGATION                                      -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <nav class="nav" id="nav">
+    <div class="nav__container">
+      <a href="#" class="nav__logo">
+        <img src="assets/images/logo.jpg" alt="Spectra Leaf Logo" width="36" height="36">
+        <span>Spectra Leaf</span>
+      </a>
+      <ul class="nav__links" id="nav-links">
+        <li><a href="#introduction" class="nav__link">Introduction</a></li>
+        <li><a href="#architecture" class="nav__link">Architecture</a></li>
+        <li><a href="#design" class="nav__link">Design</a></li>
+        <li><a href="#data-pipeline" class="nav__link">Data &amp; ML</a></li>
+        <li><a href="#testing" class="nav__link">Testing</a></li>
+        <li><a href="#team" class="nav__link">Team</a></li>
+      </ul>
+      <button class="nav__mobile-toggle" id="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav__overlay" id="nav-overlay"></div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- HERO                                            -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="hero" id="hero">
+    <div class="hero__bg-image" style="background-image:url('assets/images/hero-bg.jpg')"></div>
+    <div class="hero__overlay"></div>
+
+    <div class="hero__content">
+      <div class="hero__badge">
+        <span class="hero__badge-dot"></span>
+        3rd Year Project — University of Peradeniya
+      </div>
+
+      <h1 class="hero__title">
+        <span class="copper">Spectra</span> Leaf
+      </h1>
+
+      <p class="hero__tagline">
+        Digitizing the tea fermentation sweet spot — replacing decades of subjective intuition with real-time sensor intelligence and serverless cloud analytics.
+      </p>
+
+      <div class="hero__cta-group">
+        <a href="#introduction" class="btn btn--primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Explore Project
+        </a>
+        <a href="https://github.com/cepdnaclk/e21-3yp-SPECTRA-LEAF" target="_blank" rel="noopener" class="btn btn--outline">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+
+      <div class="hero__stats">
+        <div class="stat-chip">
+          <div class="stat-chip__icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+          </div>
+          <div class="stat-chip__text">
+            <strong>3 Sensor Types</strong>
+            Temperature, Gas, Color
+          </div>
+        </div>
+        <div class="stat-chip">
+          <div class="stat-chip__icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
+          <div class="stat-chip__text">
+            <strong>Serverless AWS</strong>
+            IoT Core + Lambda + DynamoDB
+          </div>
+        </div>
+        <div class="stat-chip">
+          <div class="stat-chip__icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+          </div>
+          <div class="stat-chip__text">
+            <strong>Real-time Dashboard</strong>
+            Next.js + AWS Amplify
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- 01 / INTRODUCTION                               -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="section" id="introduction">
+    <div class="section__container">
+      
+      <!-- Component Header -->
+      <div class="section__header">
+        <div class="section__number">01</div>
+        <div class="section__label">Introduction</div>
+        <h2 class="section__title">The Problem with Intuition-Based Fermentation</h2>
+        <p class="section__description">
+          For generations, the tea industry has relied heavily on manual observation and the subjective intuition of experienced factory operators to determine the fermentation "sweet spot." This dependency creates an operational bottleneck vulnerable to environmental fluctuations and human error.
+        </p>
+      </div>
+
+      <!-- Problem Analysis: The Invisible Variables -->
+      <div class="grid-2 mb-lg">
+        <div>
+          <div class="img-showcase">
+            <img src="images/intuition-flaw.png" alt="Traditional Artisanal Leaf Inspection" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px; font-style: italic; text-align: center;">
+            Traditional methods rely entirely on visual, olfactory, and tactile evaluation by eye and hand.
+          </div>
+        </div>
+        
+        <div>
+          <h3 class="problem-heading">Why Human Intuition Fails the Scale Test</h3>
+          <p class="text-block">
+            The chemical transition from green leaf catechins to coppery-brown theaflavins and thearubigins releases volatile organic compounds (VOCs) and generates exothermic heat. Because these critical variables are invisible to the naked eye, relying on human senses leads to direct operational inefficiencies:
+          </p>
+          
+          <ul class="problem-list">
+            <li><span><strong>Sensory Fatigue:</strong> An operator's ability to accurately smell volatile changes and differentiate leaf color drops sharply over a standard 8-to-12 hour factory shift.</span></li>
+            <li><span><strong>Environmental Shifts:</strong> Microclimate changes within the factory (ambient humidity, localized drafts) alter the oxidation rate without visible indicators on the trough surface.</span></li>
+            <li><span><strong>Quality Inconsistency:</strong> Missing the fermentation window by as little as 5 minutes drastically lowers the final Good Leaf Percentage (GLP), reducing batch market value.</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- System Objectives Grid Setup -->
+      <div class="grid-2 section-reverse" style="margin-top: 64px;">
+        <div>
+          <h3 class="problem-heading" style="color: var(--text-primary);">The Spectra Leaf Intervention</h3>
+          <p class="text-block" style="margin-bottom: 24px;">
+            Spectra Leaf directly eliminates the subjectivity of artisanal observation. By treating the fermentation trough as an active chemical bioreactor, our AWS-powered IIoT platform digitizes environmental vectors in real time, translating human guesswork into hard data science.
+          </p>
+
+          <div class="objectives-stack">
+            <div class="objective-card">
+              <div class="objective-card__number">01</div>
+              <div>
+                <h4 class="objective-card__title">Digitize Sensory Assessment</h4>
+                <p class="objective-card__text">Replace subjective smell-and-touch evaluation with quantitative sensor telemetry covering gas composition, thermal profiles, and spectral color data.</p>
+              </div>
+            </div>
+            
+            <div class="objective-card">
+              <div class="objective-card__number">02</div>
+              <div>
+                <h4 class="objective-card__title">Real-time Operator Guidance</h4>
+                <p class="objective-card__text">Deliver live dashboards so operators can track fermentation progress and receive alerts when conditions deviate from optimal parameters.</p>
+              </div>
+            </div>
+            
+            <div class="objective-card">
+              <div class="objective-card__number">03</div>
+              <div>
+                <h4 class="objective-card__title">Build a Fermentation Dataset</h4>
+                <p class="objective-card__text">Harvest time-series telemetry paired with expert-labeled quality outcomes to create the first open dataset for tea fermentation research.</p>
+              </div>
+            </div>
+            
+            <div class="objective-card">
+              <div class="objective-card__number">04</div>
+              <div>
+                <h4 class="objective-card__title">Enable Future Automation</h4>
+                <p class="objective-card__text">Lay the data foundation for machine learning models that can autonomously detect the fermentation "sweet spot" without human intervention.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="img-showcase" style="height: 100%; min-height: 350px;">
+            <img src="images/sensory-overload.png" alt="IIoT Environmental Mapping Overlay" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- 02 / SOLUTION ARCHITECTURE                      -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="section section--alt" id="architecture">
+    <div class="section__container">
+      <div class="section__header">
+        <div class="section__number">02</div>
+        <div class="section__label">Solution Architecture</div>
+        <h2 class="section__title">Three Layers, Zero Servers to Manage</h2>
+        <p class="section__description">
+          A fully serverless, event-driven architecture connects edge sensors to cloud analytics and a responsive operator dashboard. Every component is completely decoupled to guarantee independent scaling, hardware fault isolation, and minimal operational overhead.
+        </p>
+      </div>
+
+      <div class="grid-2 mb-lg">
+        <div>
+          <h3 class="mb-md" style="font-family:'DM Serif Display',serif; font-size:1.75rem;">
+            Decoupled Event-Driven Pipeline
+          </h3>
+          <p class="mb-md" style="color:var(--text-muted); line-height:1.8; font-size:1.02rem;">
+            The entire design prioritizes high throughput at the edge and zero idle maintenance costs in the cloud. Hardware nodes publish physical telemetry changes directly over encrypted protocols, completely bypassable from direct UI rendering dependencies:
+          </p>
+          
+          <ul style="list-style: none; padding: 0; margin-bottom: 24px;">
+            <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 8px;">
+              <span style="color: var(--accent-green); font-weight: bold;">✓</span>
+              <span><strong>Hardware Independence:</strong> If the user interface goes offline, the ESP32 edge device safely continues its sensory loops, executing remote data persistence autonomously.</span>
+            </li>
+            <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 8px;">
+              <span style="color: var(--accent-green); font-weight: bold;">✓</span>
+              <span><strong>Scale-to-Zero Ingestion:</strong> AWS Lambda functions trigger on-demand only when state modifications or batch read queries arrive via the API Gateway, eliminating active virtual machine bills.</span>
+            </li>
+            <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 8px;">
+              <span style="color: var(--accent-green); font-weight: bold;">✓</span>
+              <span><strong>Secure Token State:</strong> Token verification happens cleanly at the edge of the cloud layer using Amazon Cognito User Pools, handling automated session security before data routes hit our internal APIs.</span>
+            </li>
+          </ul>
+        </div>
+        <div>
+          <div class="img-showcase">
+            <img src="assets/images/solution-architecture.png" alt="Spectra Leaf 3-Layer Serverless System Framework Diagram" class="parallax-img" loading="lazy">
+          </div>
+        </div>
+      </div>
+
+      <div class="architecture">
+        <div class="arch-layer arch-layer--edge">
+          <div class="arch-layer__title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 1v3m6-3v3M9 20v3m6-3v3M1 9h3m-3 6h3M20 9h3m-3 6h3"/></svg>
+            Edge Layer — Sensor Acquisition
+          </div>
+          <div class="arch-layer__items">
+            <span class="arch-tag">ESP32 Microcontroller</span>
+            <span class="arch-tag">Temperature Sensor</span>
+            <span class="arch-tag">Gas Sensor Array</span>
+            <span class="arch-tag">Color Sensor (RGB)</span>
+            <span class="arch-tag">MQTT over TLS</span>
+            <span class="arch-tag">Device Shadow Sync</span>
+          </div>
+        </div>
+        <div class="arch-layer arch-layer--cloud">
+          <div class="arch-layer__title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-copper)" stroke-width="2"><path d="M17.5 19H9a7 7 0 116.71-9h1.79a4.5 4.5 0 010 9z"/></svg>
+            Cloud Layer — Processing &amp; Storage
+          </div>
+          <div class="arch-layer__items">
+            <span class="arch-tag">AWS IoT Core</span>
+            <span class="arch-tag">Device Shadow</span>
+            <span class="arch-tag">AWS Lambda</span>
+            <span class="arch-tag">API Gateway (REST)</span>
+            <span class="arch-tag">DynamoDB</span>
+            <span class="arch-tag">Amazon Cognito (SRP Auth)</span>
+          </div>
+        </div>
+        <div class="arch-layer arch-layer--client">
+          <div class="arch-layer__title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-copper-light)" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+            Client Layer — Operator Dashboard
+          </div>
+          <div class="arch-layer__items">
+            <span class="arch-tag">Next.js SPA</span>
+            <span class="arch-tag">Tailwind CSS</span>
+            <span class="arch-tag">AWS Amplify v6</span>
+            <span class="arch-tag">Cognito Session/Token Management</span>
+            <span class="arch-tag">Real-time Charts</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto; margin-top:40px;">
+        <table class="arch-table">
+          <thead>
+            <tr>
+              <th>Layer</th>
+              <th>Component</th>
+              <th>Technology</th>
+              <th>Responsibility</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Edge</td>
+              <td>Microcontroller</td>
+              <td>ESP32-WROOM-32</td>
+              <td>Sensor polling, MQTT publish, Device Shadow subscription</td>
+            </tr>
+            <tr>
+              <td>Edge</td>
+              <td>Sensors</td>
+              <td>DHT22 / MQ-series / TCS34725</td>
+              <td>Temperature, volatile gas, and RGB color acquisition</td>
+            </tr>
+            <tr>
+              <td>Cloud</td>
+              <td>Message Broker</td>
+              <td>AWS IoT Core</td>
+              <td>MQTT ingestion, Device Shadow state sync</td>
+            </tr>
+            <tr>
+              <td>Cloud</td>
+              <td>Compute</td>
+              <td>AWS Lambda</td>
+              <td>Stateless processing, REST endpoint handlers</td>
+            </tr>
+            <tr>
+              <td>Cloud</td>
+              <td>API</td>
+              <td>API Gateway</td>
+              <td>RESTful interface between dashboard and backend</td>
+            </tr>
+            <tr>
+              <td>Cloud</td>
+              <td>Storage</td>
+              <td>DynamoDB</td>
+              <td>Time-series telemetry ingestion and query</td>
+            </tr>
+            <tr>
+              <td>Cloud</td>
+              <td>Auth</td>
+              <td>Amazon Cognito</td>
+              <td>SRP-based authentication, token refresh (60s grace)</td>
+            </tr>
+            <tr>
+              <td>Client</td>
+              <td>Dashboard</td>
+              <td>Next.js + Tailwind</td>
+              <td>Real-time visualization, session management via Amplify v6</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card" style="margin-top:32px; border-left:3px solid var(--accent-copper);">
+        <div class="card__icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        </div>
+        <h3 class="card__title">Security: SRP Authentication</h3>
+        <p class="card__text">
+          Amazon Cognito enforces Secure Remote Password (SRP) protocol — the user's password never leaves the client device. Access tokens auto-refresh with a 60-second grace period ensuring seamless session continuity without re-authentication.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- 03 / HARDWARE & SOFTWARE DESIGN                 -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="section" id="design">
+    <div class="section__container">
+      <div class="section__header">
+        <div class="section__number">03</div>
+        <div class="section__label reveal">Hardware &amp; Software Design</div>
+        <h2 class="section__title word-reveal">From Sensor Pins to Cloud Endpoints</h2>
+        <p class="section__description reveal">
+          Every layer of Spectra Leaf is designed for reliability in a humid, high-temperature factory environment — from ruggedized sensor wiring to auto-reconnecting MQTT clients.
+        </p>
+      </div>
+
+      <!-- Hardware Section -->
+      <div class="grid-2 mb-lg">
+        <div>
+          <h3 class="reveal mb-md" style="font-family:'DM Serif Display',serif;font-size:1.5rem;">
+            <span class="text-copper">Edge Device</span> — ESP32 Sensor Node
+          </h3>
+          <div class="card reveal" style="margin-bottom:16px">
+            <div class="card__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 1v3m6-3v3M9 20v3m6-3v3M1 9h3m-3 6h3M20 9h3m-3 6h3"/></svg>
+            </div>
+            <h3 class="card__title">ESP32-WROOM-32</h3>
+            <p class="card__text">Dual-core 240 MHz processor with built-in Wi-Fi and BLE. Manages concurrent sensor polling, MQTT publishing, and Device Shadow state subscriptions over TLS-encrypted connections.</p>
+          </div>
+          <div class="card reveal" style="margin-bottom:16px">
+            <div class="card__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83"/></svg>
+            </div>
+            <h3 class="card__title">Sensor Array</h3>
+            <p class="card__text">Temperature (DHT22), volatile organic compound (MQ-series gas sensors), and spectral color (TCS34725 RGB) — capturing the three primary dimensions of oxidation progression.</p>
+          </div>
+          <div class="card reveal">
+            <div class="card__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14a1 1 0 01-.78-1.63l9.9-10.2a.5.5 0 01.86.46l-1.92 6.02A1 1 0 0013 10h7a1 1 0 01.78 1.63l-9.9 10.2a.5.5 0 01-.86-.46l1.92-6.02A1 1 0 0011 14H4z"/></svg>
+            </div>
+            <h3 class="card__title">Device Shadow Logic</h3>
+            <p class="card__text">The ESP32 subscribes to AWS IoT Device Shadow updates, enabling remote state control (RUNNING / STOPPED) without direct connectivity to the operator's browser.</p>
+          </div>
+        </div>
+        <div class="reveal">
+          <div class="img-showcase">
+            <img src="assets/images/hardware.jpg" alt="ESP32 sensor node with temperature, gas, and color sensors" class="parallax-img" loading="lazy">
+          </div>
+        </div>
+      </div>
+
+      <!-- Software Section -->
+      <div class="grid-2">
+        <div class="reveal">
+          <div class="img-showcase">
+            <img src="assets/images/dashboard.jpg" alt="Spectra Leaf real-time monitoring dashboard" class="parallax-img" loading="lazy">
+          </div>
+        </div>
+        <div>
+          <h3 class="reveal mb-md" style="font-family:'DM Serif Display',serif;font-size:1.5rem;">
+            <span class="text-copper">Cloud &amp; Frontend</span> — Serverless Stack
+          </h3>
+          <div class="card reveal" style="margin-bottom:16px">
+            <div class="card__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 116.71-9h1.79a4.5 4.5 0 010 9z"/></svg>
+            </div>
+            <h3 class="card__title">IoT Core + Device Shadow</h3>
+            <p class="card__text">AWS IoT Core ingests MQTT telemetry and maintains a Device Shadow — a virtual twin of each sensor node's reported and desired state, enabling bidirectional control.</p>
+          </div>
+          <div class="card reveal" style="margin-bottom:16px">
+            <div class="card__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <h3 class="card__title">Lambda + API Gateway</h3>
+            <p class="card__text">Stateless Lambda functions behind API Gateway expose REST endpoints for historical data queries, session management, and device control — scaling to zero when idle.</p>
+          </div>
+          <div class="card reveal">
+            <div class="card__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+            </div>
+            <h3 class="card__title">Next.js Dashboard</h3>
+            <p class="card__text">A responsive SPA built with Next.js and Tailwind CSS, authenticated via AWS Amplify v6 and Cognito. Operators view live sensor feeds, historical trends, and fermentation batch status in real time.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- 04 / DATA PIPELINE & ML STRATEGY                -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="section section--alt" id="data-pipeline">
+    <div class="section__container">
+      <div class="section__header">
+        <div class="section__number">04</div>
+        <div class="section__label reveal">Data Pipeline &amp; ML Strategy</div>
+        <h2 class="section__title word-reveal">Building a Dataset That Doesn't Exist Yet</h2>
+        <p class="section__description reveal">
+          No public tea fermentation dataset exists. Spectra Leaf creates one from scratch — pairing multi-sensor telemetry with expert-labeled quality grades to power future machine learning.
+        </p>
+      </div>
+
+      <!-- Pipeline Flow Diagram -->
+      <div class="pipeline reveal">
+        <div class="pipeline__flow">
+          <div class="pipeline__node">
+            <div class="pipeline__node-icon pipeline__node-icon--sensor">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+            </div>
+            <span class="pipeline__node-label">Sensors</span>
+          </div>
+          <div class="pipeline__connector"></div>
+          <div class="pipeline__node">
+            <div class="pipeline__node-icon pipeline__node-icon--sensor">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 1v3m6-3v3M9 20v3m6-3v3"/></svg>
+            </div>
+            <span class="pipeline__node-label">ESP32</span>
+          </div>
+          <div class="pipeline__connector"></div>
+          <div class="pipeline__node">
+            <div class="pipeline__node-icon pipeline__node-icon--cloud">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <span class="pipeline__node-label">MQTT / IoT Core</span>
+          </div>
+          <div class="pipeline__connector"></div>
+          <div class="pipeline__node">
+            <div class="pipeline__node-icon pipeline__node-icon--cloud">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            </div>
+            <span class="pipeline__node-label">DynamoDB</span>
+          </div>
+          <div class="pipeline__connector"></div>
+          <div class="pipeline__node">
+            <div class="pipeline__node-icon pipeline__node-icon--cloud">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </div>
+            <span class="pipeline__node-label">Expert Labels</span>
+          </div>
+          <div class="pipeline__connector"></div>
+          <div class="pipeline__node">
+            <div class="pipeline__node-icon pipeline__node-icon--cloud" style="background:rgba(201,124,61,0.2);">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+            </div>
+            <span class="pipeline__node-label">ML Model<br><small style="color:var(--text-dim)">(Future)</small></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Narrative Cards -->
+      <div class="grid-2" style="margin-top:48px;">
+        <div class="card reveal">
+          <div class="card__icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          </div>
+          <h3 class="card__title">Good Leaf Percentage (GLP)</h3>
+          <p class="card__text">
+            Each fermentation batch is scored by experienced tea makers using Good Leaf Percentage — the fraction of leaves reaching optimal oxidation. This human label becomes the ground-truth target for every sensor reading captured during that batch.
+          </p>
+        </div>
+        <div class="card reveal">
+          <div class="card__icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          </div>
+          <h3 class="card__title">Future: Sweet-Spot Classifier</h3>
+          <p class="card__text">
+            With sufficient labeled batches, a classification model will learn to predict fermentation completion autonomously — detecting the moment gas-profile, color, and temperature collectively signal the "sweet spot" without human intervention.
+          </p>
+        </div>
+      </div>
+
+      <!-- Counter Stats -->
+      <div class="counter-grid reveal">
+        <div class="counter-item">
+          <div class="counter-item__value"><span class="counter-value" data-target="3" data-suffix="">0</span></div>
+          <div class="counter-item__label">Sensor Channels</div>
+        </div>
+        <div class="counter-item">
+          <div class="counter-item__value"><span class="counter-value" data-target="5" data-suffix="s">0</span></div>
+          <div class="counter-item__label">Sampling Interval</div>
+        </div>
+        <div class="counter-item">
+          <div class="counter-item__value"><span class="counter-value" data-target="100" data-suffix="%">0</span></div>
+          <div class="counter-item__label">Serverless Uptime</div>
+        </div>
+        <div class="counter-item">
+          <div class="counter-item__value"><span class="counter-value" data-target="60" data-suffix="s">0</span></div>
+          <div class="counter-item__label">Token Refresh Grace</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- 05 / TESTING & CI/CD                            -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="section" id="testing">
+    <div class="section__container">
+      <div class="section__header">
+        <div class="section__number">05</div>
+        <div class="section__label reveal">Testing &amp; CI/CD</div>
+        <h2 class="section__title word-reveal">Ship Confidently, From Commit to Cloud</h2>
+        <p class="section__description reveal">
+          Automated pipelines and rigorous edge-case testing ensure every change is validated before reaching production — from GitHub push to AWS Amplify deployment.
+        </p>
+      </div>
+
+      <div class="grid-3">
+        <div class="card reveal">
+          <div class="card__icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </div>
+          <h3 class="card__title">GitHub Actions Pipeline</h3>
+          <p class="card__text">Every push to main triggers automated builds and deploys via GitHub Actions, building the Next.js frontend and deploying static output to AWS Amplify Hosting.</p>
+        </div>
+        <div class="card reveal">
+          <div class="card__icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <h3 class="card__title">Local / Cloud Parity</h3>
+          <p class="card__text">Development and staging environments mirror production AWS configurations, catching integration issues before deployment. DynamoDB local and IoT Core test endpoints maintain parity.</p>
+        </div>
+        <div class="card reveal">
+          <div class="card__icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          </div>
+          <h3 class="card__title">Auth Resilience Testing</h3>
+          <p class="card__text">SRP authentication flows are stress-tested across token expiry boundaries, verifying the 60-second refresh grace period handles concurrent requests without session drops.</p>
+        </div>
+        <div class="card reveal">
+          <div class="card__icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+          </div>
+          <h3 class="card__title">MQTT Reconnection Loop</h3>
+          <p class="card__text">ESP32 firmware implements exponential-backoff reconnection with jitter, tested against network interruptions, broker restarts, and Wi-Fi drops to ensure field reliability.</p>
+        </div>
+        <div class="card reveal">
+          <div class="card__icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
+          <h3 class="card__title">End-to-End Data Validation</h3>
+          <p class="card__text">Telemetry integrity is verified from sensor ADC readings through MQTT serialization, Lambda processing, DynamoDB storage, and finally API Gateway response — ensuring no data loss or corruption.</p>
+        </div>
+        <div class="card reveal">
+          <div class="card__icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          </div>
+          <h3 class="card__title">AWS Amplify Hosting</h3>
+          <p class="card__text">Production frontend is deployed to AWS Amplify Hosting with automatic branch previews, instant cache invalidation, and custom domain support for factory-floor access.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- 06 / TEAM                                       -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="section section--alt" id="team">
+    <div class="section__container">
+      <div class="section__header">
+        <div class="section__number">06</div>
+        <div class="section__label reveal">Team</div>
+        <h2 class="section__title word-reveal">The People Behind Spectra Leaf</h2>
+        <p class="section__description reveal">
+          Undergraduate engineers from the Department of Computer Engineering, University of Peradeniya — combining embedded systems, cloud architecture, and frontend development expertise.
+        </p>
+      </div>
+
+      <div class="team__grid">
+        <!-- Team Member 1 -->
+        <div class="team-card">
+          <div class="team-card__placeholder">
+            <div class="team-card__placeholder-initials">NK</div>
+          </div>
+          <div class="team-card__info">
+            <h3 class="team-card__name">Nadeera Kothalawala</h3>
+            <div class="team-card__index">E/21/226</div>
+            <a href="mailto:e21226@eng.pdn.ac.lk" class="team-card__email">e21226@eng.pdn.ac.lk</a>
+          </div>
+        </div>
+
+        <!-- Team Member 2 -->
+        <div class="team-card">
+          <div class="team-card__placeholder">
+            <div class="team-card__placeholder-initials">LD</div>
+          </div>
+          <div class="team-card__info">
+            <h3 class="team-card__name">Lahiru Dinushan</h3>
+            <div class="team-card__index">E/21/049</div>
+            <a href="mailto:e21049@eng.pdn.ac.lk" class="team-card__email">e21049@eng.pdn.ac.lk</a>
+          </div>
+        </div>
+
+        <!-- Team Member 3 -->
+        <div class="team-card">
+          <div class="team-card__placeholder">
+            <div class="team-card__placeholder-initials">RM</div>
+          </div>
+          <div class="team-card__info">
+            <h3 class="team-card__name">Rangana Madhushanka</h3>
+            <div class="team-card__index">E/21/200</div>
+            <a href="mailto:e21200@eng.pdn.ac.lk" class="team-card__email">e21200@eng.pdn.ac.lk</a>
+          </div>
+        </div>
+
+        <!-- Team Member 4 -->
+        <div class="team-card">
+          <div class="team-card__placeholder">
+            <div class="team-card__placeholder-initials">DD</div>
+          </div>
+          <div class="team-card__info">
+            <h3 class="team-card__name">Deshan Dinidu</h3>
+            <div class="team-card__index">E/21/054</div>
+            <a href="mailto:e21054@eng.pdn.ac.lk" class="team-card__email">e21054@eng.pdn.ac.lk</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Supervisor -->
+      <div class="supervisor reveal">
+        <div class="supervisor__photo">
+          <div class="team-card__placeholder-initials" style="font-size:1.5rem;display:flex;align-items:center;justify-content:center;width:100%;height:100%;">S</div>
+        </div>
+        <div>
+          <div class="supervisor__label">Project Supervisor</div>
+          <div class="supervisor__name">Department of Computer Engineering</div>
+          <div style="font-size:0.85rem;color:var(--text-muted);margin-top:4px;">University of Peradeniya</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- 07 / CONCLUSION                                 -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="section" id="conclusion">
+    <div class="section__container" style="text-align:center;max-width:800px;">
+      <div class="section__number" style="text-align:center;">07</div>
+      <div class="section__label reveal" style="text-align:center;">Conclusion</div>
+      <h2 class="section__title word-reveal" style="text-align:center;">Serverless Today, AI-Automated Tomorrow</h2>
+      <p class="reveal" style="color:var(--text-muted);line-height:1.8;font-size:1.05rem;margin-top:24px;">
+        Spectra Leaf demonstrates that industrial-grade fermentation monitoring can be built on fully serverless infrastructure — no on-premise servers, no dedicated IT staff, just sensors talking to the cloud. As the dataset grows batch by batch, the path to autonomous sweet-spot detection becomes clearer. The future of Sri Lankan tea quality isn't just digitized — it's intelligent.
+      </p>
+      <div style="margin-top:40px;" class="reveal">
+        <a href="https://github.com/cepdnaclk/e21-3yp-SPECTRA-LEAF" target="_blank" rel="noopener" class="btn btn--primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+          View Repository on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- FOOTER                                          -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <footer class="footer">
+    <div class="footer__container">
+      <div class="footer__top">
+        <div class="footer__brand">
+          <a href="#" class="nav__logo" style="margin-bottom:8px;">
+            <img src="assets/images/logo.jpg" alt="Spectra Leaf" width="32" height="32">
+            <span>Spectra Leaf</span>
+          </a>
+          <p class="footer__brand-desc">
+            An IIoT platform for real-time tea fermentation monitoring — transforming artisanal intuition into reproducible data science.
+          </p>
+        </div>
+        <div>
+          <h4 class="footer__heading">Project</h4>
+          <ul class="footer__links">
+            <li><a href="#introduction">Introduction</a></li>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#design">Design</a></li>
+            <li><a href="#data-pipeline">Data &amp; ML</a></li>
+            <li><a href="#testing">Testing</a></li>
+            <li><a href="#team">Team</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer__heading">Institution</h4>
+          <ul class="footer__links">
+            <li><a href="http://www.ce.pdn.ac.lk/" target="_blank" rel="noopener">Dept. of Computer Engineering</a></li>
+            <li><a href="https://eng.pdn.ac.lk/" target="_blank" rel="noopener">Faculty of Engineering</a></li>
+            <li><a href="https://www.pdn.ac.lk/" target="_blank" rel="noopener">University of Peradeniya</a></li>
+            <li><a href="https://github.com/cepdnaclk/e21-3yp-SPECTRA-LEAF" target="_blank" rel="noopener">GitHub Repository</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <div class="footer__copyright">
+          &copy; 2025 Spectra Leaf — Department of Computer Engineering, University of Peradeniya
+        </div>
+        <div style="display:flex;gap:16px;align-items:center;">
+          <a href="https://github.com/cepdnaclk/e21-3yp-SPECTRA-LEAF" target="_blank" rel="noopener" style="color:var(--text-muted);transition:color 0.3s;" aria-label="GitHub">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- SCRIPTS                                         -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- GSAP + ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <!-- Site Scripts -->
+  <script src="js/animations.js"></script>
+</body>
+</html>
