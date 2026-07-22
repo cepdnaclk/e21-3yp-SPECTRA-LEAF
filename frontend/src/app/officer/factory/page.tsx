@@ -144,6 +144,7 @@ export default function FactoryPage() {
                 <Th>Batch ID</Th>
                 <Th>Last Seen</Th>
                 <Th>Temperature</Th>
+                <Th>Humidity</Th>
                 <Th>GLP</Th>
                 <Th>Status</Th>
               </Thead>
@@ -158,6 +159,9 @@ export default function FactoryPage() {
                       </Td>
                       <Td className="tabular">
                         {b.latestTemperature !== null ? `${b.latestTemperature.toFixed(1)} °C` : '—'}
+                      </Td>
+                      <Td className="tabular">
+                        {b.latestHumidity !== null ? `${b.latestHumidity.toFixed(1)} %` : '—'}
                       </Td>
                       <Td className="tabular">{done ? `${b.glp}%` : '—'}</Td>
                       <Td>

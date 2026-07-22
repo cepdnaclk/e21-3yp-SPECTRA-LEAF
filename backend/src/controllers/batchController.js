@@ -23,6 +23,7 @@ async function getReadings(req, res) {
       batchId: i.BATCH_ID,
       rgRatio: readingValue(i, 'RG_RATIO', 'COLOR'),
       temperature: i.TEMPERATURE ?? null,
+      humidity: i.HUMIDITY ?? null,
       mq137: readingValue(i, 'MQ137', 'MQ135'),
       tgs2620: readingValue(i, 'TGS2620'),
       tgs822: readingValue(i, 'TGS822'),
@@ -44,6 +45,7 @@ async function getGraphs(req, res) {
   try {
     const items = await getBatchReadings(batchId);
     const temperature = [];
+    const humidity = [];
     const rgRatio = [];
     const mq137 = [];
     const tgs2620 = [];
@@ -51,6 +53,7 @@ async function getGraphs(req, res) {
     for (const i of items) {
       const ts = i.TIMESTAMP;
       if (i.TEMPERATURE != null) temperature.push({ timestamp: ts, value: i.TEMPERATURE });
+      if (i.HUMIDITY != null) humidity.push({ timestamp: ts, value: i.HUMIDITY });
       const rg = readingValue(i, 'RG_RATIO', 'COLOR');
       const mq = readingValue(i, 'MQ137', 'MQ135');
       if (rg != null) rgRatio.push({ timestamp: ts, value: rg });
@@ -58,7 +61,7 @@ async function getGraphs(req, res) {
       if (i.TGS2620 != null) tgs2620.push({ timestamp: ts, value: i.TGS2620 });
       if (i.TGS822 != null) tgs822.push({ timestamp: ts, value: i.TGS822 });
     }
-    return res.json({ success: true, batchId, temperature, rgRatio, mq137, tgs2620, tgs822 });
+    return res.json({ success: true, batchId, temperature, humidity, rgRatio, mq137, tgs2620, tgs822 });
   } catch (err) {
     return serverError(res, 'Failed to fetch graph data', err);
   }

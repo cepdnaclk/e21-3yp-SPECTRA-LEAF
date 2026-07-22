@@ -11,6 +11,7 @@ async function ingestReading(req, res) {
     'BATCH_ID',
     'RG_RATIO',
     'TEMPERATURE',
+    'HUMIDITY',
     'MQ137',
     'TGS2620',
     'TGS822',
@@ -21,7 +22,7 @@ async function ingestReading(req, res) {
   if (!isValidTimestamp(body.TIMESTAMP)) {
     return badRequest(res, 'TIMESTAMP must be a valid ISO 8601 string e.g. 2026-04-23T10:20:00Z');
   }
-  for (const field of ['RG_RATIO', 'TEMPERATURE', 'MQ137', 'TGS2620', 'TGS822']) {
+  for (const field of ['RG_RATIO', 'TEMPERATURE', 'HUMIDITY', 'MQ137', 'TGS2620', 'TGS822']) {
     if (!isValidNumber(body[field])) {
       return badRequest(res, `${field} must be a valid number`);
     }

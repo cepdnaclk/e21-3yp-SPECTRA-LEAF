@@ -33,6 +33,7 @@ function normalizeReading(item: any): SensorReading {
     factoryId: item.factoryId ?? item.FACTORY_ID ?? null,
     batchId: item.batchId ?? item.BATCH_ID ?? null,
     temperature: num(item.temperature ?? item.TEMPERATURE),
+    humidity: num(item.humidity ?? item.HUMIDITY),
     rgRatio: num(item.rgRatio ?? item.RG_RATIO ?? item.color ?? item.COLOR),
     mq137: num(item.mq137 ?? item.MQ137 ?? item.mq135 ?? item.MQ135),
     tgs2620: num(item.tgs2620 ?? item.TGS2620),
@@ -102,6 +103,7 @@ export function useBatchGraphs(batchId: string | null) {
         if (!cancelled) {
           setGraphs({
             temperature: normalizePoints(payload.temperature),
+            humidity: normalizePoints(payload.humidity),
             rgRatio: normalizePoints(payload.rgRatio ?? payload.color),
             mq137: normalizePoints(payload.mq137 ?? payload.mq135),
             tgs2620: normalizePoints(payload.tgs2620),
@@ -113,6 +115,7 @@ export function useBatchGraphs(batchId: string | null) {
         if (!cancelled) {
           setGraphs({
             temperature: [],
+            humidity: [],
             rgRatio: [],
             mq137: [],
             tgs2620: [],

@@ -28,6 +28,13 @@ export default function BatchDetailPage() {
     })),
     [graphs]
   );
+  const humidityData = useMemo(
+    () => (graphs?.humidity ?? []).map((p) => ({
+      t: format(new Date(p.timestamp), 'HH:mm'),
+      value: p.value,
+    })),
+    [graphs]
+  );
   const rgData = useMemo(
     () => (graphs?.rgRatio ?? []).map((p) => ({
       t: format(new Date(p.timestamp), 'HH:mm'),
@@ -132,6 +139,20 @@ export default function BatchDetailPage() {
                 data={tempData}
                 xKey="t"
                 series={[{ dataKey: 'value', name: 'Temperature', color: 'var(--accent-primary)' }]}
+                height={220}
+              />
+            ) : <Empty />}
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader title="Humidity" subtitle="% over time" />
+          <CardBody>
+            {humidityData.length > 0 ? (
+              <LineChart
+                data={humidityData}
+                xKey="t"
+                series={[{ dataKey: 'value', name: 'Humidity', color: '#06b6d4' }]}
                 height={220}
               />
             ) : <Empty />}

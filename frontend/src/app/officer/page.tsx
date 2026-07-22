@@ -57,6 +57,7 @@ export default function OfficerDashboard() {
   const latest = readings[0] ?? null;
 
   const tempTrend    = useMemo(() => readings.map(r => r.temperature ?? 0).reverse(), [readings]);
+  const humidityTrend= useMemo(() => readings.map(r => r.humidity    ?? 0).reverse(), [readings]);
   const rgTrend      = useMemo(() => readings.map(r => r.rgRatio     ?? 0).reverse(), [readings]);
   const mq137Trend   = useMemo(() => readings.map(r => r.mq137       ?? 0).reverse(), [readings]);
   const tgs2620Trend = useMemo(() => readings.map(r => r.tgs2620     ?? 0).reverse(), [readings]);
@@ -69,6 +70,7 @@ export default function OfficerDashboard() {
       .map((r) => ({
         t: format(new Date(r.timestamp), 'HH:mm:ss'),
         temperature: r.temperature ?? null,
+        humidity: r.humidity ?? null,
         rgRatio: r.rgRatio ?? null,
         mq137: r.mq137 ?? null,
         tgs2620: r.tgs2620 ?? null,
@@ -312,6 +314,9 @@ export default function OfficerDashboard() {
                 <Stat label="Temperature"
                       value={activeBatch.latestTemperature !== null
                         ? `${activeBatch.latestTemperature.toFixed(1)} °C` : '—'} />
+                <Stat label="Humidity"
+                      value={activeBatch.latestHumidity !== null
+                        ? `${activeBatch.latestHumidity.toFixed(1)} %` : '—'} />
                 <Stat label="RG Ratio"
                       value={activeBatch.latestRgRatio != null
                         ? `${activeBatch.latestRgRatio.toFixed(1)}` : '—'} />
@@ -353,6 +358,8 @@ export default function OfficerDashboard() {
           <>
             <SensorCard label="Temperature" value={latest?.temperature ?? null} unit="°C"
               trend={tempTrend} color="var(--accent-primary)" />
+            <SensorCard label="Humidity" value={latest?.humidity ?? null} unit="%"
+              trend={humidityTrend} color="#06b6d4" precision={1} />
             <SensorCard label="RG Ratio" value={latest?.rgRatio ?? null} unit=""
               trend={rgTrend} color="var(--accent-warn)" precision={1} />
             <SensorCard label="MQ137" value={latest?.mq137 ?? null} unit=""
@@ -416,6 +423,28 @@ export default function OfficerDashboard() {
                 data={seriesData}
                 xKey="t"
                 series={[{ dataKey: 'temperature', name: 'Temperature', color: 'var(--accent-primary)' }]}
+                height={240}
+              />
+            )}
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader
+            title="Humidity over Time"
+            subtitle={`% — last ${seriesData.length} samples`}
+            right={<Badge tone="info">Live</Badge>}
+          />
+          <CardBody>
+            {readingsLoading ? (
+              <SkeletonBlock className="h-60" />
+            ) : seriesData.length === 0 ? (
+              <EmptyChart />
+            ) : (
+              <LineChart
+                data={seriesData}
+                xKey="t"
+                series={[{ dataKey: 'humidity', name: 'Humidity', color: '#06b6d4' }]}
                 height={240}
               />
             )}
@@ -527,6 +556,7 @@ export default function OfficerDashboard() {
                 showLegend
                 series={[
                   { dataKey: 'temperature', name: 'Temperature (°C)', color: 'var(--accent-primary)' },
+                  { dataKey: 'humidity',    name: 'Humidity (%)',     color: '#06b6d4' },
                   { dataKey: 'rgRatio',     name: 'RG Ratio',         color: 'var(--accent-warn)' },
                   { dataKey: 'mq137',       name: 'MQ137',            color: 'var(--accent-secondary)' },
                   { dataKey: 'tgs2620',     name: 'TGS2620',          color: 'var(--accent-danger)' },
@@ -603,9 +633,10 @@ export default function OfficerDashboard() {
                   <div className="font-display text-[28px] tabular text-accent-primary mt-2 leading-none">
                     {fmtCurrency(b.price ?? 0)}
                   </div>
-                  <div className="mt-4 grid grid-cols-3 gap-3 pt-3 border-t border-border">
+                  <div className="mt-4 grid grid-cols-4 gap-3 pt-3 border-t border-border">
                     <MiniStat label="GLP" value={b.glp !== null && b.glp !== undefined ? `${b.glp}%` : '—'} />
                     <MiniStat label="Temp" value={b.latestTemperature != null ? `${b.latestTemperature.toFixed(1)}°` : '—'} />
+                    <MiniStat label="Hum" value={b.latestHumidity != null ? `${b.latestHumidity.toFixed(1)}%` : '—'} />
                     <MiniStat label="RG" value={b.latestRgRatio != null ? `${b.latestRgRatio.toFixed(1)}` : '—'} />
                     <MiniStat label="MQ137" value={b.latestMq137 != null ? `${b.latestMq137.toFixed(0)}` : '—'} />
                     <MiniStat label="TGS2620" value={b.latestTgs2620 != null ? `${b.latestTgs2620.toFixed(0)}` : '—'} />

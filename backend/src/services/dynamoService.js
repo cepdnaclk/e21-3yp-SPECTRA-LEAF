@@ -31,6 +31,7 @@ function hasSensorValues(item) {
     'MQ135',
     'TGS2620',
     'TGS822',
+    'HUMIDITY',
   ].some((key) => item[key] !== undefined && item[key] !== null);
 }
 
@@ -84,6 +85,7 @@ async function createSensorReading(item) {
     BATCH_ID: item.BATCH_ID,
     RG_RATIO: Number(item.RG_RATIO ?? item.COLOR),
     TEMPERATURE: Number(item.TEMPERATURE),
+    HUMIDITY: Number(item.HUMIDITY),
     MQ137: Number(item.MQ137 ?? item.MQ135),
     TGS2620: Number(item.TGS2620),
     TGS822: Number(item.TGS822),
@@ -289,6 +291,7 @@ async function getFactoryBatches(factoryId) {
       batchId,
       lastTimestamp: latest.TIMESTAMP,
       latestTemperature: latest.TEMPERATURE ?? null,
+      latestHumidity: latest.HUMIDITY ?? null,
       latestRgRatio: readingValue(latest, 'RG_RATIO', 'COLOR'),
       latestMq137: readingValue(latest, 'MQ137', 'MQ135'),
       latestTgs2620: readingValue(latest, 'TGS2620'),

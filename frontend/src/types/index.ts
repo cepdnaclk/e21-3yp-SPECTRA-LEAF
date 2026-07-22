@@ -13,6 +13,7 @@ export interface SensorReading {
   factoryId: string | null;
   batchId: string | null;
   temperature: number | null;
+  humidity: number | null;
   rgRatio: number | null;
   mq137: number | null;
   tgs2620: number | null;
@@ -26,6 +27,7 @@ export interface GraphPoint {
 
 export interface BatchGraphs {
   temperature: GraphPoint[];
+  humidity: GraphPoint[];
   rgRatio: GraphPoint[];
   mq137: GraphPoint[];
   tgs2620: GraphPoint[];
@@ -45,6 +47,7 @@ export interface BatchListItem {
   batchId: string;
   lastTimestamp: string | null;
   latestTemperature: number | null;
+  latestHumidity: number | null;
   latestRgRatio: number | null;
   latestMq137: number | null;
   latestTgs2620: number | null;
