@@ -69,6 +69,7 @@ export function BatchTable({ batches, search, onRowClick, actionColumn }: Props)
           Last Seen
         </Th>
         <Th>Temperature</Th>
+        <Th>Humidity</Th>
         <Th>RG Ratio</Th>
         <Th>MQ137</Th>
         <Th>TGS2620</Th>
@@ -103,7 +104,10 @@ export function BatchTable({ batches, search, onRowClick, actionColumn }: Props)
               {b.latestTemperature != null ? `${b.latestTemperature.toFixed(1)} °C` : '—'}
             </Td>
             <Td className="tabular text-xs">
-              {b.latestRgRatio != null ? b.latestRgRatio.toFixed(1) : '—'}
+              {b.latestHumidity != null ? `${b.latestHumidity.toFixed(1)} %` : '—'}
+            </Td>
+            <Td className="tabular text-xs">
+              {b.latestRgRatio != null ? b.latestRgRatio.toFixed(3) : '—'}
             </Td>
             <Td className="tabular text-xs">
               {b.latestMq137 != null ? b.latestMq137.toFixed(0) : '—'}

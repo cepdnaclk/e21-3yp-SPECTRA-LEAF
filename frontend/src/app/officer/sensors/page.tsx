@@ -19,6 +19,7 @@ export default function SensorsPage() {
   const latest = readings[0] ?? null;
 
   const tempTrend    = useMemo(() => readings.map(r => r.temperature ?? 0).reverse(), [readings]);
+  const humidityTrend= useMemo(() => readings.map(r => r.humidity    ?? 0).reverse(), [readings]);
   const rgTrend      = useMemo(() => readings.map(r => r.rgRatio     ?? 0).reverse(), [readings]);
   const mq137Trend   = useMemo(() => readings.map(r => r.mq137       ?? 0).reverse(), [readings]);
   const tgs2620Trend = useMemo(() => readings.map(r => r.tgs2620     ?? 0).reverse(), [readings]);
@@ -91,6 +92,14 @@ export default function SensorsPage() {
               color="var(--accent-primary)"
             />
             <SensorCard
+              label="Humidity"
+              value={latest?.humidity ?? null}
+              unit="%"
+              trend={humidityTrend}
+              color="#06b6d4"
+              precision={1}
+            />
+            <SensorCard
               label="RG Ratio"
               value={latest?.rgRatio ?? null}
               unit=""
@@ -151,6 +160,7 @@ export default function SensorsPage() {
                 <Th>Batch</Th>
                 <Th>RG Ratio</Th>
                 <Th>Temp °C</Th>
+                <Th>Humidity %</Th>
                 <Th>MQ137 Reading</Th>
                 <Th>TGS2620 Reading</Th>
                 <Th>TGS822 Reading</Th>
@@ -166,6 +176,7 @@ export default function SensorsPage() {
                     <Td className="font-mono text-[12px]">{r.batchId ?? '—'}</Td>
                     <Td className="tabular">{r.rgRatio?.toFixed(1) ?? '—'}</Td>
                     <Td className="tabular">{r.temperature?.toFixed(1) ?? '—'}</Td>
+                    <Td className="tabular">{r.humidity?.toFixed(1) ?? '—'}</Td>
                     <Td className="tabular">{r.mq137?.toFixed(0) ?? '—'}</Td>
                     <Td className="tabular">{r.tgs2620?.toFixed(0) ?? '—'}</Td>
                     <Td className="tabular">{r.tgs822?.toFixed(0) ?? '—'}</Td>
