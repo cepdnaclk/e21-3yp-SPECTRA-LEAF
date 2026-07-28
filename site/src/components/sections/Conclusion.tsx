@@ -11,7 +11,7 @@ export function Conclusion() {
       <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
         <span className="conclusion-mark"><Leaf /> CLOSING SIGNAL</span>
         <h2>Measure the process.<br />Understand the profile.<br /><em>Perfect the leaf.</em></h2>
-        <p>Spectra Leaf bridges traditional tea-manufacturing expertise with modern digital infrastructure. The current platform improves fermentation visibility through synchronized sensor telemetry and remote factory guidance. Every monitored batch also contributes to a structured quality dataset—the foundation for future automated detection of the fermentation sweet spot.</p>
+        <p>Spectra Leaf bridges traditional tea-manufacturing expertise with modern digital infrastructure. The current platform improves fermentation visibility through synchronized sensor telemetry and remote factory guidance. Every monitored batch also contributes to a structured quality dataset, the foundation for future automated detection of the fermentation sweet spot.</p>
         <a href={project.githubUrl} target="_blank" rel="noreferrer">Explore the repository <ArrowUpRight /></a>
       </motion.div>
       <div className="conclusion-telemetry" aria-hidden="true">

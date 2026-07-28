@@ -28,7 +28,7 @@ export function CloudInfrastructure() {
   return (
     <section id="cloud" className="section cloud-section">
       <SectionHeading
-        index="05"
+        index="06"
         eyebrow="Cloud infrastructure"
         title="Serverless by design. Synchronized by state."
         description="Each AWS service has one focused responsibility across device communication, identity, storage and secure access."

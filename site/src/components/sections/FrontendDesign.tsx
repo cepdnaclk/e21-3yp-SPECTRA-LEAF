@@ -15,7 +15,7 @@ export function FrontendDesign() {
   return (
     <section id="software" className="section software-section">
       <SectionHeading
-        index="06"
+        index="07"
         eyebrow="Frontend software"
         title="A calm interface for a live industrial process."
         description="The dashboard turns a complex telemetry stream into clear actions for factory officers."

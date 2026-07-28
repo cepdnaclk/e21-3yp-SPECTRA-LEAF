@@ -24,7 +24,7 @@ export function Hardware() {
   return (
     <section id="hardware" className="section hardware">
       <SectionHeading
-        index="04"
+        index="05"
         eyebrow="Hardware design"
         title="Built to observe the chemistry of change."
         description="An ESP32 edge unit fuses three sensor domains into a resilient MQTT telemetry stream."
@@ -32,13 +32,13 @@ export function Hardware() {
       <div className="hardware-hero">
         <Reveal className="hardware-image">
           <Image
-            src={getAssetPath("/assets/images/hardware-prototype.jpg")}
-            alt="ESP32 prototype with temperature, gas and optical sensing modules"
+            src={getAssetPath("/assets/images/hardware_design/image_2.png")}
+            alt="Completed Spectra Leaf sensing prototype with control electronics, pumps and sample chamber"
             width={1200}
             height={900}
             sizes="(max-width: 760px) 100vw, 62vw"
           />
-          <span>PROTOTYPE CONCEPT / EDGE NODE 01</span>
+          <span>REAL PROTOTYPE / EDGE NODE 01</span>
         </Reveal>
         <Reveal className="controller-copy" delay={0.1}>
           <span className="chip-label">MAIN CONTROLLER</span>

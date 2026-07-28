@@ -1,39 +1,32 @@
 "use client";
 
-import { motion, useMotionValue, useSpring } from "framer-motion";
-import { ArrowDown, ArrowRight, Cloud, Cpu, Database, Radio } from "lucide-react";
-import { type MouseEvent } from "react";
+import { motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
+import Image from "next/image";
 import { project } from "@/data/project";
-
-const telemetry = [
-  { label: "TEMP", value: "27.8 °C", x: "10%", y: "27%" },
-  { label: "VOC", value: "342 IDX", x: "75%", y: "22%" },
-  { label: "COLOUR", value: "68%", x: "79%", y: "68%" },
-  { label: "MQTT", value: "SYNCED", x: "12%", y: "74%" },
-];
+import { getAssetPath } from "@/lib/paths";
 
 export function Hero() {
-  const x = useSpring(useMotionValue(0), { stiffness: 80, damping: 20 });
-  const y = useSpring(useMotionValue(0), { stiffness: 80, damping: 20 });
-  const move = (event: MouseEvent<HTMLElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    x.set((event.clientX - rect.left - rect.width / 2) / 35);
-    y.set((event.clientY - rect.top - rect.height / 2) / 35);
-  };
-
   return (
-    <section id="home" className="hero" onMouseMove={move}>
-      <div className="hero-grid" aria-hidden="true" />
-      <div className="scan-beam" aria-hidden="true" />
-      <div className="hero-orbit hero-orbit-one" aria-hidden="true" />
-      <div className="hero-orbit hero-orbit-two" aria-hidden="true" />
-      <motion.div className="hero-telemetry" style={{ x, y }} aria-hidden="true">
-        {telemetry.map((item) => (
-          <div key={item.label} className="floating-reading" style={{ left: item.x, top: item.y }}>
-            <span>{item.label}</span><strong>{item.value}</strong>
-          </div>
-        ))}
-      </motion.div>
+    <section id="home" className="hero">
+      <div className="hero-visual" aria-hidden="true">
+        <Image
+          className="hero-image-dark"
+          src={getAssetPath("/assets/images/hero/leaf1.jpg")}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+        />
+        <Image
+          className="hero-image-light"
+          src={getAssetPath("/assets/images/hero/leaf3.jpg")}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+        />
+      </div>
       <div className="hero-content">
         <motion.p className="eyebrow" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
           {project.eyebrow}
@@ -65,18 +58,6 @@ export function Hero() {
           <a className="button button-secondary" href="#architecture">View Architecture</a>
         </motion.div>
       </div>
-      <div className="hero-status">
-        {[
-          [Cpu, "ESP32 Edge Sensing"],
-          [Cloud, "AWS Serverless Cloud"],
-          [Radio, "Live Batch Telemetry"],
-          [Database, "AI-Ready Dataset"],
-        ].map(([Icon, label]) => {
-          const StatusIcon = Icon as typeof Cpu;
-          return <div key={label as string}><StatusIcon /><span>{label as string}</span></div>;
-        })}
-      </div>
-      <a href="#introduction" className="scroll-cue"><span>Scroll to trace the signal</span><ArrowDown /></a>
     </section>
   );
 }

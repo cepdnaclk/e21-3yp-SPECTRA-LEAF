@@ -8,7 +8,7 @@ const statuses = [
   "Initializing edge sensors",
   "Connecting telemetry channels",
   "Synchronizing cloud state",
-  "System online",
+  "Experience ready",
 ];
 
 export function LoadingIntro() {

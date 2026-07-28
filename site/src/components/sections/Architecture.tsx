@@ -57,7 +57,7 @@ export function Architecture() {
   return (
     <section id="architecture" className="section architecture">
       <SectionHeading
-        index="03"
+        index="04"
         eyebrow="Solution architecture"
         title="One signal path. Three engineered layers."
         description="The architecture carries context from the fermentation trough to a secure remote interface."

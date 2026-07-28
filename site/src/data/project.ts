@@ -3,13 +3,12 @@ export const project = {
   subtitle: "Digitizing the Fermentation Sweet Spot",
   eyebrow: "INDUSTRIAL IoT · TEA PROCESS INTELLIGENCE",
   description:
-    "An AWS-powered Industrial IoT platform that captures temperature, gas and colour telemetry to guide tea fermentation today—and train intelligent quality-control models for tomorrow.",
+    "An AWS-powered Industrial IoT platform that captures temperature, gas and colour telemetry to guide tea fermentation today and train intelligent quality-control models for tomorrow.",
   githubUrl: "https://github.com/cepdnaclk/e21-3yp-SPECTRA-LEAF",
   university: "University of Peradeniya",
   faculty: "Faculty of Engineering",
   department: "Department of Computer Engineering",
   projectYear: "3rd Year Engineering Project",
-  systemStatus: "SYSTEM ONLINE",
   contactEmail: "",
   technologies: [
     "ESP32",

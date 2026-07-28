@@ -13,13 +13,13 @@ import { FrontendDesign } from "@/components/sections/FrontendDesign";
 import { Gallery } from "@/components/sections/Gallery";
 import { Hardware } from "@/components/sections/Hardware";
 import { Introduction } from "@/components/sections/Introduction";
+import { KeyFeatures } from "@/components/sections/KeyFeatures";
 import { MachineLearning } from "@/components/sections/MachineLearning";
 import { Metrics } from "@/components/sections/Metrics";
 import { Objectives } from "@/components/sections/Objectives";
 import { Roadmap } from "@/components/sections/Roadmap";
 import { Team } from "@/components/sections/Team";
 import { Testing } from "@/components/sections/Testing";
-import { Timeline } from "@/components/sections/Timeline";
 import { ProductVideos } from "@/components/video/ProductVideos";
 
 export default function Home() {
@@ -35,6 +35,7 @@ export default function Home() {
         <Introduction />
         <ProductVideos />
         <Objectives />
+        <KeyFeatures />
         <Architecture />
         <Hardware />
         <CloudInfrastructure />
@@ -43,7 +44,6 @@ export default function Home() {
         <MachineLearning />
         <DashboardPreview />
         <Testing />
-        <Timeline />
         <Gallery />
         <Roadmap />
         <Team />

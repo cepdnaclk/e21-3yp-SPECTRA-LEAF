@@ -9,6 +9,13 @@ export type TeamMember = {
   githubUrl: string;
 };
 
+export type Supervisor = {
+  name: string;
+  role: string;
+  email: string;
+  biography: string;
+};
+
 export const team: TeamMember[] = [
   {
     name: "Nadeera Kothalawala",
@@ -49,5 +56,20 @@ export const team: TeamMember[] = [
     profileImage: "/assets/images/members/e21054.jpg",
     linkedInUrl: "",
     githubUrl: "",
+  },
+];
+
+export const supervisors: Supervisor[] = [
+  {
+    name: "Ms. Yasodha Vimukthi",
+    role: "Project Supervisor",
+    email: "yasodhav@eng.pdn.ac.lk",
+    biography: "Provides academic guidance and engineering direction for the Spectra Leaf project.",
+  },
+  {
+    name: "Dr. Isuru Nawinne",
+    role: "Project Supervisor",
+    email: "isurunawinne@eng.pdn.ac.lk",
+    biography: "Supports the team with technical review, research guidance and project supervision.",
   },
 ];

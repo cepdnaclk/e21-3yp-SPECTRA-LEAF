@@ -10,7 +10,7 @@ export function DashboardPreview() {
   return (
     <section id="dashboard" className="section dashboard-section">
       <SectionHeading
-        index="09"
+        index="10"
         eyebrow="Live dashboard"
         title="One operation. Every screen."
         description="Factory officers can follow live fermentation, compare sensor trends and manage batches from a focused web workspace or a field-ready mobile view."

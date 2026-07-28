@@ -24,7 +24,7 @@ export function MachineLearning() {
   return (
     <section className="section ml-section" aria-labelledby="ml-title">
       <SectionHeading
-        index="08"
+        index="09"
         eyebrow="Future ML concept"
         title="First build the evidence. Then build the model."
         description="Machine learning is planned future work. The current contribution is a reliable, batch-linked and expert-labelled dataset."

@@ -22,7 +22,7 @@ export function DataPipeline() {
   return (
     <section id="data" className="section data-section">
       <SectionHeading
-        index="07"
+        index="08"
         eyebrow="Data pipeline"
         title="The system guides today while learning for tomorrow."
         description="The data strategy closes the loop between the evolving process and expert-evaluated final quality."

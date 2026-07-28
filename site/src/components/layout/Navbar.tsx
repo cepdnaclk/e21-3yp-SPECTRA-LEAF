@@ -66,7 +66,6 @@ export function Navbar() {
         })}
       </nav>
       <div className="nav-actions">
-        <span className="online-badge"><i />{project.systemStatus}</span>
         <button
           className="theme-toggle"
           type="button"

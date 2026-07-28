@@ -21,8 +21,7 @@ export function Footer() {
           <p>{project.department}</p>
         </div>
         <div>
-          <h3>Status</h3>
-          <span className="online-badge"><i />{project.systemStatus}</span>
+          <h3>Repository</h3>
           <a className="footer-github" href={project.githubUrl} target="_blank" rel="noreferrer">
             <GitBranch /> Repository <MoveUpRight />
           </a>
