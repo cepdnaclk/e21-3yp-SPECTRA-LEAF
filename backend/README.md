@@ -28,7 +28,7 @@ AWS_ACCESS_KEY_ID=your_access_key_here
 AWS_SECRET_ACCESS_KEY=your_secret_key_here
 DYNAMODB_TABLE_NAME=FermentationData
 PORT=5000
-CORS_ORIGIN=http://localhost:4200
+CORS_ORIGIN=http://localhost:3000
 ```
 
 ---

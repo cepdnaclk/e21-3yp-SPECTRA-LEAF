@@ -20,7 +20,7 @@ const envSchema = z.object({
   TABLE_DEVICES: z.string().default('SpectraLeaf_Devices'),
   TABLE_USERS: z.string().default('SpectraLeaf_Users'),
 
-  CORS_ORIGIN: z.string().default('http://localhost:4200'),
+  CORS_ORIGIN: z.string().default('http://localhost:3000'),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -32,6 +32,7 @@ function normalizeBatch(item: any): BatchListItem {
     batchId: item.batchId ?? item.BATCH_ID ?? '',
     lastTimestamp: item.lastTimestamp ?? item.TIMESTAMP ?? null,
     latestTemperature: num(item.latestTemperature ?? item.TEMPERATURE),
+    latestHumidity: num(item.latestHumidity ?? item.HUMIDITY),
     latestRgRatio: num(item.latestRgRatio ?? item.RG_RATIO ?? item.latestColor ?? item.COLOR),
     latestMq137: num(item.latestMq137 ?? item.MQ137 ?? item.latestMq135 ?? item.MQ135),
     latestTgs2620: num(item.latestTgs2620 ?? item.TGS2620),
