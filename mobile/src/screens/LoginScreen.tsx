@@ -1,7 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
-  ImageBackground,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,513 +10,280 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { authImages } from '../assets/images/auth';
+import { LinearGradient } from 'expo-linear-gradient';
+import BrandMark from '../components/BrandMark';
+import ThemeToggle from '../components/ThemeToggle';
 import { useAuthStore } from '../store/authStore';
-import { theme } from '../theme';
+import { AppTheme, useAppTheme } from '../theme';
 
-const slides = [
-  {
-    image: authImages.fermentation,
-    quote: '"The finest teas are born from patience — every leaf tells the story of its fermentation."',
-    meta: 'Spectraleaf · Fermentation Intelligence',
-  },
-  {
-    image: authImages.monitoring,
-    quote: '"Real-time data turns instinct into certainty — measure every degree, every second."',
-    meta: 'Spectraleaf · IoT Tea Monitoring',
-  },
-  {
-    image: authImages.quality,
-    quote: '"From leaf to cup, quality begins in the fermentation chamber."',
-    meta: 'Spectraleaf · Quality Intelligence',
-  },
-];
-
-const logo = require('../assets/images/Logo.png');
-
-type LoginPage = 'intro' | 'login';
+const DEFAULT_LOGIN_EMAIL =
+  process.env.EXPO_PUBLIC_DEFAULT_LOGIN_EMAIL ?? 'officer@spectraleaf.local';
+const DEFAULT_LOGIN_PASSWORD =
+  process.env.EXPO_PUBLIC_DEFAULT_LOGIN_PASSWORD ?? '';
 
 export default function LoginScreen() {
-  const signIn = useAuthStore(s => s.signIn);
-  const [page, setPage] = useState<LoginPage>('intro');
-  const [slide, setSlide] = useState(0);
-  const [email, setEmail] = useState('officer@spectraleaf.io');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(true);
+  const theme = useAppTheme();
+  const styles = makeStyles(theme);
+  const signIn = useAuthStore(state => state.signIn);
+  const [email, setEmail] = useState(DEFAULT_LOGIN_EMAIL);
+  const [passcode, setPasscode] = useState(DEFAULT_LOGIN_PASSWORD);
+  const [showPasscode, setShowPasscode] = useState(false);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (page !== 'intro') return;
-    const id = setInterval(() => {
-      setSlide(current => (current + 1) % slides.length);
-    }, 3500);
-    return () => clearInterval(id);
-  }, [page]);
-
-  const onSubmit = () => {
-    signIn('FAC001', 'Factory Officer');
+  const submit = () => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setError('Enter a valid officer email.');
+      return;
+    }
+    if (passcode.length < 4) {
+      setError('Passcode must contain at least four characters.');
+      return;
+    }
+    if (
+      DEFAULT_LOGIN_PASSWORD &&
+      (cleanEmail !== DEFAULT_LOGIN_EMAIL.toLowerCase() || passcode !== DEFAULT_LOGIN_PASSWORD)
+    ) {
+      setError('Enter the configured officer account credentials.');
+      return;
+    }
+    setError('');
+    signIn(cleanEmail);
   };
 
   return (
-    <ImageBackground
-      source={page === 'intro' ? slides[slide].image : slides[1].image}
-      style={styles.background}
-      resizeMode="cover"
-    >
-      <SafeAreaView style={styles.safe}>
-        {page === 'intro' ? (
-          <IntroPage
-            currentSlide={slide}
-            onNext={() => setPage('login')}
-            onSelectSlide={setSlide}
-          />
-        ) : (
-          <LoginPageView
-            email={email}
-            password={password}
-            remember={remember}
-            showPassword={showPassword}
-            setEmail={setEmail}
-            setPassword={setPassword}
-            setRemember={setRemember}
-            setShowPassword={setShowPassword}
-            onBack={() => setPage('intro')}
-            onSubmit={onSubmit}
-          />
-        )}
-      </SafeAreaView>
-    </ImageBackground>
-  );
-}
+    <SafeAreaView style={styles.safe}>
+      <LinearGradient
+        colors={
+          theme.mode === 'dark'
+            ? ['#06130B', theme.colors.background, '#031008']
+            : ['#E0F8E9', theme.colors.background, '#F8FBF8']
+        }
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.orbOne} />
+      <View style={styles.orbTwo} />
 
-function IntroPage({
-  currentSlide,
-  onNext,
-  onSelectSlide,
-}: {
-  currentSlide: number;
-  onNext: () => void;
-  onSelectSlide: (index: number) => void;
-}) {
-  const active = slides[currentSlide];
-
-  return (
-    <LinearGradient
-      colors={['rgba(3, 20, 12, 0.04)', 'rgba(3, 20, 12, 0.34)', 'rgba(3, 20, 12, 0.94)']}
-      locations={[0, 0.44, 1]}
-      style={styles.overlay}
-    >
-      <View style={styles.screen}>
-        <View style={styles.brandRow}>
-          <View style={styles.logoBox}>
-            <Image source={logo} style={styles.logoImage} resizeMode="contain" />
-          </View>
-          <Text style={styles.brandText}>Spectraleaf</Text>
-        </View>
-
-        <View style={styles.introSpacer} />
-
-        <View style={styles.introContent}>
-          <View style={styles.slideDots}>
-            {slides.map((_, index) => (
-              <Pressable
-                key={index}
-                onPress={() => onSelectSlide(index)}
-                style={index === currentSlide ? styles.dotActive : styles.dotMuted}
-              />
-            ))}
-          </View>
-
-          <Text style={styles.quote}>
-            {active.quote}
-          </Text>
-          <Text style={styles.quoteMeta}>{active.meta}</Text>
-
-          <View style={styles.introPanel}>
-            <Text style={styles.introTitle}>Officer batch monitoring</Text>
-            <Text style={styles.introText}>
-              Review live sensors, batch history, GLP completion, and factory activity from FAC001.
-            </Text>
-
-            <Pressable
-              onPress={onNext}
-              style={({ pressed }) => [styles.nextButton, pressed && styles.pressed]}
-            >
-              <Text style={styles.nextButtonText}>Get Started</Text>
-              <Ionicons name="arrow-forward" size={20} color="#fff" />
-            </Pressable>
-          </View>
-        </View>
-      </View>
-    </LinearGradient>
-  );
-}
-
-interface LoginPageViewProps {
-  email: string;
-  password: string;
-  remember: boolean;
-  showPassword: boolean;
-  setEmail: (value: string) => void;
-  setPassword: (value: string) => void;
-  setRemember: (value: boolean) => void;
-  setShowPassword: (value: boolean) => void;
-  onBack: () => void;
-  onSubmit: () => void;
-}
-
-function LoginPageView({
-  email,
-  password,
-  remember,
-  showPassword,
-  setEmail,
-  setPassword,
-  setRemember,
-  setShowPassword,
-  onBack,
-  onSubmit,
-}: LoginPageViewProps) {
-  return (
-    <LinearGradient
-      colors={['rgba(3, 20, 12, 0.44)', 'rgba(3, 20, 12, 0.16)', 'rgba(245, 247, 246, 0.50)']}
-      locations={[0, 0.34, 1]}
-      style={styles.overlay}
-    >
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView contentContainerStyle={styles.loginScroll} keyboardShouldPersistTaps="handled">
-          <View style={styles.topActions}>
-            <Pressable
-              onPress={onBack}
-              style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
-            >
-              <Ionicons name="chevron-back" size={22} color="#fff" />
-            </Pressable>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.topBar}>
+            <BrandMark compact />
+            <ThemeToggle compact />
           </View>
 
-          <View style={styles.loginHero}>
-            <Text style={styles.loginKicker}>FAC001 Officer Console</Text>
-            <Text style={styles.loginImageTitle}>Quality begins with the data.</Text>
+          <View style={styles.intro}>
+            <Text style={styles.kicker}>FERMENTATION OPERATIONS</Text>
+            <Text style={styles.title}>Welcome back,{'\n'}officer.</Text>
+            <Text style={styles.subtitle}>
+              Enter your workspace to monitor live chambers, inspect batches, and complete shift handoffs.
+            </Text>
           </View>
 
-          <View style={styles.formSheet}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.formTitle}>Welcome Back</Text>
-            <Text style={styles.formSubtitle}>Welcome back! please enter your details.</Text>
+          <View style={styles.formCard}>
+            <View style={styles.formTop}>
+              <View style={styles.formIcon}>
+                <Ionicons name="shield-checkmark-outline" size={20} color={theme.colors.ink} />
+              </View>
+              <View>
+                <Text style={styles.formTitle}>Officer access</Text>
+                <Text style={styles.formMeta}>Factory workspace · secure preview</Text>
+              </View>
+            </View>
 
-            <Text style={styles.label}>Email</Text>
-            <InputRow
-              icon="mail-outline"
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Your email address"
-              keyboardType="email-address"
-            />
+            <Text style={styles.label}>WORK EMAIL</Text>
+            <View style={[styles.inputWrap, error && !email.includes('@') ? styles.inputError : null]}>
+              <Ionicons name="mail-outline" size={18} color={theme.colors.textMuted} />
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                style={styles.input}
+                placeholder="name@spectraleaf.com"
+                placeholderTextColor={theme.colors.textMuted}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                returnKeyType="next"
+              />
+            </View>
 
-            <View style={styles.labelRow}>
-              <Text style={styles.label}>Password</Text>
-              <Pressable>
-                <Text style={styles.forgotText}>Forget your password</Text>
+            <Text style={styles.label}>PASSCODE</Text>
+            <View style={[styles.inputWrap, error && passcode.length < 4 ? styles.inputError : null]}>
+              <Ionicons name="lock-closed-outline" size={18} color={theme.colors.textMuted} />
+              <TextInput
+                value={passcode}
+                onChangeText={setPasscode}
+                style={styles.input}
+                placeholder="Enter 4+ characters"
+                placeholderTextColor={theme.colors.textMuted}
+                secureTextEntry={!showPasscode}
+                returnKeyType="done"
+                onSubmitEditing={submit}
+              />
+              <Pressable onPress={() => setShowPasscode(current => !current)} hitSlop={10}>
+                <Ionicons
+                  name={showPasscode ? 'eye-off-outline' : 'eye-outline'}
+                  size={19}
+                  color={theme.colors.textMuted}
+                />
               </Pressable>
             </View>
-            <InputRow
-              icon="lock-closed-outline"
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Your password"
-              secureTextEntry={!showPassword}
-              rightIcon={showPassword ? 'eye-outline' : 'eye-off-outline'}
-              onRightPress={() => setShowPassword(!showPassword)}
-            />
 
-            <Text style={styles.label}>Role</Text>
-            <View style={styles.roleCard}>
-              <View style={styles.radioOuter}>
-                <View style={styles.radioInner} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.roleTitle}>Factory Officer</Text>
-                <Text style={styles.roleSub}>Monitor sensors · edit GLP</Text>
-              </View>
-              <Ionicons name="flask-outline" size={22} color={theme.colors.primary} />
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <Pressable
+              onPress={submit}
+              style={({ pressed }) => [styles.submit, pressed && styles.pressed]}
+            >
+              <Text style={styles.submitText}>Enter officer desk</Text>
+              <Ionicons name="arrow-forward" size={18} color={theme.colors.ink} />
+            </Pressable>
+
+            <View style={styles.previewNote}>
+              <Ionicons name="information-circle-outline" size={16} color={theme.colors.primaryDark} />
+              <Text style={styles.previewText}>
+                This build is configured for the assigned officer account.
+              </Text>
             </View>
+          </View>
 
-            <Pressable
-              onPress={() => setRemember(!remember)}
-              style={({ pressed }) => [styles.rememberRow, pressed && styles.pressed]}
-            >
-              <View style={[styles.checkbox, remember && styles.checkboxOn]}>
-                {remember ? <Ionicons name="checkmark" size={12} color="#fff" /> : null}
-              </View>
-              <Text style={styles.rememberText}>Remember me</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={onSubmit}
-              style={({ pressed }) => [styles.loginButton, pressed && styles.pressed]}
-            >
-              <Text style={styles.loginButtonText}>Log In</Text>
-            </Pressable>
-
-            <Text style={styles.footerText}>
-              Don't have an account? <Text style={styles.footerLink}>Sign up</Text>
-            </Text>
+          <View style={styles.footer}>
+            <View style={styles.footerDot} />
+            <Text style={styles.footerText}>LIVE SYSTEM STATUS · READY</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </SafeAreaView>
   );
 }
 
-interface InputRowProps {
-  icon: keyof typeof Ionicons.glyphMap;
-  value: string;
-  onChangeText: (value: string) => void;
-  placeholder: string;
-  secureTextEntry?: boolean;
-  keyboardType?: 'default' | 'email-address';
-  rightIcon?: keyof typeof Ionicons.glyphMap;
-  onRightPress?: () => void;
-}
-
-function InputRow({
-  icon,
-  value,
-  onChangeText,
-  placeholder,
-  secureTextEntry,
-  keyboardType = 'default',
-  rightIcon,
-  onRightPress,
-}: InputRowProps) {
-  return (
-    <View style={styles.inputWrap}>
-      <Ionicons name={icon} size={17} color={theme.colors.textMuted} />
-      <TextInput
-        style={styles.input}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor="#96a6b8"
-        secureTextEntry={secureTextEntry}
-        keyboardType={keyboardType}
-        autoCapitalize="none"
-      />
-      {rightIcon ? (
-        <Pressable onPress={onRightPress} hitSlop={10}>
-          <Ionicons name={rightIcon} size={18} color="#8aa0b8" />
-        </Pressable>
-      ) : null}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  background: { flex: 1, backgroundColor: theme.colors.primaryDark },
-  overlay: { flex: 1 },
-  safe: { flex: 1 },
-  screen: {
-    flex: 1,
-    width: '100%',
-    maxWidth: 460,
-    alignSelf: 'center',
-    paddingHorizontal: 22,
-    paddingBottom: 18,
-  },
-  brandRow: { flexDirection: 'row', alignItems: 'center', paddingTop: 14 },
-  logoBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  logoImage: { width: 25, height: 25 },
-  brandText: { color: '#fff', fontSize: 17, fontWeight: '900' },
-  introSpacer: { flex: 1 },
-  introContent: { paddingBottom: 10 },
-  slideDots: { flexDirection: 'row', gap: 7, marginBottom: 18 },
-  dotMuted: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.45)' },
-  dotActive: { width: 22, height: 8, borderRadius: 4, backgroundColor: '#fff' },
-  quote: {
-    color: '#fff',
-    fontSize: 28,
-    lineHeight: 36,
+const makeStyles = (theme: AppTheme) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: theme.colors.background },
+  flex: { flex: 1 },
+  content: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 26 },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  intro: { marginTop: 48, marginBottom: 26 },
+  kicker: { color: theme.colors.primaryDark, fontSize: 9, fontWeight: '900', letterSpacing: 1.7 },
+  title: {
+    color: theme.colors.text,
+    fontSize: 43,
+    lineHeight: 46,
     fontWeight: '900',
-    maxWidth: 350,
+    letterSpacing: -1.7,
+    marginTop: 10,
   },
-  quoteMeta: {
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: theme.font.small,
-    marginTop: 12,
-    marginBottom: 22,
+  subtitle: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    lineHeight: 19,
+    maxWidth: 340,
+    marginTop: 13,
   },
-  introPanel: {
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 28,
-    padding: 24,
-    shadowColor: '#03140c',
-    shadowOpacity: 0.2,
+  formCard: {
+    borderRadius: 30,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: 20,
+    shadowColor: '#031008',
+    shadowOpacity: theme.mode === 'dark' ? 0.3 : 0.08,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 14 },
+    elevation: 7,
   },
-  introTitle: { color: theme.colors.primary, fontSize: 23, fontWeight: '900', marginBottom: 9 },
-  introText: { color: theme.colors.textMuted, fontSize: theme.font.body, lineHeight: 22 },
-  nextButton: {
-    height: 52,
-    borderRadius: 26,
+  formTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
+  formIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
     backgroundColor: theme.colors.primary,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    marginTop: 22,
+    marginRight: 11,
   },
-  nextButtonText: { color: '#fff', fontSize: theme.font.body, fontWeight: '900' },
-  loginScroll: {
-    flexGrow: 1,
-    width: '100%',
-    maxWidth: 460,
-    alignSelf: 'center',
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 10,
-  },
-  topActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-  },
-  backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loginHero: {
-    minHeight: 132,
-    justifyContent: 'flex-end',
-    paddingBottom: 12,
-    paddingHorizontal: 8,
-  },
-  loginKicker: {
-    color: 'rgba(255,255,255,0.78)',
-    fontSize: theme.font.small,
+  formTitle: { color: theme.colors.text, fontSize: 15, fontWeight: '900' },
+  formMeta: { color: theme.colors.textMuted, fontSize: 9, marginTop: 3 },
+  label: {
+    color: theme.colors.primaryDark,
+    fontSize: 8,
     fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 0,
+    letterSpacing: 1.2,
+    marginBottom: 8,
+    marginTop: 4,
   },
-  loginImageTitle: {
-    color: '#fff',
-    fontSize: 30,
-    lineHeight: 36,
-    fontWeight: '900',
-    marginTop: 6,
-    maxWidth: 320,
-  },
-  formSheet: {
-    borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 18,
+  inputWrap: {
+    height: 54,
+    borderRadius: 17,
+    backgroundColor: theme.colors.elevated,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.42)',
-    shadowColor: '#03140c',
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
+    borderColor: theme.colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    marginBottom: 17,
   },
-  sheetHandle: {
-    width: 42,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: '#d6e3dc',
-    alignSelf: 'center',
-    marginBottom: 18,
-  },
-  formTitle: { color: theme.colors.text, fontSize: 27, fontWeight: '900' },
-  formSubtitle: { color: theme.colors.textMuted, fontSize: theme.font.small, marginTop: 5, marginBottom: 16 },
-  label: { color: theme.colors.text, fontSize: theme.font.small, fontWeight: '800', marginBottom: 8 },
-  labelRow: {
-    marginTop: 14,
+  inputError: { borderColor: theme.colors.danger },
+  input: { flex: 1, color: theme.colors.text, fontSize: 13, marginHorizontal: 10 },
+  error: { color: theme.colors.dangerText, fontSize: 10, marginTop: -7, marginBottom: 12 },
+  submit: {
+    height: 56,
+    borderRadius: 19,
+    backgroundColor: theme.colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginTop: 3,
   },
-  forgotText: { color: theme.colors.primary, fontSize: theme.font.small, fontWeight: '800', marginBottom: 8 },
-  inputWrap: {
-    height: 48,
+  submitText: { color: theme.colors.ink, fontSize: 13, fontWeight: '900' },
+  previewNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 15,
+    backgroundColor: theme.colors.primarySoft,
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(216,227,223,0.78)',
-    backgroundColor: 'rgba(255,255,255,0.62)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
+    padding: 11,
   },
-  input: {
+  previewText: {
     flex: 1,
-    height: 46,
-    paddingHorizontal: 10,
-    color: theme.colors.text,
-    fontSize: theme.font.body,
+    color: theme.colors.textSecondary,
+    fontSize: 9,
+    lineHeight: 14,
+    marginLeft: 8,
   },
-  roleCard: {
-    minHeight: 62,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
-    backgroundColor: 'rgba(240,253,244,0.62)',
+  footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  radioOuter: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: theme.colors.primary,
-    alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginTop: 24,
   },
-  radioInner: { width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.primary },
-  roleTitle: { color: theme.colors.primaryDark, fontSize: theme.font.body, fontWeight: '900' },
-  roleSub: { color: '#7a8fa4', fontSize: theme.font.tiny, marginTop: 2 },
-  rememberRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  checkbox: {
-    width: 17,
-    height: 17,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#cbd7d2',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
+  footerDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.primary },
+  footerText: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1.1, marginLeft: 7 },
+  orbOne: {
+    position: 'absolute',
+    width: 230,
+    height: 230,
+    borderRadius: 115,
+    borderWidth: 34,
+    borderColor: theme.mode === 'dark' ? 'rgba(60,242,138,0.07)' : 'rgba(32,200,115,0.08)',
+    right: -100,
+    top: 90,
   },
-  checkboxOn: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
-  rememberText: { color: theme.colors.textMuted, fontSize: theme.font.small, fontWeight: '700' },
-  loginButton: {
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+  orbTwo: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: theme.mode === 'dark' ? 'rgba(60,242,138,0.04)' : 'rgba(32,200,115,0.06)',
+    left: -50,
+    bottom: 80,
   },
-  loginButtonText: { color: '#fff', fontSize: theme.font.body, fontWeight: '900' },
-  footerText: { color: theme.colors.textMuted, fontSize: theme.font.small, textAlign: 'center', marginTop: 22 },
-  footerLink: { color: theme.colors.primary, fontWeight: '900' },
-  pressed: { opacity: 0.86, transform: [{ scale: 0.99 }] },
+  pressed: { opacity: 0.8, transform: [{ scale: 0.985 }] },
 });
