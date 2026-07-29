@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { api } from '@/lib/api';
-import { fetchAuthSession } from 'aws-amplify/auth';
 import { useAuthStore } from '@/store/auth.store';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -23,6 +22,7 @@ import {
 import { PerfSummary, PerfTile } from '@/components/layout/PerfSummary';
 import { useFactoryBatches } from '@/hooks/useBatch';
 import { useFactoryReadings } from '@/hooks/useReadings';
+import { useFermentationState } from '@/hooks/useFermentationState';
 import type { BatchListItem } from '@/types';
 
 const tabs = [
@@ -39,6 +39,12 @@ export default function OfficerDashboard() {
   const { batches, loading: batchesLoading, reload: reloadBatches } = useFactoryBatches(
     factoryId, 30_000
   );
+  const {
+    state: fermentationState,
+    isLive,
+    loading: fermentationStateLoading,
+    reload: reloadFermentationState,
+  } = useFermentationState(factoryId, 5_000);
 
   const [tab, setTab] = useState('overview');
   const [glpTarget, setGlpTarget] = useState<BatchListItem | null>(null);
@@ -50,7 +56,6 @@ export default function OfficerDashboard() {
   const [startOpen, setStartOpen] = useState(false);
   const [newBatchId, setNewBatchId] = useState('');
   const [newDeviceId, setNewDeviceId] = useState('DEV001');
-  const [newGlp, setNewGlp] = useState(70);
   const [starting, setStarting] = useState(false);
   const [startErr, setStartErr] = useState<string | null>(null);
 
@@ -91,8 +96,8 @@ export default function OfficerDashboard() {
     [topBatches]
   );
 
-  const ongoing = batches.filter((b) => b.glp === null || b.glp === undefined).length;
-  const completed = batches.length - ongoing;
+  const ongoing = isLive ? 1 : 0;
+  const completed = batches.filter((b) => b.glp !== null && b.glp !== undefined).length;
 
   const tiles: PerfTile[] = [
     {
@@ -121,14 +126,27 @@ export default function OfficerDashboard() {
     },
   ];
 
-  // Active batch (most recent ongoing)
-  const activeBatch = useMemo(
-    () => batches.find((b) => b.glp === null || b.glp === undefined) ?? null,
-    [batches]
-  );
+  const activeBatch = useMemo<BatchListItem | null>(() => {
+    if (!isLive || !fermentationState?.batchId) return null;
+    const existing = batches.find((batch) => batch.batchId === fermentationState.batchId);
+    if (existing) return existing;
+
+    return {
+      batchId: fermentationState.batchId,
+      lastTimestamp: fermentationState.startedAt,
+      latestTemperature: null,
+      latestHumidity: null,
+      latestRgRatio: null,
+      latestMq137: null,
+      latestTgs2620: null,
+      latestTgs822: null,
+      glp: null,
+      price: null,
+    };
+  }, [batches, fermentationState, isLive]);
 
   function openStart() {
-    if (activeBatch) {
+    if (isLive && activeBatch) {
       setStartErr(`Batch ${activeBatch.batchId} is still in fermentation. Set its GLP to mark it complete before starting another.`);
       setStartOpen(true);
       return;
@@ -136,13 +154,12 @@ export default function OfficerDashboard() {
     const next = `BAT${String(batches.length + 1).padStart(3, '0')}`;
     setNewBatchId(next);
     setNewDeviceId('DEV001');
-    setNewGlp(70);
     setStartErr(null);
     setStartOpen(true);
   }
 
   async function handleStart() {
-    if (activeBatch) {
+    if (isLive && activeBatch) {
       setStartErr(`Batch ${activeBatch.batchId} is still in fermentation. Set its GLP first.`);
       return;
     }
@@ -153,35 +170,15 @@ export default function OfficerDashboard() {
     setStarting(true);
     setStartErr(null);
     try {
-      // Primary: try the create endpoint
-      await api.post('/batches', {
-        deviceId: newDeviceId,
-      }).catch(() => {/* swallow — surface success in UI for demo */});
-
-      const session: any = await fetchAuthSession().catch(() => ({}));
-      console.log("Auth session object:", session);
-      // Safely extract tokens bypassing strict types
-      const token = session?.tokens?.accessToken?.toString() || session?.tokens?.idToken?.toString();
-      console.log("Token attached:", token);
-
-      // Secondary: IoT Control endpoint
       await api.post('/fermentation/control', {
         status: 'RUNNING',
-        batch_id: newBatchId.trim(),
-        glp: newGlp,
-      }, {
-        ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {})
-      }).catch((e) => {
-        console.error('Failed to trigger IoT control', e);
-      });
-
-      // Tertiary: Save the initial GLP to the database
-      await api.put(`/batches/${newBatchId.trim()}/glp`, { factoryId, glp: newGlp }).catch((e) => {
-        console.error('Failed to save GLP to database', e);
+        factory_id: factoryId,
+        batch_id: newBatchId.trim().toUpperCase(),
+        device_id: newDeviceId.trim().toUpperCase(),
       });
 
       setStartOpen(false);
-      await reloadBatches();
+      await Promise.all([reloadFermentationState(), reloadBatches()]);
     } catch (e: any) {
       setStartErr(e.response?.data?.error ?? e.response?.data?.message ?? 'Failed to start');
     } finally {
@@ -194,16 +191,13 @@ export default function OfficerDashboard() {
     
     setStarting(true);
     try {
-      const session: any = await fetchAuthSession().catch(() => ({}));
-      // Safely extract tokens bypassing strict types
-      const token = session?.tokens?.accessToken?.toString() || session?.tokens?.idToken?.toString();
       await api.post('/fermentation/control', {
         status: "STOPPED",
-        batch_id: "NONE"
-      }, {
-        ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {})
+        factory_id: factoryId,
+        batch_id: fermentationState?.batchId,
+        device_id: fermentationState?.deviceId,
       });
-      await reloadBatches();
+      await Promise.all([reloadFermentationState(), reloadBatches()]);
     } catch (e: any) {
       console.error('Failed to stop fermentation', e);
       alert('Failed to stop fermentation');
@@ -217,9 +211,17 @@ export default function OfficerDashboard() {
     setSubmitting(true);
     setActionErr(null);
     try {
+      if (isLive && fermentationState?.batchId === glpTarget.batchId) {
+        await api.post('/fermentation/control', {
+          status: 'STOPPED',
+          factory_id: factoryId,
+          batch_id: fermentationState.batchId,
+          device_id: fermentationState.deviceId,
+        });
+      }
       await api.put(`/batches/${glpTarget.batchId}/glp`, { factoryId, glp: glpValue });
       setGlpTarget(null);
-      await reloadBatches();
+      await Promise.all([reloadFermentationState(), reloadBatches()]);
     } catch (e: any) {
       setActionErr(e.response?.data?.error ?? e.response?.data?.message ?? 'Failed to update GLP');
     } finally {
@@ -240,25 +242,29 @@ export default function OfficerDashboard() {
       onTabChange={setTab}
       actions={
         <>
-          <Badge tone="live">Live</Badge>
+          <Badge tone={isLive ? 'live' : 'neutral'}>
+            {fermentationStateLoading ? 'Checking sensors…' : isLive ? 'Live' : 'Sensors stopped'}
+          </Badge>
           <DateRangeButton>Last 30 days</DateRangeButton>
           <FilterButton />
-          <Button
-            onClick={handleStopFermentation}
-            disabled={starting}
-            variant="danger"
-            title="Stop Live Sensors"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="6" y="6" width="12" height="12" />
-            </svg>
-            Stop Live Sensors
-          </Button>
+          {isLive && (
+            <Button
+              onClick={handleStopFermentation}
+              disabled={starting}
+              variant="danger"
+              title="Stop Live Sensors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="6" y="6" width="12" height="12" />
+              </svg>
+              Stop Live Sensors
+            </Button>
+          )}
 
           <Button
             onClick={openStart}
-            disabled={!!activeBatch || starting}
+            disabled={fermentationStateLoading || isLive || starting}
             title={activeBatch
               ? `Stop fermentation for ${activeBatch.batchId}`
               : 'Start a new fermentation batch'}
@@ -274,7 +280,9 @@ export default function OfficerDashboard() {
     >
       <PerfSummary
         title="Performance Summary"
-        description={`Live signal from factory ${factoryId} — sensors stream every 30s.`}
+        description={isLive
+          ? `Live signal from factory ${factoryId} — shared status refreshes every 5s.`
+          : `Factory ${factoryId} sensors are currently stopped.`}
         tiles={tiles}
       />
 
@@ -736,23 +744,6 @@ export default function OfficerDashboard() {
             <Field label="Batch ID" value={newBatchId} onChange={setNewBatchId} mono />
             <Field label="Factory" value={factoryId || ''} onChange={() => {}} disabled mono />
             <Field label="Device" value={newDeviceId} onChange={setNewDeviceId} mono disabled />
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="eyebrow">Good Leaf Percentage</span>
-              <span className="font-mono font-semibold text-accent-primary text-[15px]">
-                {newGlp}%
-              </span>
-            </div>
-            <input
-              type="range" min={0} max={100} step={1} value={newGlp}
-              onChange={(e) => setNewGlp(parseInt(e.target.value, 10))}
-              className="w-full accent-[var(--accent-primary)]"
-            />
-            <div className="flex justify-between text-[10px] text-text-muted mt-1 tabular">
-              <span>0%</span><span>50%</span><span>100%</span>
-            </div>
           </div>
 
           {startErr && (

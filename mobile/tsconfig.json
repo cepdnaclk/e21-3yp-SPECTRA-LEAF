@@ -11,5 +11,19 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx"]
+  "include": [
+    "App.tsx",
+    "src/assets/**/*.ts",
+    "src/components/*.tsx",
+    "src/hooks/useBatch.ts",
+    "src/hooks/useFermentationState.ts",
+    "src/hooks/useReadings.ts",
+    "src/lib/api.ts",
+    "src/lib/format.ts",
+    "src/navigation/**/*.tsx",
+    "src/screens/**/*.tsx",
+    "src/store/authStore.ts",
+    "src/theme.ts",
+    "src/types/**/*.ts"
+  ]
 }

@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StyleSheet, Text, View } from 'react-native';
 import RootNavigator from './src/navigation/AppNavigator';
+import { useAppTheme } from './src/theme';
 
 interface EState { hasError: boolean; msg: string }
 class ErrorBoundary extends Component<{ children: ReactNode }, EState> {
@@ -33,11 +34,12 @@ const eb = StyleSheet.create({
 });
 
 export default function App() {
+  const theme = useAppTheme();
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
-        <StatusBar style="light" />
-        <View style={styles.root}>
+        <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
+        <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
           <RootNavigator />
         </View>
       </SafeAreaProvider>

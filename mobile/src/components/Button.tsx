@@ -6,7 +6,7 @@ import {
   Text,
   ViewStyle,
 } from 'react-native';
-import { theme } from '../theme';
+import { AppTheme, useAppTheme } from '../theme';
 
 interface Props {
   title: string;
@@ -25,6 +25,9 @@ export default function Button({
   disabled,
   style,
 }: Props) {
+  const theme = useAppTheme();
+  const styles = makeStyles(theme);
+  const textStyles = makeTextStyles(theme);
   const isDisabled = disabled || loading;
   const variantStyle = styles[variant];
   const textStyle = textStyles[variant];
@@ -35,12 +38,12 @@ export default function Button({
         styles.base,
         variantStyle,
         isDisabled && styles.disabled,
-        pressed && !isDisabled && { opacity: 0.85 },
+        pressed && !isDisabled && styles.pressed,
         style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'ghost' ? theme.colors.primary : '#fff'} />
+        <ActivityIndicator color={variant === 'primary' ? theme.colors.ink : theme.colors.primary} />
       ) : (
         <Text style={[styles.text, textStyle]}>{title}</Text>
       )}
@@ -48,29 +51,34 @@ export default function Button({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme: AppTheme) => StyleSheet.create({
   base: {
-    height: 46,
-    borderRadius: theme.radius.md,
+    height: 52,
+    borderRadius: theme.radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: theme.spacing.lg,
   },
   primary: { backgroundColor: theme.colors.primary },
   secondary: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.elevated,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: theme.colors.borderActive,
   },
-  danger: { backgroundColor: theme.colors.danger },
+  danger: {
+    backgroundColor: theme.colors.dangerSoft,
+    borderWidth: 1,
+    borderColor: theme.colors.danger,
+  },
   ghost: { backgroundColor: 'transparent' },
   disabled: { opacity: 0.5 },
-  text: { fontSize: theme.font.body, fontWeight: '700' },
+  pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
+  text: { fontSize: theme.font.small, fontWeight: '900', letterSpacing: 0.4 },
 });
 
-const textStyles = StyleSheet.create({
-  primary: { color: '#fff' },
+const makeTextStyles = (theme: AppTheme) => StyleSheet.create({
+  primary: { color: theme.colors.ink },
   secondary: { color: theme.colors.text },
-  danger: { color: '#fff' },
+  danger: { color: theme.colors.danger },
   ghost: { color: theme.colors.primary },
 });

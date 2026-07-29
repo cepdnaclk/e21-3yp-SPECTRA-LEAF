@@ -74,5 +74,11 @@ What was achieved, future developments, commercialization plans
 - [Department of Computer Engineering](http://www.ce.pdn.ac.lk/)
 - [University of Peradeniya](https://eng.pdn.ac.lk/)
 
+## Project website
+
+The editable Next.js project website lives in [`site/`](./site). Running `npm run build` from that directory validates and exports the production GitHub Pages site into [`docs/`](./docs).
+
+The two project videos remain protected in `docs/assets/video1.mp4` and `docs/assets/video2.mp4`. Cross-platform Node.js build scripts back them up, prepare development copies, clean only generated documentation output, and restore the originals after every production build.
+
 [//]: # (Please refer this to learn more about Markdown syntax)
 [//]: # (https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
