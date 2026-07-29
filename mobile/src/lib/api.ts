@@ -171,9 +171,12 @@ export function normalizeReading(raw: any): SensorReading {
     deviceId: stringOrEmpty(raw?.deviceId ?? raw?.DEVICE_ID),
     factoryId: stringOrEmpty(raw?.factoryId ?? raw?.FACTORY_ID),
     batchId: stringOrEmpty(raw?.batchId ?? raw?.BATCH_ID),
-    color: numberOrNull(raw?.color ?? raw?.COLOR),
     temperature: numberOrNull(raw?.temperature ?? raw?.TEMPERATURE),
-    mq135: numberOrNull(raw?.mq135 ?? raw?.MQ135),
+    humidity: numberOrNull(raw?.humidity ?? raw?.HUMIDITY),
+    rgRatio: numberOrNull(raw?.rgRatio ?? raw?.RG_RATIO ?? raw?.color ?? raw?.COLOR),
+    mq137: numberOrNull(raw?.mq137 ?? raw?.MQ137 ?? raw?.mq135 ?? raw?.MQ135),
+    tgs2620: numberOrNull(raw?.tgs2620 ?? raw?.TGS2620),
+    tgs822: numberOrNull(raw?.tgs822 ?? raw?.TGS822),
   };
 }
 
@@ -182,8 +185,15 @@ export function normalizeBatch(raw: any): BatchListItem {
     batchId: stringOrEmpty(raw?.batchId ?? raw?.BATCH_ID),
     lastTimestamp: stringOrEmpty(raw?.lastTimestamp ?? raw?.TIMESTAMP),
     latestTemperature: numberOrNull(raw?.latestTemperature ?? raw?.temperature ?? raw?.TEMPERATURE),
-    latestColor: numberOrNull(raw?.latestColor ?? raw?.color ?? raw?.COLOR),
-    latestMq135: numberOrNull(raw?.latestMq135 ?? raw?.mq135 ?? raw?.MQ135),
+    latestHumidity: numberOrNull(raw?.latestHumidity ?? raw?.humidity ?? raw?.HUMIDITY),
+    latestRgRatio: numberOrNull(
+      raw?.latestRgRatio ?? raw?.rgRatio ?? raw?.RG_RATIO ?? raw?.latestColor ?? raw?.COLOR,
+    ),
+    latestMq137: numberOrNull(
+      raw?.latestMq137 ?? raw?.mq137 ?? raw?.MQ137 ?? raw?.latestMq135 ?? raw?.MQ135,
+    ),
+    latestTgs2620: numberOrNull(raw?.latestTgs2620 ?? raw?.tgs2620 ?? raw?.TGS2620),
+    latestTgs822: numberOrNull(raw?.latestTgs822 ?? raw?.tgs822 ?? raw?.TGS822),
     glp: numberOrNull(raw?.glp ?? raw?.GLP),
     price: numberOrNull(raw?.price ?? raw?.PRICE),
   };
@@ -211,8 +221,11 @@ export function normalizeGraphs(payload: any, fallbackBatchId: string): BatchGra
   return {
     batchId: stringOrEmpty(raw?.batchId ?? raw?.BATCH_ID) || fallbackBatchId,
     temperature: normalizeGraphPoints(raw?.temperature),
-    color: normalizeGraphPoints(raw?.color),
-    mq135: normalizeGraphPoints(raw?.mq135),
+    humidity: normalizeGraphPoints(raw?.humidity),
+    rgRatio: normalizeGraphPoints(raw?.rgRatio ?? raw?.color),
+    mq137: normalizeGraphPoints(raw?.mq137 ?? raw?.mq135),
+    tgs2620: normalizeGraphPoints(raw?.tgs2620),
+    tgs822: normalizeGraphPoints(raw?.tgs822),
   };
 }
 

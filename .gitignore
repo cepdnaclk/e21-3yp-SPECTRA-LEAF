@@ -35,3 +35,7 @@ Thumbs.db
 # Expo / React Native
 .expo/
 .expo-shared/
+
+# Gradle caches
+**/.gradle/
+mobile/.gradle-build-release*/

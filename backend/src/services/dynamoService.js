@@ -13,6 +13,10 @@ function summaryKey(batchId) {
   return { DEVICE_ID: `BATCH#${batchId}`, TIMESTAMP: 'SUMMARY' };
 }
 
+function fermentationStateKey(factoryId) {
+  return { DEVICE_ID: `FERMENTATION#${factoryId}`, TIMESTAMP: 'STATE' };
+}
+
 function priceValue(value) {
   if (value === undefined || value === null || value === '') return null;
   const num = Number(value);
@@ -90,6 +94,45 @@ async function createSensorReading(item) {
     TGS2620: Number(item.TGS2620),
     TGS822: Number(item.TGS822),
   };
+  await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: record }));
+  return record;
+}
+
+// ─── Shared fermentation state ───────────────────────────────────────────────
+
+async function getFermentationState(factoryId) {
+  const result = await ddb.send(
+    new GetCommand({
+      TableName: TABLE_NAME,
+      Key: fermentationStateKey(factoryId),
+    })
+  );
+  return result.Item ?? null;
+}
+
+async function setFermentationState({
+  factoryId,
+  status,
+  batchId,
+  sensorDeviceId,
+  updatedAt,
+}) {
+  const current = await getFermentationState(factoryId);
+  const record = {
+    ...fermentationStateKey(factoryId),
+    TYPE: 'FERMENTATION_STATE',
+    FACTORY_ID: factoryId,
+    STATUS: status,
+    BATCH_ID: batchId ?? current?.BATCH_ID ?? null,
+    SENSOR_DEVICE_ID: sensorDeviceId ?? current?.SENSOR_DEVICE_ID ?? null,
+    STARTED_AT: status === 'RUNNING'
+      ? (current?.STATUS === 'RUNNING' && current?.BATCH_ID === batchId
+        ? current.STARTED_AT
+        : updatedAt)
+      : current?.STARTED_AT ?? null,
+    UPDATED_AT: updatedAt,
+  };
+
   await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: record }));
   return record;
 }
@@ -374,6 +417,8 @@ async function getAllPricedBatches(factoryId) {
 
 module.exports = {
   createSensorReading,
+  getFermentationState,
+  setFermentationState,
   getBatchReadings,
   getBatchSummary,
   upsertBatchGlp,

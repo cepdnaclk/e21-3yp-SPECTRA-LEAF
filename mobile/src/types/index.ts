@@ -11,17 +11,23 @@ export interface SensorReading {
   deviceId: string;
   factoryId: string;
   batchId: string;
-  color: number | null;
   temperature: number | null;
-  mq135: number | null;
+  humidity: number | null;
+  rgRatio: number | null;
+  mq137: number | null;
+  tgs2620: number | null;
+  tgs822: number | null;
 }
 
 export interface BatchListItem {
   batchId: string;
   lastTimestamp: string;
   latestTemperature: number | null;
-  latestColor: number | null;
-  latestMq135: number | null;
+  latestHumidity: number | null;
+  latestRgRatio: number | null;
+  latestMq137: number | null;
+  latestTgs2620: number | null;
+  latestTgs822: number | null;
   glp: number | null;
   price: number | null;
 }
@@ -41,8 +47,20 @@ export interface GraphPoint {
 export interface BatchGraphs {
   batchId: string;
   temperature: GraphPoint[];
-  color: GraphPoint[];
-  mq135: GraphPoint[];
+  humidity: GraphPoint[];
+  rgRatio: GraphPoint[];
+  mq137: GraphPoint[];
+  tgs2620: GraphPoint[];
+  tgs822: GraphPoint[];
+}
+
+export interface FermentationState {
+  factoryId: string;
+  status: 'RUNNING' | 'STOPPED';
+  batchId: string | null;
+  deviceId: string | null;
+  startedAt: string | null;
+  updatedAt: string | null;
 }
 
 export interface OfficerProfile {

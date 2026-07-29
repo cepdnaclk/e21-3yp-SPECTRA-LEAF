@@ -1,123 +1,376 @@
 import React, { useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Card from '../components/Card';
-import MetricCard from '../components/MetricCard';
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import Badge from '../components/Badge';
-import Loading from '../components/Loading';
+import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
+import Loading from '../components/Loading';
 import { useAuthStore } from '../store/authStore';
 import { useFactoryBatches, useFactoryReadings } from '../hooks/useReadings';
+import { useFermentationState } from '../hooks/useFermentationState';
 import { fmtDate } from '../lib/format';
-import { theme } from '../theme';
-import { BatchListItem } from '../types';
+import { AppTheme, useAppTheme } from '../theme';
 
-const isActive = (b: BatchListItem) => b.glp === null || b.glp === undefined;
+const checklistItems = [
+  'Chamber cleaned and prepared',
+  'Sensor device mounted securely',
+  'Previous shift notes reviewed',
+];
 
 export default function FactoryScreen() {
-  const factoryId = useAuthStore(s => s.factoryId);
-  const { readings, loading: rLoading, refresh: rRefresh } = useFactoryReadings(factoryId, 30000, 50);
-  const { batches, loading: bLoading, refresh: bRefresh } = useFactoryBatches(factoryId, 30000);
+  const theme = useAppTheme();
+  const styles = makeStyles(theme);
+  const factoryId = useAuthStore(state => state.factoryId);
+  const { readings, loading: readingsLoading, error: readingsError, refresh: refreshReadings } =
+    useFactoryReadings(factoryId, 20_000, 60);
+  const { batches, loading: batchesLoading, error: batchesError, refresh: refreshBatches } =
+    useFactoryBatches(factoryId, 20_000);
+  const { isLive, state: liveState, refresh: refreshLive } = useFermentationState(factoryId, 5_000);
   const [refreshing, setRefreshing] = useState(false);
+  const [checked, setChecked] = useState<boolean[]>([true, true, false]);
 
   const devices = useMemo(() => {
-    const map = new Map<string, string>();
-    readings.forEach(r => {
-      if (r.deviceId && (!map.has(r.deviceId) || r.timestamp > (map.get(r.deviceId) || ''))) {
-        map.set(r.deviceId, r.timestamp);
-      }
+    const latestByDevice = new Map<string, string>();
+    readings.forEach(reading => {
+      if (!reading.deviceId) return;
+      const current = latestByDevice.get(reading.deviceId);
+      if (!current || reading.timestamp > current) latestByDevice.set(reading.deviceId, reading.timestamp);
     });
-    return Array.from(map.entries()).map(([deviceId, lastSeen]) => ({ deviceId, lastSeen }));
+    return Array.from(latestByDevice.entries()).map(([deviceId, lastSeen]) => ({
+      deviceId,
+      lastSeen,
+      online: Date.now() - new Date(lastSeen).getTime() < 5 * 60 * 1000,
+    }));
   }, [readings]);
+
+  const completed = batches.filter(batch => batch.glp != null).length;
+  const readiness = Math.round((checked.filter(Boolean).length / checked.length) * 100);
+  const error = readingsError || batchesError;
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([rRefresh(), bRefresh()]);
+    await Promise.all([refreshReadings(), refreshBatches(), refreshLive()]);
     setRefreshing(false);
   };
 
-  const ongoing = batches.filter(isActive).length;
-  const completed = batches.length - ongoing;
+  const toggleCheck = (index: number) => {
+    setChecked(current => current.map((value, itemIndex) => itemIndex === index ? !value : value));
+  };
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <Text style={styles.title}>Factory {factoryId}</Text>
-      <Text style={styles.muted}>Operational overview</Text>
-
-      <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
-        <MetricCard label="Total Batches" value={batches.length} />
-        <View style={{ width: theme.spacing.md }} />
-        <MetricCard label="Devices" value={devices.length} />
-      </View>
-      <View style={[styles.row, { marginTop: theme.spacing.md }]}>
-        <MetricCard label="Ongoing" value={ongoing} accent={theme.colors.warning} />
-        <View style={{ width: theme.spacing.md }} />
-        <MetricCard label="Completed" value={completed} accent={theme.colors.success} />
-      </View>
-
-      <Text style={styles.section}>Connected Devices</Text>
-      {rLoading && devices.length === 0 ? <Loading /> : null}
-      {!rLoading && devices.length === 0 ? (
-        <Card>
-          <EmptyState title="No devices" message="No recent device activity." />
-        </Card>
-      ) : null}
-      {devices.map(d => (
-        <Card key={d.deviceId} style={{ marginBottom: theme.spacing.sm }}>
-          <View style={styles.rowBetween}>
-            <View>
-              <Text style={styles.itemTitle}>{d.deviceId}</Text>
-              <Text style={styles.muted}>Last seen: {fmtDate(d.lastSeen)}</Text>
-            </View>
-            <Badge label="Live" variant="live" />
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.kicker}>FACILITY CONTROL</Text>
+            <Text style={styles.title}>Factory floor</Text>
           </View>
-        </Card>
-      ))}
-
-      <Text style={styles.section}>Recent Batch Activity</Text>
-      {bLoading && batches.length === 0 ? <Loading /> : null}
-      {!bLoading && batches.length === 0 ? (
-        <Card>
-          <EmptyState title="No activity" />
-        </Card>
-      ) : null}
-      {batches.slice(0, 6).map(b => (
-        <Card key={b.batchId} style={{ marginBottom: theme.spacing.sm }}>
-          <View style={styles.rowBetween}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.itemTitle}>{b.batchId}</Text>
-              <Text style={styles.muted}>{fmtDate(b.lastTimestamp)}</Text>
-            </View>
-            {isActive(b) ? (
-              <Badge label="Ongoing" variant="ongoing" />
-            ) : (
-              <Badge label="Completed" variant="completed" />
-            )}
+          <View style={styles.headerIcon}>
+            <Ionicons name="business-outline" size={22} color={theme.colors.primary} />
           </View>
-        </Card>
-      ))}
+        </View>
 
-      <View style={{ height: theme.spacing.xxl }} />
-    </ScrollView>
+        <View style={styles.factoryHero}>
+          <View style={styles.factoryPatternOne} />
+          <View style={styles.factoryPatternTwo} />
+          <View style={styles.factoryHeroTop}>
+            <View style={styles.factoryMark}>
+              <Ionicons name="leaf" size={22} color="#031008" />
+            </View>
+            <Badge label={isLive ? 'Producing' : 'Ready'} variant={isLive ? 'live' : 'priced'} />
+          </View>
+          <Text style={styles.factoryCode}>{factoryId}</Text>
+          <Text style={styles.factoryName}>Fermentation operations</Text>
+          <View style={styles.factoryStats}>
+            <HeroStat label="DEVICES" value={devices.length} />
+            <HeroStat label="BATCHES" value={batches.length} />
+            <HeroStat label="COMPLETED" value={completed} />
+          </View>
+        </View>
+
+        {error ? (
+          <Pressable onPress={onRefresh} style={styles.errorCard}>
+            <Ionicons name="cloud-offline-outline" size={18} color={theme.colors.danger} />
+            <Text style={styles.errorText}>{error}</Text>
+            <Text style={styles.retry}>Retry</Text>
+          </Pressable>
+        ) : null}
+
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionKicker}>CURRENT OPERATION</Text>
+            <Text style={styles.sectionTitle}>Floor status</Text>
+          </View>
+          <Text style={styles.sectionMeta}>LIVE SYNC</Text>
+        </View>
+
+        <Card style={styles.operationCard}>
+          <View style={styles.operationIcon}>
+            <Ionicons
+              name={isLive ? 'radio-outline' : 'pause-outline'}
+              size={21}
+              color={theme.colors.primary}
+            />
+          </View>
+          <View style={styles.operationCopy}>
+            <Text style={styles.operationTitle}>
+              {isLive ? `${liveState?.batchId ?? 'Batch'} is in chamber` : 'No active fermentation'}
+            </Text>
+            <Text style={styles.operationMeta}>
+              {isLive
+                ? `${liveState?.deviceId ?? 'Sensor'} · started ${fmtDate(liveState?.startedAt)}`
+                : 'The chamber is available for the next officer cycle.'}
+            </Text>
+          </View>
+          <View style={[styles.operationDot, isLive && styles.operationDotLive]} />
+        </Card>
+
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionKicker}>SHIFT PREP</Text>
+            <Text style={styles.sectionTitle}>Officer checklist</Text>
+          </View>
+          <Text style={styles.readiness}>{readiness}% ready</Text>
+        </View>
+
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${readiness}%` }]} />
+        </View>
+
+        <Card style={styles.checklist}>
+          {checklistItems.map((item, index) => (
+            <Pressable
+              key={item}
+              onPress={() => toggleCheck(index)}
+              style={({ pressed }) => [
+                styles.checkRow,
+                index > 0 && styles.checkRowBorder,
+                pressed && styles.pressed,
+              ]}
+            >
+              <View style={[styles.checkBox, checked[index] && styles.checkBoxDone]}>
+                {checked[index] ? <Ionicons name="checkmark" size={14} color="#031008" /> : null}
+              </View>
+              <Text style={[styles.checkText, checked[index] && styles.checkTextDone]}>{item}</Text>
+              <Text style={styles.checkIndex}>0{index + 1}</Text>
+            </Pressable>
+          ))}
+        </Card>
+
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionKicker}>CONNECTED HARDWARE</Text>
+            <Text style={styles.sectionTitle}>Device roster</Text>
+          </View>
+          <Text style={styles.sectionMeta}>{devices.filter(device => device.online).length} ONLINE</Text>
+        </View>
+
+        {readingsLoading && devices.length === 0 ? <Loading label="Scanning device roster" /> : null}
+        {!readingsLoading && devices.length === 0 ? (
+          <Card>
+            <EmptyState title="No devices reporting" message="A sensor appears after its first factory reading." />
+          </Card>
+        ) : null}
+
+        {devices.map((device, index) => (
+          <View key={device.deviceId} style={styles.deviceRow}>
+            <View style={[styles.deviceNumber, device.online && styles.deviceNumberOnline]}>
+              <Text style={[styles.deviceNumberText, device.online && styles.deviceNumberTextOnline]}>
+                0{index + 1}
+              </Text>
+            </View>
+            <View style={styles.deviceCopy}>
+              <Text style={styles.deviceId}>{device.deviceId}</Text>
+              <Text style={styles.deviceMeta}>Last seen {fmtDate(device.lastSeen)}</Text>
+            </View>
+            <View style={styles.deviceStatus}>
+              <View style={[styles.statusDot, device.online && styles.statusDotOnline]} />
+              <Text style={[styles.statusText, device.online && styles.statusTextOnline]}>
+                {device.online ? 'ONLINE' : 'IDLE'}
+              </Text>
+            </View>
+          </View>
+        ))}
+
+        {batchesLoading && batches.length === 0 ? <Loading /> : null}
+        <View style={styles.bottomSpace} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: theme.colors.background },
-  content: { padding: theme.spacing.lg, paddingBottom: theme.spacing.xxl * 2 },
-  title: { fontSize: theme.font.h1, fontWeight: '800', color: theme.colors.text },
-  muted: { color: theme.colors.textMuted, fontSize: theme.font.small },
-  row: { flexDirection: 'row' },
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  section: {
-    fontSize: theme.font.h3,
-    fontWeight: '700',
-    color: theme.colors.text,
-    marginTop: theme.spacing.xl,
-    marginBottom: theme.spacing.md,
+function HeroStat({ label, value }: { label: string; value: number }) {
+  const theme = useAppTheme();
+  const styles = makeStyles(theme);
+  return (
+    <View style={styles.heroStat}>
+      <Text style={styles.heroStatValue}>{String(value).padStart(2, '0')}</Text>
+      <Text style={styles.heroStatLabel}>{label}</Text>
+    </View>
+  );
+}
+
+const makeStyles = (theme: AppTheme) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: 16, paddingTop: 10 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 },
+  kicker: { color: theme.colors.primary, fontSize: 9, fontWeight: '900', letterSpacing: 1.6 },
+  title: { color: theme.colors.text, fontSize: 30, fontWeight: '900', letterSpacing: -0.8, marginTop: 4 },
+  headerIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 16,
+    backgroundColor: theme.colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.borderActive,
   },
-  itemTitle: { fontSize: theme.font.body, fontWeight: '700', color: theme.colors.text },
+  factoryHero: {
+    minHeight: 260,
+    borderRadius: 30,
+    backgroundColor: theme.colors.primary,
+    padding: 20,
+    overflow: 'hidden',
+  },
+  factoryPatternOne: {
+    position: 'absolute',
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    borderWidth: 28,
+    borderColor: 'rgba(3,16,8,0.08)',
+    right: -55,
+    top: -68,
+  },
+  factoryPatternTwo: {
+    position: 'absolute',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 1,
+    borderColor: 'rgba(3,16,8,0.15)',
+    right: 30,
+    top: 23,
+  },
+  factoryHeroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  factoryMark: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.26)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  factoryCode: { color: '#031008', fontSize: 39, fontWeight: '900', letterSpacing: -1.5, marginTop: 24 },
+  factoryName: { color: '#1D5A35', fontSize: 12, fontWeight: '800', marginTop: 3 },
+  factoryStats: { flexDirection: 'row', marginTop: 24 },
+  heroStat: { flex: 1 },
+  heroStatValue: { color: '#031008', fontSize: 20, fontWeight: '900' },
+  heroStatLabel: { color: '#1D5A35', fontSize: 7, fontWeight: '900', letterSpacing: 1, marginTop: 4 },
+  errorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 18,
+    backgroundColor: theme.colors.dangerSoft,
+    borderWidth: 1,
+    borderColor: theme.colors.danger,
+    padding: 13,
+    marginTop: 12,
+  },
+  errorText: { color: theme.colors.dangerText, fontSize: 11, flex: 1, marginHorizontal: 9 },
+  retry: { color: theme.colors.text, fontSize: 11, fontWeight: '900' },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginTop: 30,
+    marginBottom: 13,
+  },
+  sectionKicker: { color: theme.colors.primary, fontSize: 9, fontWeight: '900', letterSpacing: 1.4 },
+  sectionTitle: { color: theme.colors.text, fontSize: 21, fontWeight: '900', marginTop: 4 },
+  sectionMeta: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.8, marginBottom: 4 },
+  operationCard: { flexDirection: 'row', alignItems: 'center', borderRadius: 23 },
+  operationIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: theme.colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  operationCopy: { flex: 1, marginHorizontal: 12 },
+  operationTitle: { color: theme.colors.text, fontSize: 13, fontWeight: '900' },
+  operationMeta: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14, marginTop: 4 },
+  operationDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: theme.colors.borderActive },
+  operationDotLive: { backgroundColor: theme.colors.primary },
+  readiness: { color: theme.colors.primary, fontSize: 11, fontWeight: '900', marginBottom: 3 },
+  progressTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: theme.colors.border,
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
+  progressFill: { height: 4, borderRadius: 2, backgroundColor: theme.colors.primary },
+  checklist: { paddingVertical: 6, borderRadius: 23 },
+  checkRow: { minHeight: 58, flexDirection: 'row', alignItems: 'center' },
+  checkRowBorder: { borderTopWidth: 1, borderTopColor: theme.colors.border },
+  checkBox: {
+    width: 25,
+    height: 25,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: theme.colors.borderActive,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkBoxDone: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  checkText: { color: theme.colors.text, fontSize: 12, fontWeight: '700', flex: 1, marginHorizontal: 11 },
+  checkTextDone: { color: theme.colors.textSecondary },
+  checkIndex: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '900' },
+  deviceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    paddingVertical: 13,
+  },
+  deviceNumber: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    backgroundColor: theme.colors.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deviceNumberOnline: { backgroundColor: theme.colors.primarySoft },
+  deviceNumberText: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '900' },
+  deviceNumberTextOnline: { color: theme.colors.primary },
+  deviceCopy: { flex: 1, marginHorizontal: 11 },
+  deviceId: { color: theme.colors.text, fontSize: 13, fontWeight: '900' },
+  deviceMeta: { color: theme.colors.textMuted, fontSize: 9, marginTop: 3 },
+  deviceStatus: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: theme.colors.borderActive },
+  statusDotOnline: { backgroundColor: theme.colors.primary },
+  statusText: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.7 },
+  statusTextOnline: { color: theme.colors.primary },
+  pressed: { opacity: 0.7 },
+  bottomSpace: { height: 116 },
 });

@@ -1,5 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
+  Animated,
   Modal,
   Pressable,
   RefreshControl,
@@ -8,835 +10,796 @@ import {
   Text,
   TextInput,
   View,
-  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import Card from '../components/Card';
-import MetricCard from '../components/MetricCard';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
+import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
 import Loading from '../components/Loading';
+import BrandMark from '../components/BrandMark';
+import ThemeToggle from '../components/ThemeToggle';
 import { useAuthStore } from '../store/authStore';
 import { useFactoryBatches, useFactoryReadings } from '../hooks/useReadings';
+import { useFermentationState } from '../hooks/useFermentationState';
 import { api, getErrorMessage } from '../lib/api';
 import { fmtDate, fmtNumber } from '../lib/format';
-import { theme } from '../theme';
 import { BatchListItem } from '../types';
+import { AppTheme, useAppTheme } from '../theme';
 
-type Tab = 'overview' | 'sensors' | 'batches';
+const sensorTiles = [
+  { key: 'temperature', label: 'Temperature', unit: '°C', icon: 'thermometer-outline' },
+  { key: 'humidity', label: 'Humidity', unit: '%', icon: 'water-outline' },
+  { key: 'rgRatio', label: 'RG Ratio', unit: '', icon: 'color-filter-outline' },
+  { key: 'mq137', label: 'MQ137', unit: '', icon: 'cloud-outline' },
+  { key: 'tgs2620', label: 'TGS2620', unit: '', icon: 'analytics-outline' },
+  { key: 'tgs822', label: 'TGS822', unit: '', icon: 'speedometer-outline' },
+] as const;
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'sensors',  label: 'Sensors'  },
-  { key: 'batches',  label: 'Batches'  },
-];
-
-function fmt(n: number | null | undefined, digits = 1) {
-  return fmtNumber(n, digits);
-}
-
-function isActiveBatch(b: BatchListItem) {
-  return b.glp === null || b.glp === undefined;
+function formatSensor(value: number | null | undefined, digits = 1) {
+  return value == null ? '—' : fmtNumber(value, digits);
 }
 
 export default function DashboardScreen() {
+  const theme = useAppTheme();
+  const styles = makeStyles(theme);
   const navigation = useNavigation<any>();
-  const factoryId  = useAuthStore(s => s.factoryId);
-  const displayName = useAuthStore(s => s.displayName);
-
+  const factoryId = useAuthStore(state => state.factoryId);
+  const displayName = useAuthStore(state => state.displayName);
   const { readings, loading: readingsLoading, error: readingsError, refresh: refreshReadings } =
-    useFactoryReadings(factoryId, 30000, 20);
+    useFactoryReadings(factoryId, 15_000, 24);
   const { batches, loading: batchesLoading, error: batchesError, refresh: refreshBatches } =
-    useFactoryBatches(factoryId, 30000);
+    useFactoryBatches(factoryId, 15_000);
+  const {
+    state: liveState,
+    isLive,
+    loading: liveLoading,
+    error: liveError,
+    refresh: refreshLiveState,
+  } = useFermentationState(factoryId, 5_000);
 
-  const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [refreshing, setRefreshing] = useState(false);
-  const [startOpen, setStartOpen]   = useState(false);
-  const [glpOpen, setGlpOpen]       = useState(false);
-  const [submitting, setSubmitting]  = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [startOpen, setStartOpen] = useState(false);
+  const [glpOpen, setGlpOpen] = useState(false);
+  const [batchId, setBatchId] = useState('');
+  const [deviceId, setDeviceId] = useState('DEV001');
+  const [glp, setGlp] = useState('80');
+  const pulse = useRef(new Animated.Value(0)).current;
 
-  const [batchId, setBatchId]           = useState('');
-  const [deviceId, setDeviceId]         = useState('DEV001');
-  const [targetTemperature, setTargetTemperature] = useState('28.5');
-  const [estimatedHours, setEstimatedHours]       = useState('8');
-  const [glp, setGlp]                   = useState('80');
+  useEffect(() => {
+    if (!isLive) {
+      pulse.stopAnimation();
+      pulse.setValue(0);
+      return;
+    }
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0, duration: 900, useNativeDriver: true }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [isLive, pulse]);
 
-  const latest        = readings[0];
-  const activeBatch   = useMemo(() => batches.find(isActiveBatch) || null, [batches]);
-  const completedCount = batches.filter(b => !isActiveBatch(b)).length;
-  const activeCount   = batches.filter(isActiveBatch).length;
-  const deviceCount   = new Set(readings.map(r => r.deviceId).filter(Boolean)).size;
-  const pricedBatches = useMemo(
-    () => batches.filter(b => b.price != null).sort((a, b) => (b.price ?? 0) - (a.price ?? 0)),
-    [batches]
-  );
-  const totalRevenue  = pricedBatches.reduce((s, b) => s + (b.price ?? 0), 0);
+  const latest = readings[0];
+  const activeBatch = useMemo<BatchListItem | null>(() => {
+    if (!isLive || !liveState?.batchId) return null;
+    return batches.find(batch => batch.batchId === liveState.batchId) ?? {
+      batchId: liveState.batchId,
+      lastTimestamp: liveState.startedAt ?? '',
+      latestTemperature: null,
+      latestHumidity: null,
+      latestRgRatio: null,
+      latestMq137: null,
+      latestTgs2620: null,
+      latestTgs822: null,
+      glp: null,
+      price: null,
+    };
+  }, [batches, isLive, liveState]);
 
-  const loading = readingsLoading && batchesLoading && readings.length === 0 && batches.length === 0;
+  const awaitingGlp = batches.filter(batch => batch.glp == null).length;
+  const completed = batches.filter(batch => batch.glp != null).length;
+  const loading =
+    (readingsLoading || batchesLoading || liveLoading)
+    && readings.length === 0
+    && batches.length === 0;
 
-  const onRefresh = async () => {
+  const refreshAll = async () => {
     setRefreshing(true);
-    await Promise.all([refreshReadings(), refreshBatches()]);
+    await Promise.all([refreshReadings(), refreshBatches(), refreshLiveState()]);
     setRefreshing(false);
   };
 
-  const submitStart = async () => {
-    if (!batchId.trim()) { Alert.alert('Missing Batch ID', 'Enter a batch ID.'); return; }
-    setSubmitting(true);
-    try {
-      await api.post('/sensor', {
-        DEVICE_ID: (deviceId.trim() || 'DEV001').toUpperCase(),
-        TIMESTAMP:  new Date().toISOString(),
-        FACTORY_ID: factoryId,
-        BATCH_ID:   batchId.trim().toUpperCase(),
-        TEMPERATURE: Number(targetTemperature) || 28.5,
-        MQ135: 0,
-        COLOR: 0,
-      });
-      setStartOpen(false);
-      setBatchId('');
-      await refreshBatches();
-      Alert.alert('Batch Registered', `Batch ${batchId.trim().toUpperCase()} is now active.`);
-    } catch (e) {
-      Alert.alert('Error', getErrorMessage(e));
-    } finally {
-      setSubmitting(false);
+  const openStart = () => {
+    if (isLive) {
+      Alert.alert('Fermentation already live', `${liveState?.batchId ?? 'A batch'} is still streaming.`);
+      return;
     }
+    setBatchId(`BAT${String(batches.length + 1).padStart(3, '0')}`);
+    setDeviceId('DEV001');
+    setStartOpen(true);
   };
 
-  const submitGlp = async () => {
-    if (!activeBatch) return;
-    const v = Number(glp);
-    if (Number.isNaN(v) || v < 0 || v > 100) {
-      Alert.alert('Invalid GLP', 'GLP must be between 0 and 100.');
+  const startFermentation = async () => {
+    if (!batchId.trim()) {
+      Alert.alert('Batch ID required', 'Add a batch ID before starting the sensor stream.');
       return;
     }
     setSubmitting(true);
     try {
-      await api.put(`/batches/${activeBatch.batchId}/glp`, { factoryId, glp: v });
-      setGlpOpen(false);
-      await refreshBatches();
-      Alert.alert('Updated', 'GLP set and batch completed.');
-    } catch (e) {
-      Alert.alert('Error', getErrorMessage(e));
+      await api.post('/fermentation/control', {
+        status: 'RUNNING',
+        factory_id: factoryId,
+        batch_id: batchId.trim().toUpperCase(),
+        device_id: (deviceId.trim() || 'DEV001').toUpperCase(),
+      });
+      setStartOpen(false);
+      await Promise.all([refreshLiveState(), refreshBatches(), refreshReadings()]);
+    } catch (error) {
+      Alert.alert('Could not start', getErrorMessage(error));
     } finally {
       setSubmitting(false);
     }
   };
 
+  const stopFermentation = async () => {
+    setSubmitting(true);
+    try {
+      await api.post('/fermentation/control', {
+        status: 'STOPPED',
+        factory_id: factoryId,
+        batch_id: liveState?.batchId,
+        device_id: liveState?.deviceId,
+      });
+      await Promise.all([refreshLiveState(), refreshBatches()]);
+    } catch (error) {
+      Alert.alert('Could not stop', getErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const confirmStop = () => {
+    Alert.alert(
+      'Stop the live sensor stream?',
+      'The web dashboard and every connected mobile device will switch to the stopped state.',
+      [
+        { text: 'Keep running', style: 'cancel' },
+        { text: 'Stop stream', style: 'destructive', onPress: stopFermentation },
+      ],
+    );
+  };
+
+  const completeBatch = async () => {
+    if (!activeBatch) return;
+    const value = Number(glp);
+    if (!Number.isFinite(value) || value < 0 || value > 100) {
+      Alert.alert('Invalid GLP', 'Enter a value from 0 to 100.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      if (isLive) {
+        await api.post('/fermentation/control', {
+          status: 'STOPPED',
+          factory_id: factoryId,
+          batch_id: activeBatch.batchId,
+          device_id: liveState?.deviceId,
+        });
+      }
+      await api.put(`/batches/${activeBatch.batchId}/glp`, { factoryId, glp: value });
+      setGlpOpen(false);
+      await Promise.all([refreshLiveState(), refreshBatches()]);
+    } catch (error) {
+      Alert.alert('Could not complete batch', getErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const error = readingsError || batchesError || liveError;
+
   return (
-    <SafeAreaView style={styles.scroll} edges={['top']}>
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      {/* ── Header ── */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.hello}>Welcome back</Text>
-          <Text style={styles.name}>{displayName}</Text>
-          <Text style={styles.muted}>Factory {factoryId} · Officer</Text>
-        </View>
-        <Badge label="Live" variant="live" />
-      </View>
-
-      {loading ? <Loading /> : null}
-
-      {/* ── Error banner ── */}
-      {(readingsError || batchesError) && readings.length === 0 && batches.length === 0 ? (
-        <Pressable onPress={onRefresh} style={styles.errorBanner}>
-          <Ionicons name="cloud-offline-outline" size={20} color={theme.colors.danger} />
-          <View style={{ flex: 1, marginLeft: theme.spacing.sm }}>
-            <Text style={styles.errorTitle}>Could not reach server</Text>
-            <Text style={styles.errorMsg}>{readingsError || batchesError}</Text>
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refreshAll}
+            tintColor={theme.colors.primary}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.topBar}>
+          <BrandMark compact />
+          <View style={styles.topActions}>
+            <ThemeToggle compact />
+            <View style={styles.avatar}>
+              <Ionicons name="person-outline" size={20} color={theme.colors.primaryDark} />
+            </View>
           </View>
-          <Text style={styles.retryText}>Retry</Text>
-        </Pressable>
-      ) : null}
+        </View>
+        <View style={styles.welcome}>
+          <Text style={styles.kicker}>OFFICER DESK · {factoryId}</Text>
+          <Text style={styles.greeting}>Good shift, {displayName.split(' ')[0]}.</Text>
+        </View>
 
-      {/* ── Live Dashboard label ── */}
-      <Text style={styles.pageTitle}>Live Dashboard</Text>
+        <LinearGradient
+          colors={
+            theme.mode === 'dark'
+              ? isLive ? ['#0B2B19', '#07110B'] : ['#151B17', '#080B09']
+              : isLive ? ['#C8F6DA', '#F3FFF7'] : ['#FFFFFF', '#EAF3EC']
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
+          <View style={styles.heroRingLarge} />
+          <View style={styles.heroRingSmall} />
+          <View style={styles.heroStatus}>
+            <Badge
+              label={liveLoading ? 'Checking' : isLive ? 'Streaming' : 'Standby'}
+              variant={isLive ? 'live' : 'neutral'}
+            />
+            {isLive ? (
+              <Animated.View
+                style={[
+                  styles.pulseHalo,
+                  {
+                    opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.25, 0.7] }),
+                    transform: [{
+                      scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1.4] }),
+                    }],
+                  },
+                ]}
+              />
+            ) : null}
+          </View>
 
-      {/* ── Tab bar ── */}
-      <View style={styles.tabBar}>
-        {TABS.map(t => (
-          <Pressable
-            key={t.key}
-            onPress={() => setActiveTab(t.key)}
-            style={[styles.tab, activeTab === t.key && styles.tabActive]}
-          >
-            <Text style={[styles.tabLabel, activeTab === t.key && styles.tabLabelActive]}>
-              {t.label}
-            </Text>
+          <Text style={styles.heroTitle}>
+            {isLive
+              ? `${liveState?.batchId ?? 'Batch'} is\nbreathing.`
+              : 'Ready for the\nnext batch.'}
+          </Text>
+          <Text style={styles.heroBody}>
+            {isLive
+              ? `Signals from ${liveState?.deviceId ?? 'the chamber'} are shared with web and mobile.`
+              : 'Start once the leaves and chamber are ready. Every connected dashboard will update.'}
+          </Text>
+
+          <View style={styles.heroActionRow}>
+            <Button
+              title={isLive ? 'Stop live sensors' : 'Start fermentation'}
+              variant={isLive ? 'secondary' : 'primary'}
+              disabled={liveLoading}
+              loading={submitting}
+              onPress={isLive ? confirmStop : openStart}
+              style={styles.heroButton}
+            />
+            <View style={styles.heroMeta}>
+              <Text style={styles.heroMetaLabel}>LAST SIGNAL</Text>
+              <Text style={styles.heroMetaValue}>{fmtDate(latest?.timestamp) || 'No signal'}</Text>
+            </View>
+          </View>
+        </LinearGradient>
+
+        {error ? (
+          <Pressable onPress={refreshAll} style={styles.errorStrip}>
+            <Ionicons name="cloud-offline-outline" size={18} color={theme.colors.danger} />
+            <Text style={styles.errorText} numberOfLines={2}>{error}</Text>
+            <Text style={styles.retry}>Retry</Text>
           </Pressable>
-        ))}
-      </View>
+        ) : null}
 
-      {/* ══════════════ OVERVIEW TAB ══════════════ */}
-      {activeTab === 'overview' && (
-        <>
-          {/* Performance summary tiles */}
-          <View style={styles.tilesRow}>
-            <PerfTile
-              label="Active Batches"
-              sub="In fermentation"
-              value={activeCount}
-              icon="flame"
-              iconBg="#fde8d8"
-              iconFg="#e6743b"
-            />
-            <PerfTile
-              label="Latest Temp"
-              sub={latest?.batchId || 'No live batch'}
-              value={latest?.temperature != null ? `${fmt(latest.temperature)} °C` : '—'}
-              icon="thermometer"
-              iconBg="#e6f5ec"
-              iconFg={theme.colors.primary}
-              live={!!latest}
-            />
-            <PerfTile
-              label="Completed"
-              sub="GLP set"
-              value={completedCount}
-              icon="checkmark-circle"
-              iconBg="#e1eefd"
-              iconFg="#2a7fd6"
-            />
+        {loading ? <Loading label="Syncing factory state" /> : null}
+
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionKicker}>SHIFT OVERVIEW</Text>
+            <Text style={styles.sectionTitle}>What needs attention</Text>
           </View>
-
-          {/* Active fermentation banner */}
-          <Text style={styles.sectionTitle}>Active Fermentation</Text>
-          {activeBatch ? (
-            <Card>
-              <View style={styles.rowBetween}>
-                <View style={styles.batchIconWrap}>
-                  <Ionicons name="leaf" size={20} color={theme.colors.primary} />
-                </View>
-                <View style={{ flex: 1, marginLeft: theme.spacing.md }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Badge label="In Fermentation" variant="ongoing" />
-                  </View>
-                  <Text style={[styles.batchId, { marginTop: 4 }]}>{activeBatch.batchId}</Text>
-                  <Text style={styles.muted}>
-                    Started {fmtDate(activeBatch.lastTimestamp)}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.batchStats}>
-                <BatchStat label="Temperature"
-                  value={activeBatch.latestTemperature != null ? `${fmt(activeBatch.latestTemperature)} °C` : '—'} />
-                <BatchStat label="MQ135 ppm"
-                  value={activeBatch.latestMq135 != null ? fmt(activeBatch.latestMq135, 0) : '—'} />
-                <BatchStat label="Color"
-                  value={activeBatch.latestColor != null ? fmt(activeBatch.latestColor, 0) : '—'} />
-              </View>
-              <Button
-                title="Set GLP & Complete"
-                onPress={() => setGlpOpen(true)}
-                style={{ marginTop: theme.spacing.lg }}
-              />
-            </Card>
-          ) : (
-            <Card>
-              <EmptyState
-                title="No active batch"
-                message="Start a new fermentation batch to begin monitoring."
-              />
-              <Button title="Start Fermentation" onPress={() => setStartOpen(true)} />
-            </Card>
-          )}
-
-          {/* Recent batches (short list) */}
-          <Text style={styles.sectionTitle}>Factory Batches</Text>
-          <Text style={styles.sectionSub}>{batches.length} total</Text>
-          {batches.length === 0 ? (
-            <Card>
-              <EmptyState title="No batches yet" message="Batches will appear here once created." />
-            </Card>
-          ) : (
-            batches.slice(0, 5).map(b => (
-              <Pressable
-                key={b.batchId}
-                onPress={() => navigation.navigate('BatchDetail', { batchId: b.batchId })}
-              >
-                <Card style={styles.batchCard}>
-                  <View style={styles.rowBetween}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.batchId}>{b.batchId}</Text>
-                      <Text style={styles.muted}>{fmtDate(b.lastTimestamp)}</Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 6 }}>
-                      {isActiveBatch(b) ? (
-                        <Badge label="Ongoing" variant="ongoing" />
-                      ) : (
-                        <Badge label="Completed" variant="completed" />
-                      )}
-                      {b.price != null ? <Badge label="Priced" variant="priced" /> : null}
-                    </View>
-                  </View>
-                  <View style={[styles.row, { marginTop: theme.spacing.sm }]}>
-                    <Pill label={`T ${fmt(b.latestTemperature)}°C`} />
-                    <Pill label={`MQ ${fmt(b.latestMq135, 0)}`} />
-                    <Pill label={`C ${fmt(b.latestColor, 0)}`} />
-                    {b.glp != null ? <Pill label={`GLP ${b.glp}%`} accent /> : null}
-                  </View>
-                </Card>
-              </Pressable>
-            ))
-          )}
-        </>
-      )}
-
-      {/* ══════════════ SENSORS TAB ══════════════ */}
-      {activeTab === 'sensors' && (
-        <>
-          {/* 3 large sensor cards */}
-          <SensorCard
-            label="Temperature"
-            value={latest?.temperature ?? null}
-            unit="°C"
-            icon="thermometer"
-            color={theme.colors.primary}
-            bg="#e6f5ec"
-            deviceId={latest?.deviceId}
-            timestamp={latest?.timestamp}
-          />
-          <SensorCard
-            label="MQ135 Gas"
-            value={latest?.mq135 ?? null}
-            unit="ppm"
-            icon="cloud"
-            color={theme.colors.accent}
-            bg="#e1eefd"
-            digits={0}
-            deviceId={latest?.deviceId}
-            timestamp={latest?.timestamp}
-          />
-          <SensorCard
-            label="Color Index"
-            value={latest?.color ?? null}
-            unit=""
-            icon="color-palette"
-            color="#d97706"
-            bg="#fef3c7"
-            digits={0}
-            deviceId={latest?.deviceId}
-            timestamp={latest?.timestamp}
-          />
-
-          {/* Device / reading info */}
-          <Card style={{ marginTop: theme.spacing.md }}>
-            <Text style={styles.cardTitle}>Reading Details</Text>
-            <View style={styles.detailGrid}>
-              <DetailRow label="Device" value={latest?.deviceId || '—'} />
-              <DetailRow label="Factory" value={factoryId} />
-              <DetailRow label="Batch" value={latest?.batchId || '—'} />
-              <DetailRow label="Timestamp" value={fmtDate(latest?.timestamp) || '—'} />
-              <DetailRow label="Total Devices" value={String(deviceCount)} />
-              <DetailRow label="Samples" value={String(readings.length)} />
-            </View>
-          </Card>
-
-          {/* Mini trend: last N readings as text list */}
-          {readings.length > 1 && (
-            <Card style={{ marginTop: theme.spacing.md }}>
-              <Text style={styles.cardTitle}>Recent Readings</Text>
-              {readings.slice(0, 8).map((r, i) => (
-                <View key={i} style={[styles.readingRow, i > 0 && styles.readingRowBorder]}>
-                  <Text style={styles.readingTime}>{fmtDate(r.timestamp)}</Text>
-                  <View style={styles.readingPills}>
-                    <Pill label={`${fmt(r.temperature)}°C`} />
-                    <Pill label={`${fmt(r.mq135, 0)} ppm`} />
-                    <Pill label={`C ${fmt(r.color, 0)}`} />
-                  </View>
-                </View>
-              ))}
-            </Card>
-          )}
-        </>
-      )}
-
-      {/* ══════════════ BATCHES TAB ══════════════ */}
-      {activeTab === 'batches' && (
-        <>
-          {/* Top selling summary header */}
-          <Card>
-            <View style={styles.rowBetween}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.eyebrow}>Most Selling</Text>
-                <Text style={styles.cardTitle}>Top {pricedBatches.length} priced batches</Text>
-                <Text style={styles.muted}>
-                  Combined revenue Rs {totalRevenue.toLocaleString()}
-                </Text>
-              </View>
-              {pricedBatches[0] && (
-                <View style={styles.topBatchBadge}>
-                  <View style={styles.topBatchIcon}>
-                    <Ionicons name="trophy" size={18} color={theme.colors.primary} />
-                  </View>
-                  <Text style={styles.eyebrow}>Top Batch</Text>
-                  <Text style={styles.topBatchId}>{pricedBatches[0].batchId}</Text>
-                  <Text style={styles.topBatchPrice}>
-                    Rs {(pricedBatches[0].price ?? 0).toLocaleString()}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </Card>
-
-          {/* Priced batch cards */}
-          {pricedBatches.length === 0 ? (
-            <Card style={{ marginTop: theme.spacing.md }}>
-              <EmptyState
-                title="No priced batches"
-                message="Completed batches need to be priced by the Manager before appearing here."
-              />
-            </Card>
-          ) : (
-            pricedBatches.slice(0, 6).map((b, i) => (
-              <Pressable
-                key={b.batchId}
-                onPress={() => navigation.navigate('BatchDetail', { batchId: b.batchId })}
-              >
-                <Card style={styles.batchCard}>
-                  <View style={styles.rowBetween}>
-                    <View style={styles.rankBadge}>
-                      <Text style={styles.rankText}>#{i + 1}</Text>
-                    </View>
-                    <View style={{ flex: 1, marginLeft: theme.spacing.md }}>
-                      <Text style={styles.batchId}>{b.batchId}</Text>
-                      <Text style={styles.priceText}>
-                        Rs {(b.price ?? 0).toLocaleString()}
-                      </Text>
-                    </View>
-                    <Text style={styles.muted}>{fmtDate(b.lastTimestamp)?.split(' ')[0]}</Text>
-                  </View>
-                  <View style={[styles.miniStatRow, { marginTop: theme.spacing.md }]}>
-                    <MiniStat label="GLP"  value={b.glp != null ? `${b.glp}%` : '—'} />
-                    <MiniStat label="Temp" value={b.latestTemperature != null ? `${fmt(b.latestTemperature)}°` : '—'} />
-                    <MiniStat label="MQ"   value={b.latestMq135 != null ? fmt(b.latestMq135, 0) : '—'} />
-                  </View>
-                </Card>
-              </Pressable>
-            ))
-          )}
-
-          {/* Full batch list leaderboard */}
-          <Text style={styles.sectionTitle}>All Batches</Text>
-          <Text style={styles.sectionSub}>{batches.length} total</Text>
-          {batches.length === 0 ? (
-            <Card>
-              <EmptyState title="No batches yet" message="Batches will appear here once created." />
-            </Card>
-          ) : (
-            batches.map(b => (
-              <Pressable
-                key={b.batchId}
-                onPress={() => navigation.navigate('BatchDetail', { batchId: b.batchId })}
-              >
-                <Card style={styles.batchCard}>
-                  <View style={styles.rowBetween}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.batchId}>{b.batchId}</Text>
-                      <Text style={styles.muted}>{fmtDate(b.lastTimestamp)}</Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 6 }}>
-                      {isActiveBatch(b) ? (
-                        <Badge label="Ongoing" variant="ongoing" />
-                      ) : (
-                        <Badge label="Done" variant="completed" />
-                      )}
-                      {b.price != null ? <Badge label="Priced" variant="priced" /> : null}
-                    </View>
-                  </View>
-                  <View style={[styles.row, { marginTop: theme.spacing.sm }]}>
-                    <Pill label={`T ${fmt(b.latestTemperature)}°C`} />
-                    <Pill label={`MQ ${fmt(b.latestMq135, 0)}`} />
-                    {b.glp != null ? <Pill label={`GLP ${b.glp}%`} accent /> : null}
-                    {b.price != null ? (
-                      <Pill label={`Rs ${(b.price).toLocaleString()}`} accent />
-                    ) : null}
-                  </View>
-                </Card>
-              </Pressable>
-            ))
-          )}
-        </>
-      )}
-
-      <View style={{ height: 100 }} />
-
-      {/* ── Start Fermentation Modal ── */}
-      <Modal visible={startOpen} animationType="slide" transparent onRequestClose={() => setStartOpen(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Start Fermentation</Text>
-              <Pressable onPress={() => setStartOpen(false)}>
-                <Ionicons name="close" size={22} color={theme.colors.text} />
-              </Pressable>
-            </View>
-            <Text style={styles.label}>Batch ID</Text>
-            <TextInput
-              style={styles.input}
-              value={batchId}
-              onChangeText={setBatchId}
-              placeholder="BAT001"
-              autoCapitalize="characters"
-              placeholderTextColor={theme.colors.textMuted}
-            />
-            <Text style={styles.label}>Factory ID</Text>
-            <TextInput style={[styles.input, styles.disabledInput]} value={factoryId} editable={false} />
-            <Text style={styles.label}>Device ID</Text>
-            <TextInput
-              style={styles.input}
-              value={deviceId}
-              onChangeText={setDeviceId}
-              placeholder="DEV001"
-              autoCapitalize="characters"
-              placeholderTextColor={theme.colors.textMuted}
-            />
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Target Temp (°C)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={targetTemperature}
-                  onChangeText={setTargetTemperature}
-                  keyboardType="decimal-pad"
-                  placeholderTextColor={theme.colors.textMuted}
-                />
-              </View>
-              <View style={{ width: theme.spacing.md }} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Estimated Hours</Text>
-                <TextInput
-                  style={styles.input}
-                  value={estimatedHours}
-                  onChangeText={setEstimatedHours}
-                  keyboardType="number-pad"
-                  placeholderTextColor={theme.colors.textMuted}
-                />
-              </View>
-            </View>
-            <View style={{ height: theme.spacing.lg }} />
-            <Button title="Start Batch" onPress={submitStart} loading={submitting} />
-            <View style={{ height: theme.spacing.sm }} />
-            <Button title="Cancel" variant="ghost" onPress={() => setStartOpen(false)} />
-          </View>
+          <Text style={styles.sectionCount}>{batches.length} batches</Text>
         </View>
-      </Modal>
 
-      {/* ── GLP Modal ── */}
-      <Modal visible={glpOpen} animationType="slide" transparent onRequestClose={() => setGlpOpen(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Set GLP & Complete</Text>
-              <Pressable onPress={() => setGlpOpen(false)}>
-                <Ionicons name="close" size={22} color={theme.colors.text} />
-              </Pressable>
-            </View>
-            <Text style={styles.muted}>Batch: {activeBatch?.batchId}</Text>
-            <Text style={styles.label}>Good Leaf Percentage (0–100)</Text>
-            <TextInput
-              style={styles.input}
-              value={glp}
-              onChangeText={setGlp}
-              keyboardType="number-pad"
-              placeholderTextColor={theme.colors.textMuted}
-            />
-            <View style={{ height: theme.spacing.lg }} />
-            <Button title="Submit GLP" onPress={submitGlp} loading={submitting} />
-            <View style={{ height: theme.spacing.sm }} />
-            <Button title="Cancel" variant="ghost" onPress={() => setGlpOpen(false)} />
-          </View>
+        <View style={styles.attentionRow}>
+          <AttentionTile label="Live now" value={isLive ? '01' : '00'} active={isLive} />
+          <AttentionTile label="Needs GLP" value={String(awaitingGlp).padStart(2, '0')} />
+          <AttentionTile label="Completed" value={String(completed).padStart(2, '0')} />
         </View>
-      </Modal>
-    </ScrollView>
+
+        {activeBatch ? (
+          <Card style={styles.workflowCard}>
+            <View style={styles.cardTopRow}>
+              <View>
+                <Text style={styles.cardEyebrow}>ACTIVE FERMENTATION</Text>
+                <Text style={styles.activeBatchId}>{activeBatch.batchId}</Text>
+              </View>
+              <Badge label="Live" variant="live" />
+            </View>
+            <View style={styles.flow}>
+              <FlowStep label="Started" done />
+              <View style={styles.flowLine} />
+              <FlowStep label="Streaming" done />
+              <View style={styles.flowLineMuted} />
+              <FlowStep label="Quality" />
+            </View>
+            <Text style={styles.workflowHint}>
+              When the leaf is ready, stop the stream and record its Good Leaf Percentage.
+            </Text>
+            <Button title="Set GLP & complete batch" onPress={() => setGlpOpen(true)} />
+          </Card>
+        ) : (
+          <Card style={styles.readyCard}>
+            <View style={styles.readyIcon}>
+              <Ionicons name="leaf-outline" size={23} color={theme.colors.primary} />
+            </View>
+            <View style={styles.readyCopy}>
+              <Text style={styles.readyTitle}>Chamber is available</Text>
+              <Text style={styles.readyText}>No sensor stream is running for this factory.</Text>
+            </View>
+            <Pressable onPress={openStart} style={styles.roundAction}>
+              <Ionicons name="arrow-forward" size={20} color="#031008" />
+            </Pressable>
+          </Card>
+        )}
+
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionKicker}>LIVE SNAPSHOT</Text>
+            <Text style={styles.sectionTitle}>Chamber pulse</Text>
+          </View>
+          <Pressable onPress={() => navigation.navigate('Sensors')}>
+            <Text style={styles.textAction}>View stream</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.sensorGrid}>
+          {sensorTiles.map((sensor, index) => (
+            <SensorTile
+              key={sensor.key}
+              label={sensor.label}
+              value={latest?.[sensor.key] ?? null}
+              unit={sensor.unit}
+              icon={sensor.icon}
+              live={isLive}
+              index={index}
+            />
+          ))}
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionKicker}>RECENT WORK</Text>
+            <Text style={styles.sectionTitle}>Batch handoff</Text>
+          </View>
+          <Pressable onPress={() => navigation.navigate('Batches')}>
+            <Text style={styles.textAction}>See all</Text>
+          </Pressable>
+        </View>
+
+        {batches.length === 0 ? (
+          <Card><EmptyState title="No batch history yet" message="Your first fermentation will appear here." /></Card>
+        ) : (
+          batches.slice(0, 4).map(batch => (
+            <Pressable
+              key={batch.batchId}
+              onPress={() => navigation.navigate('BatchDetail', { batchId: batch.batchId })}
+              style={({ pressed }) => pressed && styles.pressed}
+            >
+              <BatchRow batch={batch} live={liveState?.batchId === batch.batchId && isLive} />
+            </Pressable>
+          ))
+        )}
+
+        <View style={styles.bottomSpace} />
+      </ScrollView>
+
+      <BottomSheet visible={startOpen} title="Start a clean cycle" onClose={() => setStartOpen(false)}>
+        <Text style={styles.sheetIntro}>
+          Confirm the chamber device and batch label. All officer dashboards will switch to live.
+        </Text>
+        <Field label="BATCH ID" value={batchId} onChangeText={setBatchId} />
+        <Field label="DEVICE ID" value={deviceId} onChangeText={setDeviceId} />
+        <Button title="Start sensor stream" onPress={startFermentation} loading={submitting} />
+      </BottomSheet>
+
+      <BottomSheet visible={glpOpen} title="Complete quality handoff" onClose={() => setGlpOpen(false)}>
+        <Text style={styles.sheetIntro}>
+          Batch {activeBatch?.batchId}. Enter the measured Good Leaf Percentage from 0 to 100.
+        </Text>
+        <Field label="GOOD LEAF PERCENTAGE" value={glp} onChangeText={setGlp} numeric />
+        <Button title="Stop stream & save GLP" onPress={completeBatch} loading={submitting} />
+      </BottomSheet>
     </SafeAreaView>
   );
 }
 
-/* ─────────────────── Sub-components ─────────────────── */
-
-function PerfTile({
-  label, sub, value, icon, iconBg, iconFg, live,
-}: {
-  label: string; sub: string; value: string | number;
-  icon: React.ComponentProps<typeof Ionicons>['name'];
-  iconBg: string; iconFg: string; live?: boolean;
-}) {
+function AttentionTile({ label, value, active }: { label: string; value: string; active?: boolean }) {
+  const theme = useAppTheme();
+  const styles = makeStyles(theme);
   return (
-    <Card style={styles.perfTile}>
-      <View style={[styles.perfTileIcon, { backgroundColor: iconBg }]}>
-        <Ionicons name={icon} size={18} color={iconFg} />
-      </View>
-      <Text style={styles.perfTileValue}>{value}</Text>
-      <Text style={styles.perfTileLabel}>{label}</Text>
-      <View style={styles.perfTileSub}>
-        {live && <View style={styles.liveDot} />}
-        <Text style={styles.perfTileSubText} numberOfLines={1}>{sub}</Text>
-      </View>
-    </Card>
+    <View style={[styles.attentionTile, active && styles.attentionTileActive]}>
+      <Text style={[styles.attentionValue, active && styles.attentionValueActive]}>{value}</Text>
+      <Text style={[styles.attentionLabel, active && styles.attentionLabelActive]}>{label}</Text>
+    </View>
   );
 }
 
-function SensorCard({
-  label, value, unit, icon, color, bg, digits = 1, deviceId, timestamp,
-}: {
-  label: string; value: number | null; unit: string;
-  icon: React.ComponentProps<typeof Ionicons>['name'];
-  color: string; bg: string; digits?: number;
-  deviceId?: string; timestamp?: string;
-}) {
+function FlowStep({ label, done }: { label: string; done?: boolean }) {
+  const theme = useAppTheme();
+  const styles = makeStyles(theme);
   return (
-    <Card style={styles.sensorCard}>
-      <View style={styles.rowBetween}>
-        <View style={[styles.sensorIcon, { backgroundColor: bg }]}>
-          <Ionicons name={icon} size={22} color={color} />
-        </View>
-        <Badge label="Live" variant="live" />
+    <View style={styles.flowStep}>
+      <View style={[styles.flowDot, done && styles.flowDotDone]}>
+        {done ? <Ionicons name="checkmark" size={11} color="#031008" /> : null}
       </View>
-      <Text style={[styles.sensorValue, { color }]}>
-        {value != null ? fmtNumber(value, digits) : '—'}
-        {value != null && unit ? (
-          <Text style={styles.sensorUnit}> {unit}</Text>
-        ) : null}
+      <Text style={[styles.flowLabel, done && styles.flowLabelDone]}>{label}</Text>
+    </View>
+  );
+}
+
+function SensorTile({
+  label,
+  value,
+  unit,
+  icon,
+  live,
+  index,
+}: {
+  label: string;
+  value: number | null;
+  unit: string;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  live: boolean;
+  index: number;
+}) {
+  const theme = useAppTheme();
+  const styles = makeStyles(theme);
+  return (
+    <View style={[styles.sensorTile, index === 0 && styles.sensorTileFeatured]}>
+      <View style={styles.sensorTileTop}>
+        <Ionicons name={icon} size={18} color={index === 0 ? '#031008' : theme.colors.primary} />
+        <View style={[styles.sensorStatus, live && styles.sensorStatusLive]} />
+      </View>
+      <Text style={[styles.sensorNumber, index === 0 && styles.sensorNumberFeatured]}>
+        {formatSensor(value, index > 2 ? 0 : 1)}
+        {value != null && unit ? <Text style={styles.sensorUnit}> {unit}</Text> : null}
       </Text>
-      <Text style={styles.sensorLabel}>{label}</Text>
-      {deviceId ? (
-        <Text style={styles.sensorDevice}>{deviceId} · {fmtDate(timestamp) || '—'}</Text>
-      ) : null}
+      <Text style={[styles.sensorLabel, index === 0 && styles.sensorLabelFeatured]}>{label}</Text>
+    </View>
+  );
+}
+
+function BatchRow({ batch, live }: { batch: BatchListItem; live: boolean }) {
+  const theme = useAppTheme();
+  const styles = makeStyles(theme);
+  const status = live ? 'Live' : batch.glp != null ? 'Completed' : 'Needs GLP';
+  return (
+    <Card style={styles.batchRow}>
+      <View style={styles.batchGlyph}>
+        <Ionicons name="leaf-outline" size={18} color={theme.colors.primary} />
+      </View>
+      <View style={styles.batchCopy}>
+        <Text style={styles.batchId}>{batch.batchId}</Text>
+        <Text style={styles.batchMeta}>
+          {fmtDate(batch.lastTimestamp)} · {formatSensor(batch.latestHumidity)}% RH
+        </Text>
+      </View>
+      <View style={styles.batchEnd}>
+        <Text style={[styles.batchStatus, live && styles.batchStatusLive]}>{status}</Text>
+        <Ionicons name="chevron-forward" size={16} color={theme.colors.textMuted} />
+      </View>
     </Card>
   );
 }
 
-function BatchStat({ label, value }: { label: string; value: string }) {
+function BottomSheet({
+  visible,
+  title,
+  onClose,
+  children,
+}: {
+  visible: boolean;
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const theme = useAppTheme();
+  const styles = makeStyles(theme);
   return (
-    <View style={styles.batchStat}>
-      <Text style={styles.batchStatLabel}>{label}</Text>
-      <Text style={styles.batchStatValue}>{value}</Text>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.backdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View style={styles.sheet}>
+          <View style={styles.sheetHandle} />
+          <View style={styles.sheetHeader}>
+            <Text style={styles.sheetTitle}>{title}</Text>
+            <Pressable onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={20} color={theme.colors.text} />
+            </Pressable>
+          </View>
+          {children}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChangeText,
+  numeric,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  numeric?: boolean;
+}) {
+  const theme = useAppTheme();
+  const styles = makeStyles(theme);
+  return (
+    <View style={styles.field}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <TextInput
+        style={styles.input}
+        value={value}
+        onChangeText={onChangeText}
+        autoCapitalize={numeric ? 'none' : 'characters'}
+        keyboardType={numeric ? 'number-pad' : 'default'}
+        placeholderTextColor={theme.colors.textMuted}
+      />
     </View>
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.miniStat}>
-      <Text style={styles.miniStatLabel}>{label}</Text>
-      <Text style={styles.miniStatValue}>{value}</Text>
-    </View>
-  );
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.detailRow}>
-      <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={styles.detailValue}>{value}</Text>
-    </View>
-  );
-}
-
-function Pill({ label, accent }: { label: string; accent?: boolean }) {
-  return (
-    <View style={[styles.pill, accent && styles.pillAccent]}>
-      <Text style={[styles.pillText, accent && styles.pillTextAccent]}>{label}</Text>
-    </View>
-  );
-}
-
-/* ─────────────────── Styles ─────────────────── */
-
-const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: theme.colors.background },
-  content: { padding: theme.spacing.lg, paddingBottom: 120 },
-
-  // Header
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: theme.spacing.xxl,
-  },
-  hello: { color: theme.colors.textMuted, fontSize: theme.font.small },
-  name:  { color: theme.colors.text, fontSize: theme.font.h2, fontWeight: '800' },
-  muted: { color: theme.colors.textMuted, fontSize: theme.font.small },
-
-  // Error banner
-  errorBanner: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: theme.colors.dangerSoft,
-    borderRadius: theme.radius.md, padding: theme.spacing.md,
-    marginBottom: theme.spacing.lg, borderWidth: 1, borderColor: '#fca5a5',
-  },
-  errorTitle: { fontSize: theme.font.small, fontWeight: '700', color: theme.colors.danger },
-  errorMsg:   { fontSize: theme.font.tiny, color: theme.colors.danger, marginTop: 2 },
-  retryText:  { fontSize: theme.font.small, fontWeight: '700', color: theme.colors.primary },
-
-  // Page title + tabs
-  pageTitle: {
-    fontSize: theme.font.h2, fontWeight: '800', color: theme.colors.text,
-    marginBottom: theme.spacing.md,
-  },
-  tabBar: {
+const makeStyles = (theme: AppTheme) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: 16, paddingTop: 10 },
+  topBar: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.subtle,
-    borderRadius: theme.radius.pill,
-    padding: 4,
-    marginBottom: theme.spacing.xl,
-  },
-  tab: {
-    flex: 1, paddingVertical: 8,
-    borderRadius: theme.radius.pill,
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 21,
   },
-  tabActive: {
-    backgroundColor: theme.colors.surface,
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+  topActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  welcome: { marginBottom: 19 },
+  kicker: { color: theme.colors.primary, fontSize: 10, fontWeight: '900', letterSpacing: 1.6 },
+  greeting: { color: theme.colors.text, fontSize: 21, fontWeight: '900', marginTop: 5 },
+  avatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: theme.colors.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.colors.borderActive,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  tabLabel:       { fontSize: theme.font.small, fontWeight: '600', color: theme.colors.textMuted },
-  tabLabelActive: { color: theme.colors.text },
-
-  // Section headers
-  sectionTitle: {
-    fontSize: theme.font.h3, fontWeight: '700', color: theme.colors.text,
-    marginTop: theme.spacing.xl, marginBottom: 2,
+  hero: {
+    minHeight: 330,
+    borderRadius: 32,
+    borderWidth: 1,
+    borderColor: theme.colors.borderActive,
+    padding: 22,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
   },
-  sectionSub: {
-    fontSize: theme.font.small, color: theme.colors.textMuted,
-    marginBottom: theme.spacing.md,
+  heroRingLarge: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    borderWidth: 1,
+    borderColor: 'rgba(60,242,138,0.14)',
+    right: -74,
+    top: -82,
   },
-
-  // Perf tiles (Overview)
-  tilesRow: { flexDirection: 'row', gap: theme.spacing.sm },
-  perfTile: { flex: 1, padding: theme.spacing.md, minWidth: 0 },
-  perfTileIcon: {
-    width: 36, height: 36, borderRadius: 10,
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: theme.spacing.sm,
+  heroRingSmall: {
+    position: 'absolute',
+    width: 105,
+    height: 105,
+    borderRadius: 53,
+    borderWidth: 18,
+    borderColor: 'rgba(60,242,138,0.05)',
+    right: 16,
+    top: 24,
   },
-  perfTileValue: {
-    fontSize: 18, fontWeight: '800', color: theme.colors.text,
-  },
-  perfTileLabel: {
-    fontSize: theme.font.tiny, color: theme.colors.textMuted,
-    fontWeight: '600', marginTop: 2,
-  },
-  perfTileSub: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 },
-  perfTileSubText: { fontSize: theme.font.tiny, color: theme.colors.textMuted, flex: 1 },
-  liveDot: {
-    width: 6, height: 6, borderRadius: 3,
+  heroStatus: { position: 'absolute', left: 22, top: 22, flexDirection: 'row', alignItems: 'center' },
+  pulseHalo: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     backgroundColor: theme.colors.primary,
+    marginLeft: 10,
   },
-
-  // Active batch card (Overview)
-  batchIconWrap: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: theme.colors.primarySoft,
-    alignItems: 'center', justifyContent: 'center',
+  heroTitle: {
+    color: theme.colors.text,
+    fontSize: 38,
+    lineHeight: 42,
+    fontWeight: '900',
+    letterSpacing: -1.4,
   },
-  batchStats: {
-    flexDirection: 'row', marginTop: theme.spacing.lg,
-    borderTopWidth: 1, borderTopColor: theme.colors.border,
-    paddingTop: theme.spacing.md,
+  heroBody: {
+    color: theme.colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 12,
+    maxWidth: 290,
   },
-  batchStat: { flex: 1, alignItems: 'center' },
-  batchStatLabel: { fontSize: theme.font.tiny, color: theme.colors.textMuted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  batchStatValue: { fontSize: theme.font.h3, fontWeight: '700', color: theme.colors.text, marginTop: 4 },
-
-  // Sensor cards (Sensors tab)
-  sensorCard: { marginBottom: theme.spacing.md },
-  sensorIcon: {
-    width: 46, height: 46, borderRadius: 14,
-    alignItems: 'center', justifyContent: 'center',
+  heroActionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20 },
+  heroButton: { flex: 1, height: 48 },
+  heroMeta: { width: 102, marginLeft: 14 },
+  heroMetaLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
+  heroMetaValue: { color: theme.colors.textSecondary, fontSize: 10, fontWeight: '700', marginTop: 4 },
+  errorStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    backgroundColor: theme.colors.dangerSoft,
+    borderWidth: 1,
+    borderColor: theme.colors.danger,
+    borderRadius: 18,
+    padding: 12,
   },
-  sensorValue: { fontSize: 40, fontWeight: '800', marginTop: theme.spacing.md },
-  sensorUnit:  { fontSize: 18, fontWeight: '600' },
-  sensorLabel: { fontSize: theme.font.body, color: theme.colors.textMuted, fontWeight: '600', marginTop: 4 },
-  sensorDevice:{ fontSize: theme.font.tiny, color: theme.colors.textMuted, marginTop: 4 },
-
-  // Reading detail & history
-  cardTitle: { fontSize: theme.font.h3, fontWeight: '700', color: theme.colors.text, marginBottom: theme.spacing.md },
-  detailGrid: { gap: theme.spacing.sm },
-  detailRow:  { flexDirection: 'row', justifyContent: 'space-between' },
-  detailLabel:{ fontSize: theme.font.small, color: theme.colors.textMuted, fontWeight: '600' },
-  detailValue:{ fontSize: theme.font.small, color: theme.colors.text, fontWeight: '700' },
-  readingRow: { paddingVertical: theme.spacing.sm },
-  readingRowBorder: { borderTopWidth: 1, borderTopColor: theme.colors.border },
-  readingTime:{ fontSize: theme.font.tiny, color: theme.colors.textMuted, marginBottom: 4 },
-  readingPills:{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-
-  // Batches tab
-  eyebrow: {
-    fontSize: 10, fontWeight: '700', letterSpacing: 1,
-    textTransform: 'uppercase', color: theme.colors.textMuted,
-    marginBottom: 4,
+  errorText: { color: theme.colors.dangerText, fontSize: 11, flex: 1, marginHorizontal: 9 },
+  retry: { color: theme.colors.text, fontSize: 11, fontWeight: '900' },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginTop: 32,
+    marginBottom: 14,
   },
-  topBatchBadge: { alignItems: 'flex-end' },
-  topBatchIcon: {
-    width: 44, height: 44, borderRadius: 14,
-    backgroundColor: theme.colors.primarySoft,
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: 4,
-  },
-  topBatchId:   { fontSize: theme.font.body, fontWeight: '700', color: theme.colors.text },
-  topBatchPrice:{ fontSize: theme.font.small, fontWeight: '700', color: theme.colors.primary },
-  rankBadge: {
-    minWidth: 32, height: 32, borderRadius: 8,
-    backgroundColor: theme.colors.primarySoft,
-    alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: 6,
-  },
-  rankText:   { fontSize: theme.font.small, fontWeight: '800', color: theme.colors.primaryDark },
-  priceText:  { fontSize: theme.font.small, fontWeight: '700', color: theme.colors.primary, marginTop: 2 },
-  miniStatRow:{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: theme.colors.border, paddingTop: theme.spacing.md, gap: theme.spacing.xl },
-  miniStat:   {},
-  miniStatLabel:{ fontSize: 10, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', color: theme.colors.textMuted },
-  miniStatValue:{ fontSize: theme.font.small, fontWeight: '700', color: theme.colors.text, marginTop: 2 },
-
-  // Shared
-  batchCard: { marginBottom: theme.spacing.md },
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  batchId: { fontSize: theme.font.body, fontWeight: '700', color: theme.colors.text },
-  pill: {
-    backgroundColor: theme.colors.subtle,
-    paddingHorizontal: 8, paddingVertical: 4,
-    borderRadius: 999, marginRight: 4, marginTop: 4,
-  },
-  pillAccent: { backgroundColor: theme.colors.primarySoft },
-  pillText:       { fontSize: theme.font.tiny, fontWeight: '600', color: theme.colors.textMuted },
-  pillTextAccent: { color: theme.colors.primaryDark },
-
-  // Modals
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  modalCard: {
+  sectionKicker: { color: theme.colors.primary, fontSize: 9, fontWeight: '900', letterSpacing: 1.4 },
+  sectionTitle: { color: theme.colors.text, fontSize: 22, fontWeight: '900', marginTop: 4 },
+  sectionCount: { color: theme.colors.textMuted, fontSize: 11, marginBottom: 3 },
+  textAction: { color: theme.colors.primary, fontSize: 11, fontWeight: '900', marginBottom: 4 },
+  attentionRow: { flexDirection: 'row', gap: 8 },
+  attentionTile: {
+    flex: 1,
+    minHeight: 90,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
-    borderTopLeftRadius: theme.radius.xl,
-    borderTopRightRadius: theme.radius.xl,
-    padding: theme.spacing.xl,
+    padding: 13,
+    justifyContent: 'space-between',
   },
-  modalHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: theme.spacing.md,
+  attentionTileActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  attentionValue: { color: theme.colors.text, fontSize: 25, fontWeight: '900' },
+  attentionValueActive: { color: '#031008' },
+  attentionLabel: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '800', textTransform: 'uppercase' },
+  attentionLabelActive: { color: '#174B2C' },
+  workflowCard: { marginTop: 12 },
+  cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  cardEyebrow: { color: theme.colors.primary, fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
+  activeBatchId: { color: theme.colors.text, fontSize: 25, fontWeight: '900', marginTop: 4 },
+  flow: { flexDirection: 'row', alignItems: 'flex-start', marginVertical: 22 },
+  flowStep: { alignItems: 'center' },
+  flowDot: {
+    width: 25,
+    height: 25,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: theme.colors.borderActive,
+    backgroundColor: theme.colors.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  modalTitle: { fontSize: theme.font.h3, fontWeight: '700', color: theme.colors.text },
-  label: {
-    color: theme.colors.textMuted, fontSize: theme.font.small,
-    marginBottom: 4, marginTop: 8, fontWeight: '600',
+  flowDotDone: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  flowLabel: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '700', marginTop: 6 },
+  flowLabelDone: { color: theme.colors.textSecondary },
+  flowLine: { height: 1, flex: 1, backgroundColor: theme.colors.primary, marginTop: 12 },
+  flowLineMuted: { height: 1, flex: 1, backgroundColor: theme.colors.border, marginTop: 12 },
+  workflowHint: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 18, marginBottom: 16 },
+  readyCard: { marginTop: 12, flexDirection: 'row', alignItems: 'center' },
+  readyIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: theme.colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  readyCopy: { flex: 1, marginHorizontal: 13 },
+  readyTitle: { color: theme.colors.text, fontSize: 14, fontWeight: '900' },
+  readyText: { color: theme.colors.textMuted, fontSize: 11, marginTop: 4 },
+  roundAction: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sensorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  sensorTile: {
+    width: '48.5%',
+    minHeight: 145,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: 16,
+    justifyContent: 'space-between',
+  },
+  sensorTileFeatured: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  sensorTileTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sensorStatus: { width: 7, height: 7, borderRadius: 4, backgroundColor: theme.colors.borderActive },
+  sensorStatusLive: { backgroundColor: theme.colors.primaryLight },
+  sensorNumber: { color: theme.colors.text, fontSize: 27, fontWeight: '900', letterSpacing: -0.8 },
+  sensorNumberFeatured: { color: '#031008' },
+  sensorUnit: { fontSize: 12, fontWeight: '700' },
+  sensorLabel: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.8 },
+  sensorLabelFeatured: { color: '#174B2C' },
+  batchRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 9, borderRadius: 20 },
+  batchGlyph: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    backgroundColor: theme.colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  batchCopy: { flex: 1, marginHorizontal: 12 },
+  batchId: { color: theme.colors.text, fontSize: 14, fontWeight: '900' },
+  batchMeta: { color: theme.colors.textMuted, fontSize: 10, marginTop: 3 },
+  batchEnd: { alignItems: 'flex-end', gap: 5 },
+  batchStatus: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '900', textTransform: 'uppercase' },
+  batchStatusLive: { color: theme.colors.primary },
+  pressed: { opacity: 0.75, transform: [{ scale: 0.99 }] },
+  bottomSpace: { height: 118 },
+  backdrop: { flex: 1, backgroundColor: theme.colors.overlay, justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    borderWidth: 1,
+    borderColor: theme.colors.borderActive,
+    padding: 20,
+    paddingBottom: 30,
+  },
+  sheetHandle: {
+    width: 46,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: theme.colors.borderActive,
+    alignSelf: 'center',
+    marginBottom: 18,
+  },
+  sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sheetTitle: { color: theme.colors.text, fontSize: 22, fontWeight: '900' },
+  closeButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: theme.colors.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetIntro: { color: theme.colors.textMuted, fontSize: 12, lineHeight: 18, marginTop: 10, marginBottom: 12 },
+  field: { marginBottom: 14 },
+  fieldLabel: { color: theme.colors.primary, fontSize: 9, fontWeight: '900', letterSpacing: 1.2, marginBottom: 7 },
   input: {
-    height: 44, borderWidth: 1, borderColor: theme.colors.border,
-    borderRadius: theme.radius.md, paddingHorizontal: 12,
-    color: theme.colors.text, backgroundColor: theme.colors.subtle,
+    height: 52,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.borderActive,
+    backgroundColor: theme.colors.elevated,
+    color: theme.colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+    paddingHorizontal: 15,
   },
-  disabledInput: { backgroundColor: theme.colors.border, color: theme.colors.textMuted },
 });
