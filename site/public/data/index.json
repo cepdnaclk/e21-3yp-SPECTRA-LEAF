@@ -1,0 +1,46 @@
+{
+  "visibility": true,
+  "title": "SPECTRA LEAF",
+  "team": [
+    {
+      "name": "Nadeera Kothalawala",
+      "email": "e21226@eng.pdn.ac.lk",
+      "eNumber": "E/21/226"
+    },
+    {
+      "name": "Lahiru Dinushan",
+      "email": "e21049@eng.pdn.ac.lk",
+      "eNumber": "E/21/049"
+    },
+    {
+      "name": "Rangana Madhushanka",
+      "email": "e21200@eng.pdn.ac.lk",
+      "eNumber": "E/21/200"
+    },
+    {
+      "name": "Deshan Dinidu",
+      "email": "e21054@eng.pdn.ac.lk",
+      "eNumber": "E/21/054"
+    }
+  ],
+  "supervisors": [
+    {
+      "name": "Ms. Yasodha Vimukthi",
+      "email": "yasodhav@eng.pdn.ac.lk"
+    },
+    {
+      "name": "Dr. Isuru Nawinne",
+      "email": "isurunawinne@eng.pdn.ac.lk"
+    }
+  ],
+  "tags": [
+    "Web",
+    "Embedded Systems",
+    "Industrial IoT",
+    "AWS",
+    "Sensor Networks",
+    "Machine Learning"
+  ],
+  "image": "cover_page.jpg",
+  "thumbnail": "thumbnail.jpg"
+}

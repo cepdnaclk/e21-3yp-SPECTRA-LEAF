@@ -5,10 +5,11 @@
   "scripts": {
     "prepare:assets": "node scripts/prepare-assets.mjs",
     "dev": "npm run prepare:assets && node scripts/dev-server.mjs",
-    "build": "npm run prepare:assets && node scripts/prepare-build.mjs && next build && node scripts/finalize-build.mjs",
+    "build": "npm run prepare:assets && npm run validate:project-data && node scripts/prepare-build.mjs && next build && node scripts/finalize-build.mjs",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run lint",
+    "validate:project-data": "node scripts/validate-project-data.mjs",
+    "check": "npm run typecheck && npm run lint && npm run validate:project-data",
     "preview": "node scripts/preview.mjs"
   },
   "dependencies": {

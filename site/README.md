@@ -92,8 +92,16 @@ The legacy misspelled `vedio1.mp4` and `vedio2.mp4` files are preserved unchange
 - Team names, registration numbers, roles, contact links and biographies: `src/data/team.ts`
 - Gallery entries and alt text: `src/data/gallery.ts`
 - Timeline phases and neutral status labels: `src/data/timeline.ts`
+- Department listing metadata: `public/data/index.json`
+- Department project cover (required 940×352): `public/data/cover_page.jpg`
+- Department batch thumbnail (required 640×360): `public/data/thumbnail.jpg`
 
 To add a gallery image, place it under `public/assets/images/`, add an item in `src/data/gallery.ts`, and use an asset path beginning with `/assets/images/`.
+
+Run `npm run validate:project-data` after changing the department metadata or
+listing images. The production build publishes these files at `/data/`, where
+the Department of Computer Engineering project index reads them during its
+scheduled update.
 
 ## Asset paths
 
