@@ -3,7 +3,7 @@
   "version": "1.0.1",
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
-    "postinstall": "node scripts/patch-expo-node-externals.js",
+    "postinstall": "node scripts/patch-expo-node-externals.js && node scripts/patch-expo-modules-core.js",
     "start": "expo start --lan",
     "start:lan": "expo start --lan",
     "start:phone": "expo start --lan -c",
