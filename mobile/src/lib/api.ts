@@ -67,15 +67,17 @@ function getExpoManifestOrigin() {
   );
 }
 
-function getApiBaseURL() {
+export function normalizeApiBaseURL(value: string) {
+  const trimmed = value.trim().replace(/\/+$/, '');
+  if (!/^https?:\/\//i.test(trimmed)) {
+    throw new Error('Server address must start with http:// or https://');
+  }
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+}
+
+export function getDefaultApiBaseURL() {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     return `${window.location.origin}/api`;
-  }
-
-  const lanHost = getExpoLanHost();
-  const lanBackend = backendOriginFromHost(lanHost);
-  if (lanBackend) {
-    return `${lanBackend}/api`;
   }
 
   const constants = Constants as any;
@@ -86,7 +88,13 @@ function getApiBaseURL() {
     process.env.EXPO_PUBLIC_API_BASE_URL;
 
   if (configuredBaseURL) {
-    return configuredBaseURL;
+    return normalizeApiBaseURL(configuredBaseURL);
+  }
+
+  const lanHost = getExpoLanHost();
+  const lanBackend = backendOriginFromHost(lanHost);
+  if (lanBackend) {
+    return `${lanBackend}/api`;
   }
 
   const nativeOrigin = getExpoManifestOrigin() || getNativeDevServerOrigin();
@@ -100,7 +108,7 @@ function getApiBaseURL() {
 }
 
 export const api = axios.create({
-  baseURL: getApiBaseURL(),
+  baseURL: getDefaultApiBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -111,25 +119,34 @@ console.log('[API baseURL]', api.defaults.baseURL);
 
 api.interceptors.response.use(
   response => response,
-  async error => {
+  error => {
     console.log('[API error]', error.config?.url, error.response?.data ?? error.message);
-    const fallbackBaseURL =
-      Platform.OS === 'android'
-        ? `http://10.0.2.2:${BACKEND_PORT}/api`
-        : `http://localhost:${BACKEND_PORT}/api`;
-    if (
-      !error.config?._retriedWithTunnel &&
-      error.message === 'Network Error' &&
-      error.config?.baseURL !== fallbackBaseURL
-    ) {
-      error.config._retriedWithTunnel = true;
-      error.config.baseURL = fallbackBaseURL;
-      api.defaults.baseURL = fallbackBaseURL;
-      return api.request(error.config);
+    if (error.message === 'Network Error') {
+      error.message = `Cannot reach database server at ${error.config?.baseURL ?? api.defaults.baseURL}`;
     }
     return Promise.reject(error);
   }
 );
+
+export function configureApiBaseURL(value: string) {
+  api.defaults.baseURL = normalizeApiBaseURL(value);
+}
+
+export async function verifyDatabaseConnection(baseURL: string, factoryId: string) {
+  const normalized = normalizeApiBaseURL(baseURL);
+  const client = axios.create({ baseURL: normalized, timeout: 15000 });
+  const [healthResponse, batchesResponse] = await Promise.all([
+    client.get('/health'),
+    client.get(`/factories/${factoryId}/batches`),
+  ]);
+  const batches = getArrayPayload<unknown>(batchesResponse.data, 'batches');
+  return {
+    baseURL: normalized,
+    batchCount: batches.length,
+    table: healthResponse.data?.data?.table ?? 'FermentationData',
+    region: healthResponse.data?.data?.region ?? 'unknown',
+  };
+}
 
 export function unwrap<T>(payload: any): T {
   if (payload && typeof payload === 'object' && 'data' in payload && payload.data !== undefined) {

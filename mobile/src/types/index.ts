@@ -70,4 +70,5 @@ export interface OfficerProfile {
   shift: string;
   factoryId: string;
   role: Role;
+  avatarUri?: string;
 }

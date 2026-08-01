@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,11 +13,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
+import * as ImagePicker from 'expo-image-picker';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import ThemeToggle from '../components/ThemeToggle';
+import { getErrorMessage, verifyDatabaseConnection } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
+import { useConnectionStore } from '../store/connectionStore';
 import { AppTheme, useAppTheme } from '../theme';
 
 export default function ProfileScreen() {
@@ -23,11 +29,22 @@ export default function ProfileScreen() {
   const styles = makeStyles(theme);
   const profile = useAuthStore(state => state.profile);
   const updateProfile = useAuthStore(state => state.updateProfile);
+  const changePassword = useAuthStore(state => state.changePassword);
   const signOut = useAuthStore(state => state.signOut);
+  const apiBaseUrl = useConnectionStore(state => state.apiBaseUrl);
+  const setApiBaseUrl = useConnectionStore(state => state.setApiBaseUrl);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(profile);
   const [liveAlerts, setLiveAlerts] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
+  const [showPasswords, setShowPasswords] = useState(false);
+  const [serverUrl, setServerUrl] = useState(apiBaseUrl);
+  const [checkingDatabase, setCheckingDatabase] = useState(false);
+  const [databaseResult, setDatabaseResult] = useState<{
+    ok: boolean;
+    message: string;
+  } | null>(null);
 
   const startEditing = () => {
     setForm(profile);
@@ -45,6 +62,82 @@ export default function ProfileScreen() {
       { text: 'Stay signed in', style: 'cancel' },
       { text: 'Sign out', style: 'destructive', onPress: signOut },
     ]);
+  };
+
+  const pickProfileImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Photo access needed', 'Allow photo access to choose an officer profile image.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    const asset = result.assets?.[0];
+    if (result.canceled || !asset) return;
+
+    try {
+      const extension = asset.fileName?.split('.').pop()?.toLowerCase() || 'jpg';
+      const destination = FileSystem.documentDirectory
+        ? `${FileSystem.documentDirectory}officer-profile-${Date.now()}.${extension}`
+        : asset.uri;
+      if (destination !== asset.uri) {
+        await FileSystem.copyAsync({ from: asset.uri, to: destination });
+      }
+      if (
+        profile.avatarUri &&
+        FileSystem.documentDirectory &&
+        profile.avatarUri.startsWith(FileSystem.documentDirectory)
+      ) {
+        await FileSystem.deleteAsync(profile.avatarUri, { idempotent: true });
+      }
+      updateProfile({ avatarUri: destination });
+    } catch (error) {
+      Alert.alert('Photo not saved', getErrorMessage(error));
+    }
+  };
+
+  const savePassword = () => {
+    if (passwords.next !== passwords.confirm) {
+      Alert.alert('Passwords do not match', 'Enter the same new password in both fields.');
+      return;
+    }
+    if (!changePassword(passwords.current, passwords.next)) {
+      Alert.alert(
+        'Password not changed',
+        passwords.next.length < 8
+          ? 'The new password must contain at least eight characters.'
+          : 'The current password is incorrect.',
+      );
+      return;
+    }
+    setPasswords({ current: '', next: '', confirm: '' });
+    Alert.alert('Password changed', 'Use the new password the next time you sign in on this device.');
+  };
+
+  const checkDatabase = async () => {
+    setCheckingDatabase(true);
+    setDatabaseResult(null);
+    try {
+      const result = await verifyDatabaseConnection(serverUrl, profile.factoryId);
+      setApiBaseUrl(result.baseURL);
+      setServerUrl(result.baseURL);
+      setDatabaseResult({
+        ok: true,
+        message: `${result.table} connected in ${result.region}. ${result.batchCount} batches loaded.`,
+      });
+    } catch (error: any) {
+      const message = error?.message === 'Network Error'
+        ? `Cannot reach ${serverUrl.trim()}`
+        : getErrorMessage(error);
+      setDatabaseResult({ ok: false, message });
+    } finally {
+      setCheckingDatabase(false);
+    }
   };
 
   return (
@@ -66,16 +159,28 @@ export default function ProfileScreen() {
 
         <View style={styles.identity}>
           <View style={styles.identityPattern} />
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {profile.displayName
-                .split(' ')
-                .map(part => part[0])
-                .join('')
-                .slice(0, 2)
-                .toUpperCase()}
-            </Text>
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Change profile photo"
+            onPress={pickProfileImage}
+            style={({ pressed }) => [styles.avatar, pressed && styles.pressed]}
+          >
+            {profile.avatarUri ? (
+              <Image source={{ uri: profile.avatarUri }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>
+                {profile.displayName
+                  .split(' ')
+                  .map(part => part[0])
+                  .join('')
+                  .slice(0, 2)
+                  .toUpperCase()}
+              </Text>
+            )}
+            <View style={styles.avatarEdit}>
+              <Ionicons name="camera" size={13} color="#031008" />
+            </View>
+          </Pressable>
           <Badge label="Officer mode" variant="live" />
           <Text style={styles.name}>{profile.displayName}</Text>
           <Text style={styles.role}>Factory Officer · {profile.factoryId}</Text>
@@ -92,7 +197,7 @@ export default function ProfileScreen() {
           <View style={styles.modeCopy}>
             <Text style={styles.modeTitle}>Officer session active</Text>
             <Text style={styles.modeText}>
-              Local preview validation is enabled. Production authentication can be connected later.
+              Your officer account and profile are stored on this device.
             </Text>
           </View>
         </View>
@@ -147,6 +252,88 @@ export default function ProfileScreen() {
               <Button title="Save details" onPress={save} style={styles.actionButton} />
             </View>
           ) : null}
+        </Card>
+
+        <SectionHeader kicker="SECURITY" title="Change officer password" />
+        <Card style={styles.securityCard}>
+          <PasswordField
+            label="CURRENT PASSWORD"
+            value={passwords.current}
+            onChangeText={current => setPasswords({ ...passwords, current })}
+            visible={showPasswords}
+          />
+          <PasswordField
+            label="NEW PASSWORD"
+            value={passwords.next}
+            onChangeText={next => setPasswords({ ...passwords, next })}
+            visible={showPasswords}
+          />
+          <PasswordField
+            label="CONFIRM NEW PASSWORD"
+            value={passwords.confirm}
+            onChangeText={confirm => setPasswords({ ...passwords, confirm })}
+            visible={showPasswords}
+            last
+          />
+          <View style={styles.securityActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={showPasswords ? 'Hide passwords' : 'Show passwords'}
+              onPress={() => setShowPasswords(current => !current)}
+              style={styles.visibilityButton}
+            >
+              <Ionicons
+                name={showPasswords ? 'eye-off-outline' : 'eye-outline'}
+                size={19}
+                color={theme.colors.primary}
+              />
+            </Pressable>
+            <Button title="Update password" onPress={savePassword} style={styles.passwordButton} />
+          </View>
+        </Card>
+
+        <SectionHeader kicker="DATABASE" title="Backend connection" />
+        <Card style={styles.connectionCard}>
+          <Text style={styles.connectionLabel}>API SERVER</Text>
+          <View style={styles.connectionInputWrap}>
+            <Ionicons name="server-outline" size={18} color={theme.colors.primary} />
+            <TextInput
+              value={serverUrl}
+              onChangeText={setServerUrl}
+              style={styles.connectionInput}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              placeholder="https://server.example.com/api"
+              placeholderTextColor={theme.colors.textMuted}
+            />
+          </View>
+          {databaseResult ? (
+            <View style={[styles.connectionResult, databaseResult.ok ? styles.connectionOk : styles.connectionError]}>
+              <Ionicons
+                name={databaseResult.ok ? 'checkmark-circle' : 'alert-circle'}
+                size={18}
+                color={databaseResult.ok ? theme.colors.primary : theme.colors.danger}
+              />
+              <Text style={[styles.connectionResultText, !databaseResult.ok && styles.connectionErrorText]}>
+                {databaseResult.message}
+              </Text>
+            </View>
+          ) : null}
+          <Pressable
+            disabled={checkingDatabase}
+            onPress={checkDatabase}
+            style={({ pressed }) => [styles.testButton, pressed && styles.pressed]}
+          >
+            {checkingDatabase ? (
+              <ActivityIndicator color="#031008" />
+            ) : (
+              <Ionicons name="cloud-done-outline" size={19} color="#031008" />
+            )}
+            <Text style={styles.testButtonText}>
+              {checkingDatabase ? 'Checking database' : 'Save and test database'}
+            </Text>
+          </Pressable>
         </Card>
 
         <SectionHeader kicker="SHIFT PREFERENCES" title="How the app behaves" />
@@ -286,6 +473,41 @@ function PreferenceRow({
   );
 }
 
+function PasswordField({
+  label,
+  value,
+  onChangeText,
+  visible,
+  last,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  visible: boolean;
+  last?: boolean;
+}) {
+  const theme = useAppTheme();
+  const styles = makeStyles(theme);
+  return (
+    <View style={[styles.passwordField, !last && styles.fieldBorder]}>
+      <Ionicons name="lock-closed-outline" size={17} color={theme.colors.primary} />
+      <View style={styles.passwordCopy}>
+        <Text style={styles.fieldLabel}>{label}</Text>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          style={styles.passwordInput}
+          secureTextEntry={!visible}
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="Enter password"
+          placeholderTextColor={theme.colors.textMuted}
+        />
+      </View>
+    </View>
+  );
+}
+
 const makeStyles = (theme: AppTheme) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { flex: 1 },
@@ -331,6 +553,20 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 14,
   },
   avatarText: { color: theme.colors.primary, fontSize: 21, fontWeight: '900' },
+  avatarImage: { width: '100%', height: '100%', borderRadius: 22 },
+  avatarEdit: {
+    position: 'absolute',
+    width: 25,
+    height: 25,
+    right: -6,
+    bottom: -6,
+    borderRadius: 13,
+    backgroundColor: theme.colors.primary,
+    borderWidth: 2,
+    borderColor: '#F7FFF9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   name: { color: '#031008', fontSize: 30, fontWeight: '900', letterSpacing: -1, marginTop: 18 },
   role: { color: '#3F5647', fontSize: 12, fontWeight: '700', marginTop: 4 },
   shiftTag: {
@@ -393,6 +629,69 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
   },
   editActions: { flexDirection: 'row', gap: 9, marginTop: 16, marginBottom: 10 },
   actionButton: { flex: 1 },
+  securityCard: { paddingVertical: 5, borderRadius: 24 },
+  passwordField: { minHeight: 66, flexDirection: 'row', alignItems: 'center' },
+  passwordCopy: { flex: 1, marginLeft: 12 },
+  passwordInput: {
+    height: 35,
+    color: theme.colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+    paddingVertical: 0,
+  },
+  securityActions: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, marginBottom: 8 },
+  visibilityButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.borderActive,
+    backgroundColor: theme.colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  passwordButton: { flex: 1 },
+  connectionCard: { borderRadius: 24 },
+  connectionLabel: {
+    color: theme.colors.textMuted,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  connectionInputWrap: {
+    minHeight: 52,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.elevated,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 13,
+  },
+  connectionInput: { flex: 1, color: theme.colors.text, fontSize: 11, marginLeft: 10 },
+  connectionResult: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 15,
+    padding: 11,
+    marginTop: 11,
+  },
+  connectionOk: { backgroundColor: theme.colors.primarySoft },
+  connectionError: { backgroundColor: theme.colors.dangerSoft },
+  connectionResultText: { flex: 1, color: theme.colors.textSecondary, fontSize: 9, lineHeight: 14, marginLeft: 8 },
+  connectionErrorText: { color: theme.colors.dangerText },
+  testButton: {
+    height: 50,
+    borderRadius: 17,
+    backgroundColor: theme.colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  testButtonText: { color: '#031008', fontSize: 12, fontWeight: '900' },
   preferenceCard: { paddingVertical: 5, borderRadius: 24 },
   preferenceRow: { minHeight: 78, flexDirection: 'row', alignItems: 'center' },
   preferenceCopy: { flex: 1, marginHorizontal: 11 },
@@ -418,4 +717,5 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
   versionName: { color: theme.colors.text, fontSize: 12, fontWeight: '900' },
   versionMeta: { color: theme.colors.textMuted, fontSize: 9, marginTop: 3 },
   bottomSpace: { height: 116 },
+  pressed: { opacity: 0.78 },
 });

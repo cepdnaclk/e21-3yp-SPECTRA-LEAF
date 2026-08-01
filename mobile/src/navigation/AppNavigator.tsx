@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { enableScreens } from 'react-native-screens';
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -17,6 +17,7 @@ import FactoryScreen from '../screens/FactoryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import LoginScreen from '../screens/LoginScreen';
 import { useAuthStore } from '../store/authStore';
+import { useConnectionStore } from '../store/connectionStore';
 import { AppTheme, useAppTheme } from '../theme';
 
 enableScreens();
@@ -148,6 +149,8 @@ function AppNavigator() {
 export default function RootNavigator() {
   const theme = useAppTheme();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const accountReady = useAuthStore(state => state.hasHydrated);
+  const connectionReady = useConnectionStore(state => state.hasHydrated);
   const baseTheme = theme.mode === 'dark' ? DarkTheme : DefaultTheme;
   const navigationTheme = {
     ...baseTheme,
@@ -162,6 +165,15 @@ export default function RootNavigator() {
     },
   };
 
+  if (!accountReady || !connectionReady) {
+    return (
+      <View style={[styles.loading, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={[styles.loadingText, { color: theme.colors.textMuted }]}>Loading officer desk</Text>
+      </View>
+    );
+  }
+
   if (!isAuthenticated) {
     return <LoginScreen />;
   }
@@ -172,6 +184,11 @@ export default function RootNavigator() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  loadingText: { fontSize: 12, fontWeight: '700', marginTop: 12 },
+});
 
 const makeTabStyles = (theme: AppTheme) => StyleSheet.create({
   wrap: { position: 'absolute', left: 14, right: 14 },
