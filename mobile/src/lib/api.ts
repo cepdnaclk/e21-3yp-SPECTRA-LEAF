@@ -78,10 +78,6 @@ export function normalizeApiBaseURL(value: string) {
 }
 
 export function getDefaultApiBaseURL() {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    return `${window.location.origin}/api`;
-  }
-
   const constants = Constants as any;
   const configuredBaseURL =
     constants.expoConfig?.extra?.apiBaseUrl ||
@@ -91,6 +87,10 @@ export function getDefaultApiBaseURL() {
 
   if (configuredBaseURL) {
     return normalizeApiBaseURL(configuredBaseURL);
+  }
+
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    return `${window.location.origin}/api`;
   }
 
   const lanHost = getExpoLanHost();

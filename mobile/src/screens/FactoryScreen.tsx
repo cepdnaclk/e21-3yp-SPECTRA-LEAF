@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -90,7 +91,7 @@ export default function FactoryScreen() {
           <View style={styles.factoryPatternTwo} />
           <View style={styles.factoryHeroTop}>
             <View style={styles.factoryMark}>
-              <Ionicons name="leaf" size={22} color="#031008" />
+              <Image source={require('../assets/images/Logo.png')} style={styles.factoryLogo} />
             </View>
             <Badge label={isLive ? 'Producing' : 'Ready'} variant={isLive ? 'live' : 'priced'} />
           </View>
@@ -278,6 +279,7 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  factoryLogo: { width: 27, height: 27, resizeMode: 'contain' },
   factoryCode: { color: '#031008', fontSize: 39, fontWeight: '900', letterSpacing: -1.5, marginTop: 24 },
   factoryName: { color: '#1D5A35', fontSize: 12, fontWeight: '800', marginTop: 3 },
   factoryStats: { flexDirection: 'row', marginTop: 24 },
@@ -372,5 +374,5 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
   statusText: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.7 },
   statusTextOnline: { color: theme.colors.primary },
   pressed: { opacity: 0.7 },
-  bottomSpace: { height: 116 },
+  bottomSpace: { height: 130 },
 });

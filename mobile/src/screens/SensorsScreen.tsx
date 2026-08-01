@@ -407,5 +407,5 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
   expandedLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '800', textTransform: 'uppercase' },
   expandedValue: { color: theme.colors.text, fontSize: 12, fontWeight: '900', marginTop: 4 },
   pressed: { opacity: 0.76, transform: [{ scale: 0.995 }] },
-  bottomSpace: { height: 116 },
+  bottomSpace: { height: 130 },
 });

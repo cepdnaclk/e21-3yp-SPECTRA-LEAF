@@ -16,11 +16,13 @@ interface AuthStore {
   factoryId: string;
   displayName: string;
   profile: OfficerProfile;
+  liveAlertsEnabled: boolean;
   loginEmail: string;
   loginPassword: string;
   signIn: (email: string, password: string) => boolean;
   signOut: () => void;
   updateProfile: (patch: Partial<OfficerProfile>) => void;
+  setLiveAlertsEnabled: (enabled: boolean) => void;
   changePassword: (currentPassword: string, newPassword: string) => boolean;
   setHasHydrated: (hydrated: boolean) => void;
 }
@@ -43,6 +45,7 @@ export const useAuthStore = create<AuthStore>()(
       factoryId: OFFICER_FACTORY_ID,
       displayName: 'Factory Officer',
       profile: defaultProfile,
+      liveAlertsEnabled: true,
       loginEmail: DEFAULT_LOGIN_EMAIL,
       loginPassword: DEFAULT_LOGIN_PASSWORD,
       signIn: (email, password) => {
@@ -66,6 +69,7 @@ export const useAuthStore = create<AuthStore>()(
             loginEmail: email || state.loginEmail,
           };
         }),
+      setLiveAlertsEnabled: liveAlertsEnabled => set({ liveAlertsEnabled }),
       changePassword: (currentPassword, newPassword) => {
         if (currentPassword !== get().loginPassword || newPassword.length < 8) {
           return false;
@@ -84,6 +88,7 @@ export const useAuthStore = create<AuthStore>()(
         factoryId: state.factoryId,
         displayName: state.displayName,
         profile: state.profile,
+        liveAlertsEnabled: state.liveAlertsEnabled,
         loginEmail: state.loginEmail,
         loginPassword: state.loginPassword,
       }),

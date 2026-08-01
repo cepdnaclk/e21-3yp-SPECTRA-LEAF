@@ -353,9 +353,9 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 15,
   },
-  filterActive: { backgroundColor: theme.colors.text, borderColor: theme.colors.text },
+  filterActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   filterText: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '900', letterSpacing: 0.6 },
-  filterTextActive: { color: '#031008' },
+  filterTextActive: { color: theme.colors.ink },
   listHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 },
   listTitle: { color: theme.colors.text, fontSize: 20, fontWeight: '900', textTransform: 'capitalize' },
   listCount: { color: theme.colors.textMuted, fontSize: 10 },
@@ -418,5 +418,5 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
     justifyContent: 'center',
   },
   pressed: { opacity: 0.74, transform: [{ scale: 0.992 }] },
-  bottomSpace: { height: 116 },
+  bottomSpace: { height: 130 },
 });

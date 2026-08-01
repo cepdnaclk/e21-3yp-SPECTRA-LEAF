@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Image,
   Pressable,
@@ -19,9 +18,12 @@ import Badge from '../components/Badge';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import ThemeToggle from '../components/ThemeToggle';
-import { getErrorMessage, verifyDatabaseConnection } from '../lib/api';
+import { getErrorMessage } from '../lib/api';
+import {
+  hideLiveBatchNotification,
+  requestLiveBatchNotificationAccess,
+} from '../lib/liveBatchNotifications';
 import { useAuthStore } from '../store/authStore';
-import { useConnectionStore } from '../store/connectionStore';
 import { AppTheme, useAppTheme } from '../theme';
 
 export default function ProfileScreen() {
@@ -31,20 +33,13 @@ export default function ProfileScreen() {
   const updateProfile = useAuthStore(state => state.updateProfile);
   const changePassword = useAuthStore(state => state.changePassword);
   const signOut = useAuthStore(state => state.signOut);
-  const apiBaseUrl = useConnectionStore(state => state.apiBaseUrl);
-  const setApiBaseUrl = useConnectionStore(state => state.setApiBaseUrl);
+  const liveAlertsEnabled = useAuthStore(state => state.liveAlertsEnabled);
+  const setLiveAlertsEnabled = useAuthStore(state => state.setLiveAlertsEnabled);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(profile);
-  const [liveAlerts, setLiveAlerts] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
   const [showPasswords, setShowPasswords] = useState(false);
-  const [serverUrl, setServerUrl] = useState(apiBaseUrl);
-  const [checkingDatabase, setCheckingDatabase] = useState(false);
-  const [databaseResult, setDatabaseResult] = useState<{
-    ok: boolean;
-    message: string;
-  } | null>(null);
 
   const startEditing = () => {
     setForm(profile);
@@ -60,7 +55,14 @@ export default function ProfileScreen() {
   const confirmSignOut = () => {
     Alert.alert('End officer session?', 'You will return to the SpectraLeaf login screen.', [
       { text: 'Stay signed in', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: signOut },
+      {
+        text: 'Sign out',
+        style: 'destructive',
+        onPress: () => {
+          void hideLiveBatchNotification();
+          signOut();
+        },
+      },
     ]);
   };
 
@@ -119,25 +121,23 @@ export default function ProfileScreen() {
     Alert.alert('Password changed', 'Use the new password the next time you sign in on this device.');
   };
 
-  const checkDatabase = async () => {
-    setCheckingDatabase(true);
-    setDatabaseResult(null);
-    try {
-      const result = await verifyDatabaseConnection(serverUrl, profile.factoryId);
-      setApiBaseUrl(result.baseURL);
-      setServerUrl(result.baseURL);
-      setDatabaseResult({
-        ok: true,
-        message: `${result.table} connected in ${result.region}. ${result.batchCount} batches loaded.`,
-      });
-    } catch (error: any) {
-      const message = error?.message === 'Network Error'
-        ? `Cannot reach ${serverUrl.trim()}`
-        : getErrorMessage(error);
-      setDatabaseResult({ ok: false, message });
-    } finally {
-      setCheckingDatabase(false);
+  const changeLiveAlerts = async (enabled: boolean) => {
+    if (!enabled) {
+      setLiveAlertsEnabled(false);
+      await hideLiveBatchNotification();
+      return;
     }
+
+    if (await requestLiveBatchNotificationAccess()) {
+      setLiveAlertsEnabled(true);
+      return;
+    }
+
+    setLiveAlertsEnabled(false);
+    Alert.alert(
+      'Notifications are off',
+      'Allow SpectraLeaf notifications in your device settings to show live batches.',
+    );
   };
 
   return (
@@ -292,58 +292,14 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
-        <SectionHeader kicker="DATABASE" title="Backend connection" />
-        <Card style={styles.connectionCard}>
-          <Text style={styles.connectionLabel}>API SERVER</Text>
-          <View style={styles.connectionInputWrap}>
-            <Ionicons name="server-outline" size={18} color={theme.colors.primary} />
-            <TextInput
-              value={serverUrl}
-              onChangeText={setServerUrl}
-              style={styles.connectionInput}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              placeholder="https://server.example.com/api"
-              placeholderTextColor={theme.colors.textMuted}
-            />
-          </View>
-          {databaseResult ? (
-            <View style={[styles.connectionResult, databaseResult.ok ? styles.connectionOk : styles.connectionError]}>
-              <Ionicons
-                name={databaseResult.ok ? 'checkmark-circle' : 'alert-circle'}
-                size={18}
-                color={databaseResult.ok ? theme.colors.primary : theme.colors.danger}
-              />
-              <Text style={[styles.connectionResultText, !databaseResult.ok && styles.connectionErrorText]}>
-                {databaseResult.message}
-              </Text>
-            </View>
-          ) : null}
-          <Pressable
-            disabled={checkingDatabase}
-            onPress={checkDatabase}
-            style={({ pressed }) => [styles.testButton, pressed && styles.pressed]}
-          >
-            {checkingDatabase ? (
-              <ActivityIndicator color="#031008" />
-            ) : (
-              <Ionicons name="cloud-done-outline" size={19} color="#031008" />
-            )}
-            <Text style={styles.testButtonText}>
-              {checkingDatabase ? 'Checking database' : 'Save and test database'}
-            </Text>
-          </Pressable>
-        </Card>
-
         <SectionHeader kicker="SHIFT PREFERENCES" title="How the app behaves" />
         <Card style={styles.preferenceCard}>
           <PreferenceRow
             icon="notifications-outline"
             title="Live state alerts"
             description="Surface start and stop changes from other devices."
-            value={liveAlerts}
-            onChange={setLiveAlerts}
+            value={liveAlertsEnabled}
+            onChange={value => void changeLiveAlerts(value)}
           />
           <PreferenceRow
             icon="sync-outline"
@@ -372,11 +328,11 @@ export default function ProfileScreen() {
 
         <View style={styles.versionRow}>
           <View style={styles.versionMark}>
-            <Ionicons name="leaf" size={16} color="#031008" />
+            <Image source={require('../assets/images/Logo.png')} style={styles.versionLogo} />
           </View>
           <View>
             <Text style={styles.versionName}>SpectraLeaf Officer</Text>
-            <Text style={styles.versionMeta}>Mobile workspace · version 1.0.0</Text>
+            <Text style={styles.versionMeta}>Mobile workspace · version 1.0.1</Text>
           </View>
         </View>
 
@@ -651,47 +607,6 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
     justifyContent: 'center',
   },
   passwordButton: { flex: 1 },
-  connectionCard: { borderRadius: 24 },
-  connectionLabel: {
-    color: theme.colors.textMuted,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-    marginBottom: 8,
-  },
-  connectionInputWrap: {
-    minHeight: 52,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.elevated,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 13,
-  },
-  connectionInput: { flex: 1, color: theme.colors.text, fontSize: 11, marginLeft: 10 },
-  connectionResult: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 15,
-    padding: 11,
-    marginTop: 11,
-  },
-  connectionOk: { backgroundColor: theme.colors.primarySoft },
-  connectionError: { backgroundColor: theme.colors.dangerSoft },
-  connectionResultText: { flex: 1, color: theme.colors.textSecondary, fontSize: 9, lineHeight: 14, marginLeft: 8 },
-  connectionErrorText: { color: theme.colors.dangerText },
-  testButton: {
-    height: 50,
-    borderRadius: 17,
-    backgroundColor: theme.colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 12,
-  },
-  testButtonText: { color: '#031008', fontSize: 12, fontWeight: '900' },
   preferenceCard: { paddingVertical: 5, borderRadius: 24 },
   preferenceRow: { minHeight: 78, flexDirection: 'row', alignItems: 'center' },
   preferenceCopy: { flex: 1, marginHorizontal: 11 },
@@ -714,8 +629,9 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
     justifyContent: 'center',
     marginRight: 11,
   },
+  versionLogo: { width: 22, height: 22, resizeMode: 'contain' },
   versionName: { color: theme.colors.text, fontSize: 12, fontWeight: '900' },
   versionMeta: { color: theme.colors.textMuted, fontSize: 9, marginTop: 3 },
-  bottomSpace: { height: 116 },
+  bottomSpace: { height: 130 },
   pressed: { opacity: 0.78 },
 });

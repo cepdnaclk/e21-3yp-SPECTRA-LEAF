@@ -16,8 +16,8 @@ import BatchDetailScreen from '../screens/BatchDetailScreen';
 import FactoryScreen from '../screens/FactoryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import LoginScreen from '../screens/LoginScreen';
+import LiveBatchNotificationSync from '../components/LiveBatchNotificationSync';
 import { useAuthStore } from '../store/authStore';
-import { useConnectionStore } from '../store/connectionStore';
 import { AppTheme, useAppTheme } from '../theme';
 
 enableScreens();
@@ -60,7 +60,7 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const theme = useAppTheme();
   const styles = makeTabStyles(theme);
-  const bottom = Math.max(insets.bottom, 12);
+  const bottom = Math.max(insets.bottom + 8, 20);
 
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { bottom }]}>
@@ -150,7 +150,6 @@ export default function RootNavigator() {
   const theme = useAppTheme();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const accountReady = useAuthStore(state => state.hasHydrated);
-  const connectionReady = useConnectionStore(state => state.hasHydrated);
   const baseTheme = theme.mode === 'dark' ? DarkTheme : DefaultTheme;
   const navigationTheme = {
     ...baseTheme,
@@ -165,7 +164,7 @@ export default function RootNavigator() {
     },
   };
 
-  if (!accountReady || !connectionReady) {
+  if (!accountReady) {
     return (
       <View style={[styles.loading, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -180,6 +179,7 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer theme={navigationTheme}>
+      <LiveBatchNotificationSync />
       <AppNavigator />
     </NavigationContainer>
   );
