@@ -17,6 +17,8 @@ function originFromHost(value?: string | null) {
 }
 
 const BACKEND_PORT = 5000;
+const PUBLIC_API_BASE_URL =
+  'https://ptao6erh2gi2z32eqy5rjj4gfu0pksbi.lambda-url.ap-south-1.on.aws/api';
 
 function backendOriginFromHost(value?: string | null) {
   if (!value) return null;
@@ -102,9 +104,7 @@ export function getDefaultApiBaseURL() {
     return `${nativeOrigin}/api`;
   }
 
-  return Platform.OS === 'android'
-    ? `http://10.0.2.2:${BACKEND_PORT}/api`
-    : `http://localhost:${BACKEND_PORT}/api`;
+  return PUBLIC_API_BASE_URL;
 }
 
 export const api = axios.create({

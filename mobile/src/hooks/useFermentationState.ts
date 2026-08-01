@@ -17,9 +17,12 @@ export function useFermentationState(factoryId: string, pollMs = 5_000) {
   const [state, setState] = useState<FermentationState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [supported, setSupported] = useState(true);
   const mounted = useRef(true);
+  const unsupported = useRef(false);
 
   const refresh = useCallback(async () => {
+    if (unsupported.current) return;
     try {
       const response = await api.get(`/fermentation/state/${factoryId}`);
       const payload = getObjectPayload<any>(response.data, {});
@@ -27,8 +30,17 @@ export function useFermentationState(factoryId: string, pollMs = 5_000) {
         setState(normalizeState(payload, factoryId));
         setError(null);
       }
-    } catch (err) {
-      if (mounted.current) setError(getErrorMessage(err));
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        unsupported.current = true;
+        if (mounted.current) {
+          setState(normalizeState({}, factoryId));
+          setSupported(false);
+          setError(null);
+        }
+      } else if (mounted.current) {
+        setError(getErrorMessage(err));
+      }
     } finally {
       if (mounted.current) setLoading(false);
     }
@@ -36,6 +48,8 @@ export function useFermentationState(factoryId: string, pollMs = 5_000) {
 
   useEffect(() => {
     mounted.current = true;
+    unsupported.current = false;
+    setSupported(true);
     refresh();
     const timer = setInterval(refresh, pollMs);
     return () => {
@@ -49,6 +63,7 @@ export function useFermentationState(factoryId: string, pollMs = 5_000) {
     isLive: state?.status === 'RUNNING',
     loading,
     error,
+    supported,
     refresh,
   };
 }

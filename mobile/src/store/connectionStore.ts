@@ -23,7 +23,7 @@ export const useConnectionStore = create<ConnectionStore>()(
       setHasHydrated: hasHydrated => set({ hasHydrated }),
     }),
     {
-      name: 'spectraleaf-api-connection-v1',
+      name: 'spectraleaf-api-connection-v2',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: state => ({ apiBaseUrl: state.apiBaseUrl }),
       onRehydrateStorage: () => state => {

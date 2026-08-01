@@ -138,6 +138,7 @@ export default function DashboardScreen() {
         factory_id: factoryId,
         batch_id: batchId.trim().toUpperCase(),
         device_id: (deviceId.trim() || 'DEV001').toUpperCase(),
+        glp: Number(glp) || 80,
       });
       setStartOpen(false);
       await Promise.all([refreshLiveState(), refreshBatches(), refreshReadings()]);
