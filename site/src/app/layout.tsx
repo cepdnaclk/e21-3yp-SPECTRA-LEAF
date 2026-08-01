@@ -29,7 +29,7 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL(productionUrl),
   title: "Spectra Leaf | Intelligent Tea Fermentation System",
-  description: "An AWS-powered Industrial IoT platform for real-time tea-fermentation monitoring, structured data collection and future AI-based sweet-spot detection.",
+  description: "An AWS-powered Industrial IoT platform for real-time black-tea oxidation monitoring, structured data collection and future AI-based sweet-spot detection.",
   keywords: [
     "tea fermentation",
     "Industrial IoT",
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
   openGraph: {
     title: "Spectra Leaf | Intelligent Tea Fermentation System",
-    description: "Organic fermentation meets precision digital intelligence.",
+    description: "Black-tea oxidation meets precise, connected process intelligence.",
     url: productionUrl,
     siteName: "Spectra Leaf",
     type: "website",

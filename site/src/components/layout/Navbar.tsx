@@ -7,7 +7,7 @@ import { navigation } from "@/data/navigation";
 import { project } from "@/data/project";
 import { useActiveSection } from "@/hooks/useActiveSection";
 
-const sectionIds = ["introduction", "architecture", "hardware", "data", "testing", "team"] as const;
+const sectionIds = navigation.map((item) => item.href.slice(1));
 type Theme = "dark" | "light";
 
 export function Navbar() {
@@ -113,7 +113,7 @@ export function Navbar() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.04 }}
               >
-                <span>0{index + 1}</span>{item.label}
+                <span>{item.number}</span>{item.label}
               </motion.a>
             ))}
             <a className="mobile-github" href={project.githubUrl} target="_blank" rel="noreferrer">

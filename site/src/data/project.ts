@@ -3,7 +3,7 @@ export const project = {
   subtitle: "Digitizing the Fermentation Sweet Spot",
   eyebrow: "INDUSTRIAL IoT · TEA PROCESS INTELLIGENCE",
   description:
-    "An AWS-powered Industrial IoT platform that captures temperature, gas and colour telemetry to guide tea fermentation today and train intelligent quality-control models for tomorrow.",
+    "Spectra Leaf aims to make black-tea oxidation measurable and repeatable by capturing temperature, gas and colour telemetry for live factory guidance and future quality-control models.",
   githubUrl: "https://github.com/cepdnaclk/e21-3yp-SPECTRA-LEAF",
   university: "University of Peradeniya",
   faculty: "Faculty of Engineering",
