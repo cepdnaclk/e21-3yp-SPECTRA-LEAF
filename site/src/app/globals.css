@@ -13,6 +13,7 @@
   --cyan: #56c8d8;
   --line: rgba(157, 173, 159, 0.16);
   --panel: rgba(13, 31, 23, 0.68);
+  --hardware-card: #0c1d15;
   --page: min(1440px, calc(100% - 48px));
 }
 
@@ -27,6 +28,7 @@ html[data-theme="light"] {
   --cyan: #147e91;
   --line: rgba(27, 57, 39, 0.16);
   --panel: rgba(255, 255, 255, 0.78);
+  --hardware-card: #ffffff;
 }
 
 * { box-sizing: border-box; }
@@ -636,7 +638,7 @@ html[data-theme="light"] .lightbox {
 .section-heading > p { font-size: 16px; }
 .intro-copy p,
 .controller-copy p,
-.component-grid p,
+.component-copy p,
 .pcb-copy p,
 .cloud-grid p,
 .cloud-architecture p,
@@ -661,7 +663,7 @@ html[data-theme="light"] .lightbox {
 .architecture-layer,
 .hardware-image,
 .controller-copy,
-.component-grid article,
+.component-card,
 .pcb-feature,
 .telemetry-terminal,
 .cloud-architecture,
@@ -716,12 +718,42 @@ html[data-theme="light"] .lightbox {
 .hardware-image { border: 1px solid var(--line); }
 .component-heading { display: grid; grid-template-columns: .55fr 1fr; gap: 5vw; align-items: end; margin: 82px 0 28px; }
 .component-heading h3 { margin: 0; font-size: clamp(30px, 4vw, 52px); letter-spacing: -.045em; }
-.component-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 82px; }
-.component-grid article { position: relative; min-height: 245px; padding: 28px; border: 1px solid var(--line); background: linear-gradient(145deg, rgba(11,34,24,.44), transparent); }
-.component-grid svg { width: 27px; color: var(--copper); }
-.component-grid > article > span { position: absolute; top: 28px; right: 28px; color: var(--sage); font: 9px var(--font-geist-mono); }
-.component-grid h3 { margin: 54px 0 12px; font-size: 19px; line-height: 1.25; }
-.component-grid p { margin: 0; color: var(--sage); }
+.component-stack { position: relative; display: grid; gap: clamp(52px, 8vh, 92px); padding-bottom: 132px; }
+.component-stack .component-card { --sensor-accent: var(--tea); --sensor-wash: rgba(36,200,117,.1); position: sticky; top: 86px; display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); min-width: 0; min-height: min(650px, calc(100svh - 116px)); overflow: hidden; isolation: isolate; border: 1px solid color-mix(in srgb, var(--sensor-accent) 34%, var(--line)); border-radius: 12px; background: var(--hardware-card); box-shadow: 0 34px 90px rgba(0,0,0,.42); }
+.component-stack .component-card::before { position: absolute; z-index: 5; top: 0; right: 0; left: 0; height: 3px; content: ""; background: linear-gradient(90deg, var(--sensor-accent), transparent 72%); }
+.component-stack .component-card:nth-child(1) { z-index: 1; --sensor-accent: #e59a52; --sensor-wash: rgba(229,154,82,.13); }
+.component-stack .component-card:nth-child(2) { z-index: 2; --sensor-accent: #56c8d8; --sensor-wash: rgba(86,200,216,.13); }
+.component-stack .component-card:nth-child(3) { z-index: 3; --sensor-accent: #80a8f2; --sensor-wash: rgba(128,168,242,.13); }
+.component-stack .component-card:nth-child(4) { z-index: 4; --sensor-accent: #9cdb5b; --sensor-wash: rgba(156,219,91,.12); }
+.component-stack .component-card:nth-child(5) { z-index: 5; --sensor-accent: #24c875; --sensor-wash: rgba(36,200,117,.13); }
+.component-stack .component-card:nth-child(6) { z-index: 6; --sensor-accent: #eb796a; --sensor-wash: rgba(235,121,106,.13); }
+.component-media { position: relative; grid-column: 1; grid-row: 1; min-height: 100%; margin: 0; overflow: hidden; border-right: 1px solid var(--line); background: #f4f6f2; }
+.component-media::before { position: absolute; z-index: 1; inset: 0; content: ""; pointer-events: none; background-image: linear-gradient(rgba(7,17,13,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(7,17,13,.045) 1px, transparent 1px); background-size: 42px 42px; }
+.component-media img { z-index: 2; width: 100%; height: 100%; padding: clamp(54px, 7vw, 105px); object-fit: contain; filter: drop-shadow(0 28px 30px rgba(7,17,13,.2)); transition: transform .55s cubic-bezier(.2,.7,.2,1); }
+.component-card:hover .component-media img { transform: scale(1.035); }
+.component-media figcaption { position: absolute; z-index: 4; right: 24px; bottom: 24px; left: 24px; display: flex; gap: 8px; align-items: center; width: fit-content; padding: 8px 10px; border: 1px solid rgba(7,17,13,.14); border-radius: 6px; color: #123125; background: rgba(250,251,248,.9); backdrop-filter: blur(10px); font: 8px var(--font-geist-mono); letter-spacing: .07em; text-transform: uppercase; }
+.component-media figcaption svg { width: 13px; height: 13px; color: #168e58; }
+.component-panel { display: flex; grid-column: 2; grid-row: 1; flex-direction: column; min-width: 0; padding: clamp(30px, 4vw, 58px); background: var(--hardware-card); }
+.component-card-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+.component-card-head > span { color: var(--sage); font: 9px var(--font-geist-mono); letter-spacing: .09em; }
+.component-card-head > small { color: var(--sensor-accent); font: 9px var(--font-geist-mono); letter-spacing: .07em; text-transform: uppercase; }
+.component-copy { display: flex; flex-direction: column; padding: 28px 0 24px; }
+.component-icon { display: grid; place-items: center; width: 54px; height: 54px; margin-bottom: 24px; border: 1px solid color-mix(in srgb, var(--sensor-accent) 48%, transparent); border-radius: 8px; color: var(--sensor-accent); background: var(--sensor-wash); }
+.component-icon svg { width: 26px; height: 26px; }
+.component-copy > small { color: var(--sensor-accent); font: 9px var(--font-geist-mono); letter-spacing: .1em; text-transform: uppercase; }
+.component-stack .component-copy h3 { max-width: 640px; margin: 13px 0 18px; font-size: clamp(38px, 3.8vw, 60px); line-height: 1; letter-spacing: -.045em; }
+.component-stack .component-copy p { max-width: 620px; margin: 0; color: var(--sage); font-size: 14px; line-height: 1.7; }
+.component-reason { margin-bottom: 24px; padding: 18px 20px; border-left: 2px solid var(--sensor-accent); background: var(--sensor-wash); }
+.component-reason small { color: var(--sensor-accent); font: 8px var(--font-geist-mono); letter-spacing: .09em; }
+.component-reason p { margin: 8px 0 0; color: var(--cream); font-size: 12px; line-height: 1.6; }
+.component-specs { display: grid; grid-template-columns: 1fr 1fr; margin-top: auto; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.component-specs > span { display: grid; gap: 6px; min-width: 0; padding: 15px 12px 15px 0; }
+.component-specs > span + span { padding-left: 14px; border-left: 1px solid var(--line); }
+.component-specs small { color: var(--sage); font: 8px var(--font-geist-mono); letter-spacing: .07em; text-transform: uppercase; }
+.component-specs strong { overflow: hidden; color: var(--cream); font: 10px var(--font-geist-mono); text-overflow: ellipsis; white-space: nowrap; }
+.component-calibration-note { display: flex; gap: 13px; align-items: flex-start; margin: 0 0 82px; padding: 17px 19px; border: 1px solid rgba(198,122,67,.28); border-left: 2px solid var(--copper); border-radius: 8px; color: var(--sage); background: rgba(198,122,67,.055); font-size: 12px; line-height: 1.6; }
+.component-calibration-note svg { width: 18px; flex: 0 0 auto; margin-top: 1px; color: var(--copper); }
+.component-calibration-note strong { color: var(--cream); }
 .pcb-feature { display: grid; grid-template-columns: .85fr 1.15fr; min-height: 570px; margin-bottom: 92px; overflow: hidden; border: 1px solid rgba(198,122,67,.32); background: radial-gradient(circle at top left, rgba(198,122,67,.12), transparent 46%), var(--panel); }
 .pcb-copy { display: flex; flex-direction: column; justify-content: center; padding: clamp(34px, 5vw, 72px); }
 .pcb-copy h3 { margin: 18px 0; font-size: clamp(38px, 4.5vw, 64px); letter-spacing: -.05em; }
@@ -848,7 +880,10 @@ html[data-theme="light"] .lightbox {
   .process-overview { grid-template-columns: 1fr; }
   .process-image { min-height: 500px; }
   .automation-method { grid-template-columns: 1fr; }
-  .component-grid { grid-template-columns: 1fr 1fr; }
+  .component-stack .component-card { min-height: min(630px, calc(100svh - 108px)); }
+  .component-panel { padding: 34px; }
+  .component-media img { padding: clamp(44px, 7vw, 78px); }
+  .component-stack .component-copy h3 { font-size: clamp(36px, 5vw, 56px); }
   .pcb-feature { grid-template-columns: 1fr; }
   .pcb-feature figure { min-height: 620px; }
   .cloud-flow { grid-template-columns: repeat(3, 1fr); }
@@ -872,7 +907,6 @@ html[data-theme="light"] .lightbox {
   .process-copy { padding: 30px 22px; }
   .process-steps { grid-template-columns: 1fr 1fr; }
   .automation-grid,
-  .component-grid,
   .pcb-feature,
   .cloud-flow,
   .stack-grid,
@@ -882,7 +916,18 @@ html[data-theme="light"] .lightbox {
   .advisor-grid { grid-template-columns: 1fr; }
   .automation-card { min-height: 180px; }
   .component-heading { grid-template-columns: 1fr; }
-  .component-grid article { min-height: 210px; }
+  .component-stack { gap: 30px; padding-bottom: 92px; }
+  .component-stack .component-card,
+  .component-stack .component-card:nth-child(n) { position: relative; top: auto; grid-template-columns: 1fr; min-height: 0; }
+  .component-media { grid-column: 1; grid-row: 1; min-height: 270px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .component-panel { grid-column: 1; grid-row: 2; padding: 28px 22px 24px; }
+  .component-media img { padding: 42px; }
+  .component-media figcaption { right: 16px; bottom: 16px; left: 16px; }
+  .component-card-head { padding-bottom: 18px; }
+  .component-copy { padding: 25px 0 28px; }
+  .component-icon { width: 50px; height: 50px; margin-bottom: 22px; }
+  .component-stack .component-copy h3 { font-size: clamp(36px, 10vw, 48px); }
+  .component-calibration-note { margin-bottom: 64px; }
   .pcb-feature figure { min-height: 490px; }
   .cloud-architecture-head,
   .stack-board-heading,
@@ -909,6 +954,16 @@ html[data-theme="light"] .lightbox {
   .advisor-grid article { grid-template-columns: 96px 1fr; column-gap: 20px; padding: 28px 22px; }
   .advisor-avatar { width: 96px; height: 96px; }
   .advisor-pending { align-items: flex-start; }
+}
+
+@media (max-width: 390px) {
+  .component-media { min-height: 230px; }
+  .component-media img { padding: 34px; }
+  .component-card-head { align-items: flex-start; gap: 12px; }
+  .component-card-head > small { justify-content: flex-end; text-align: right; }
+  .component-stack .component-copy h3 { font-size: 34px; }
+  .component-specs { grid-template-columns: 1fr; }
+  .component-specs > span + span { padding-left: 0; border-top: 1px solid var(--line); border-left: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
