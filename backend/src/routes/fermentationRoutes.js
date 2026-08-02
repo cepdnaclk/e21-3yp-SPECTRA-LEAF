@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const fermentationController = require('../controllers/fermentationController');
 
+router.get('/state/:factoryId', fermentationController.getFermentationState);
+
 // POST /api/fermentation/control
 router.post('/control', fermentationController.controlFermentation);
 

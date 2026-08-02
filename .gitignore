@@ -12,6 +12,9 @@ build/
 .next/
 out/
 coverage/
+site/.video-backup/
+site/public/assets/video1.mp4
+site/public/assets/video2.mp4
 
 # logs
 *.log
@@ -32,3 +35,7 @@ Thumbs.db
 # Expo / React Native
 .expo/
 .expo-shared/
+
+# Gradle caches
+**/.gradle/
+mobile/.gradle-build-release*/

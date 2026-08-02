@@ -56,6 +56,15 @@ export interface BatchListItem {
   price: number | null;
 }
 
+export interface FermentationState {
+  factoryId: string;
+  status: 'RUNNING' | 'STOPPED';
+  batchId: string | null;
+  deviceId: string | null;
+  startedAt: string | null;
+  updatedAt: string | null;
+}
+
 export interface PricedBatchSummary {
   batchId: string;
   factoryId?: string;

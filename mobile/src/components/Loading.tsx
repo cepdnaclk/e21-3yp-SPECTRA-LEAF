@@ -1,8 +1,10 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { theme } from '../theme';
+import { AppTheme, useAppTheme } from '../theme';
 
 export default function Loading({ label }: { label?: string }) {
+  const theme = useAppTheme();
+  const styles = makeStyles(theme);
   return (
     <View style={styles.wrap}>
       <ActivityIndicator color={theme.colors.primary} />
@@ -11,7 +13,7 @@ export default function Loading({ label }: { label?: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme: AppTheme) => StyleSheet.create({
   wrap: {
     padding: theme.spacing.xl,
     alignItems: 'center',
