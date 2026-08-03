@@ -9,7 +9,7 @@ import { useAuthStore } from '../store/authStore';
 export default function LiveBatchNotificationSync() {
   const factoryId = useAuthStore(state => state.factoryId);
   const liveAlertsEnabled = useAuthStore(state => state.liveAlertsEnabled);
-  const { state, isLive, loading, supported } = useFermentationState(factoryId, 5_000);
+  const { state, isLive, loading, supported } = useFermentationState(factoryId, 1_000);
 
   useEffect(() => {
     if (!liveAlertsEnabled) {

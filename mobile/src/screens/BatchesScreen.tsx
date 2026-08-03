@@ -36,8 +36,8 @@ export default function BatchesScreen() {
   const styles = makeStyles(theme);
   const navigation = useNavigation<any>();
   const factoryId = useAuthStore(state => state.factoryId);
-  const { batches, loading, error, refresh } = useFactoryBatches(factoryId, 20_000);
-  const { state: liveState, isLive, refresh: refreshLive } = useFermentationState(factoryId, 5_000);
+  const { batches, loading, error, refresh } = useFactoryBatches(factoryId, 5_000);
+  const { state: liveState, isLive, refresh: refreshLive } = useFermentationState(factoryId, 1_000);
   const [filter, setFilter] = useState<Filter>('ALL');
   const [analysisMetric, setAnalysisMetric] = useState<AnalysisMetric>('glp');
   const [refreshing, setRefreshing] = useState(false);

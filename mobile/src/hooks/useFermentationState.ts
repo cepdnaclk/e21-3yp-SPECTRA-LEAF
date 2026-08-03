@@ -23,16 +23,18 @@ export function publishFermentationState(state: FermentationState) {
   localStateListeners.get(state.factoryId)?.forEach(listener => listener(state));
 }
 
-export function useFermentationState(factoryId: string, pollMs = 5_000) {
+export function useFermentationState(factoryId: string, pollMs = 1_000) {
   const [state, setState] = useState<FermentationState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [supported, setSupported] = useState(true);
   const mounted = useRef(true);
   const unsupported = useRef(false);
+  const inFlight = useRef(false);
 
   const refresh = useCallback(async () => {
-    if (unsupported.current) return;
+    if (unsupported.current || inFlight.current) return;
+    inFlight.current = true;
     try {
       const response = await api.get(`/fermentation/state/${factoryId}`);
       const payload = getObjectPayload<any>(response.data, {});
@@ -52,6 +54,7 @@ export function useFermentationState(factoryId: string, pollMs = 5_000) {
         setError(getErrorMessage(err));
       }
     } finally {
+      inFlight.current = false;
       if (mounted.current) setLoading(false);
     }
   }, [factoryId]);

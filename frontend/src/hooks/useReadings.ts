@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import type { BatchGraphs, GraphPoint, SensorReading } from '@/types';
 
@@ -48,10 +48,11 @@ function normalizePoints(items: any[] | undefined): GraphPoint[] {
   }));
 }
 
-export function useFactoryReadings(factoryId: string | null, pollMs = 30_000, limit = 20) {
+export function useFactoryReadings(factoryId: string | null, pollMs = 1_000, limit = 20) {
   const [readings, setReadings] = useState<SensorReading[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const inFlight = useRef(false);
 
   const load = useCallback(async () => {
     if (!factoryId) {
@@ -59,6 +60,8 @@ export function useFactoryReadings(factoryId: string | null, pollMs = 30_000, li
       setLoading(false);
       return;
     }
+    if (inFlight.current) return;
+    inFlight.current = true;
     try {
       const res = await api.get(`/factories/${factoryId}/readings`, { params: { limit } });
       setReadings(getArrayPayload<any>(res.data).map(normalizeReading));
@@ -67,6 +70,7 @@ export function useFactoryReadings(factoryId: string | null, pollMs = 30_000, li
       setReadings([]);
       setError(e.response?.data?.error ?? e.response?.data?.message ?? 'Failed to load readings');
     } finally {
+      inFlight.current = false;
       setLoading(false);
     }
   }, [factoryId, limit]);
@@ -82,7 +86,49 @@ export function useFactoryReadings(factoryId: string | null, pollMs = 30_000, li
   return { readings, loading, error, reload: load };
 }
 
-export function useBatchGraphs(batchId: string | null) {
+export function useBatchReadings(batchId: string | null, pollMs = 1_000) {
+  const [readings, setReadings] = useState<SensorReading[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const inFlight = useRef(false);
+
+  const load = useCallback(async () => {
+    if (!batchId) {
+      setReadings([]);
+      setLoading(false);
+      return;
+    }
+    if (inFlight.current) return;
+    inFlight.current = true;
+    try {
+      const res = await api.get(`/batches/${batchId}/readings`);
+      const next = getArrayPayload<any>(res.data)
+        .map(normalizeReading)
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+      setReadings(next);
+      setError(null);
+    } catch (e: any) {
+      setReadings([]);
+      setError(e.response?.data?.error ?? e.response?.data?.message ?? 'Failed to load batch readings');
+    } finally {
+      inFlight.current = false;
+      setLoading(false);
+    }
+  }, [batchId]);
+
+  useEffect(() => {
+    setLoading(true);
+    load();
+    if (pollMs && batchId) {
+      const id = window.setInterval(load, pollMs);
+      return () => window.clearInterval(id);
+    }
+  }, [batchId, load, pollMs]);
+
+  return { readings, loading, error, reload: load };
+}
+
+export function useBatchGraphs(batchId: string | null, pollMs = 1_000) {
   const [graphs, setGraphs] = useState<BatchGraphs | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,8 +141,10 @@ export function useBatchGraphs(batchId: string | null) {
     }
 
     let cancelled = false;
+    let inFlight = false;
     async function load() {
-      setLoading(true);
+      if (inFlight) return;
+      inFlight = true;
       try {
         const res = await api.get(`/batches/${batchId}/graphs`);
         const payload = getObjectPayload<any>(res.data, {});
@@ -124,15 +172,20 @@ export function useBatchGraphs(batchId: string | null) {
           setError(e.response?.data?.error ?? e.response?.data?.message ?? 'Failed to load graphs');
         }
       } finally {
+        inFlight = false;
         if (!cancelled) setLoading(false);
       }
     }
 
+    setGraphs(null);
+    setLoading(true);
     load();
+    const id = pollMs ? window.setInterval(load, pollMs) : undefined;
     return () => {
       cancelled = true;
+      if (id) window.clearInterval(id);
     };
-  }, [batchId]);
+  }, [batchId, pollMs]);
 
   return { graphs, loading, error };
 }

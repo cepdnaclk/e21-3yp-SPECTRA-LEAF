@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import {
   LineChart as RLineChart,
   Line,
@@ -28,6 +29,41 @@ interface Props {
   yTickFormatter?: (v: unknown) => string;
 }
 
+function niceStep(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return 1;
+  const magnitude = 10 ** Math.floor(Math.log10(value));
+  const fraction = value / magnitude;
+  const niceFraction = fraction < 1.5 ? 1 : fraction < 3 ? 2 : fraction < 7 ? 5 : 10;
+  return niceFraction * magnitude;
+}
+
+function getAutoDomain(data: Array<Record<string, unknown>>, series: LineSeries[]): [number, number] {
+  const values = data.flatMap((point) => series.flatMap((item) => {
+    const rawValue = point[item.dataKey];
+    if (rawValue === null || rawValue === undefined || rawValue === '') return [];
+    const value = Number(rawValue);
+    return Number.isFinite(value) ? [value] : [];
+  }));
+
+  if (values.length === 0) return [0, 1];
+
+  const dataMin = Math.min(...values);
+  const dataMax = Math.max(...values);
+  const span = dataMax - dataMin;
+  const padding = span === 0
+    ? Math.max(Math.abs(dataMax) * 0.1, 1)
+    : span * 0.12;
+  const paddedMin = dataMin - padding;
+  const paddedMax = dataMax + padding;
+  const step = niceStep((paddedMax - paddedMin) / 5);
+
+  const domainMin = Math.floor(paddedMin / step) * step;
+  const domainMax = Math.ceil(paddedMax / step) * step;
+  return domainMin === domainMax
+    ? [domainMin - step, domainMax + step]
+    : [domainMin, domainMax];
+}
+
 export function LineChart({
   data,
   xKey,
@@ -37,6 +73,8 @@ export function LineChart({
   xTickFormatter,
   yTickFormatter,
 }: Props) {
+  const yDomain = useMemo(() => getAutoDomain(data, series), [data, series]);
+
   return (
     <ResponsiveContainer width="100%" height={height}>
       <RLineChart data={data} margin={{ top: 10, right: 12, bottom: 0, left: 0 }}>
@@ -49,6 +87,9 @@ export function LineChart({
           tickFormatter={xTickFormatter}
         />
         <YAxis
+          domain={yDomain}
+          tickCount={6}
+          allowDataOverflow
           tick={{ fill: chartColors.text, fontSize: 11 }}
           tickLine={false}
           axisLine={{ stroke: chartColors.grid }}
@@ -73,7 +114,9 @@ export function LineChart({
             name={s.name}
             stroke={s.color ?? (i === 0 ? chartColors.primary : chartColors.secondary)}
             strokeWidth={2}
-            dot={false}
+            dot={data.length === 1
+              ? { r: 4, strokeWidth: 0, fill: s.color ?? chartColors.primary }
+              : false}
             activeDot={{ r: 4, strokeWidth: 0, fill: s.color ?? chartColors.primary }}
             isAnimationActive={false}
           />

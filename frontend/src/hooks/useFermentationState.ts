@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import type { FermentationState } from '@/types';
 
@@ -16,10 +16,11 @@ function getState(payload: any, factoryId: string): FermentationState {
   };
 }
 
-export function useFermentationState(factoryId: string | null, pollMs = 5_000) {
+export function useFermentationState(factoryId: string | null, pollMs = 1_000) {
   const [state, setState] = useState<FermentationState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const inFlight = useRef(false);
 
   const reload = useCallback(async () => {
     if (!factoryId) {
@@ -27,6 +28,8 @@ export function useFermentationState(factoryId: string | null, pollMs = 5_000) {
       setLoading(false);
       return;
     }
+    if (inFlight.current) return;
+    inFlight.current = true;
 
     try {
       const response = await api.get(`/fermentation/state/${factoryId}`);
@@ -39,6 +42,7 @@ export function useFermentationState(factoryId: string | null, pollMs = 5_000) {
         ?? 'Failed to load fermentation state',
       );
     } finally {
+      inFlight.current = false;
       setLoading(false);
     }
   }, [factoryId]);

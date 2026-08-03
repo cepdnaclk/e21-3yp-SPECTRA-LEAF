@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { api } from '@/lib/api';
@@ -14,14 +14,10 @@ import { SensorCard } from '@/components/batch/SensorCard';
 import { BatchTable } from '@/components/batch/BatchTable';
 import { LineChart } from '@/components/charts/LineChart';
 import { fmtCurrency } from '@/lib/utils';
-import {
-  PageShell,
-  DateRangeButton,
-  FilterButton,
-} from '@/components/layout/PageShell';
+import { PageShell } from '@/components/layout/PageShell';
 import { PerfSummary, PerfTile } from '@/components/layout/PerfSummary';
 import { useFactoryBatches } from '@/hooks/useBatch';
-import { useFactoryReadings } from '@/hooks/useReadings';
+import { useBatchReadings } from '@/hooks/useReadings';
 import { useFermentationState } from '@/hooks/useFermentationState';
 import type { BatchListItem } from '@/types';
 
@@ -35,16 +31,36 @@ export default function OfficerDashboard() {
   const router = useRouter();
   const factoryId = useAuthStore((s) => s.factoryId);
 
-  const { readings, loading: readingsLoading } = useFactoryReadings(factoryId, 30_000, 20);
   const { batches, loading: batchesLoading, reload: reloadBatches } = useFactoryBatches(
-    factoryId, 30_000
+    factoryId, 5_000
   );
   const {
     state: fermentationState,
     isLive,
     loading: fermentationStateLoading,
     reload: reloadFermentationState,
-  } = useFermentationState(factoryId, 5_000);
+  } = useFermentationState(factoryId, 1_000);
+
+  const topBatches = useMemo(() => batches
+    .filter((batch) => batch.price !== null && batch.price !== undefined)
+    .sort((a, b) => (b.price ?? 0) - (a.price ?? 0))
+    .slice(0, 6), [batches]);
+  const highestPriceBatch = topBatches[0] ?? null;
+  const [selectedBatchId, setSelectedBatchId] = useState('');
+  const scopedBatchId = isLive && fermentationState?.batchId
+    ? fermentationState.batchId
+    : selectedBatchId
+      || fermentationState?.batchId
+      || highestPriceBatch?.batchId
+      || batches[0]?.batchId
+      || null;
+  const { readings, loading: readingsLoading } = useBatchReadings(scopedBatchId, 1_000);
+
+  useEffect(() => {
+    if (isLive && fermentationState?.batchId) {
+      setSelectedBatchId(fermentationState.batchId);
+    }
+  }, [fermentationState?.batchId, isLive]);
 
   const [tab, setTab] = useState('overview');
   const [glpTarget, setGlpTarget] = useState<BatchListItem | null>(null);
@@ -59,20 +75,18 @@ export default function OfficerDashboard() {
   const [starting, setStarting] = useState(false);
   const [startErr, setStartErr] = useState<string | null>(null);
 
-  const latest = readings[0] ?? null;
+  const latest = readings[readings.length - 1] ?? null;
 
-  const tempTrend    = useMemo(() => readings.map(r => r.temperature ?? 0).reverse(), [readings]);
-  const humidityTrend= useMemo(() => readings.map(r => r.humidity    ?? 0).reverse(), [readings]);
-  const rgTrend      = useMemo(() => readings.map(r => r.rgRatio     ?? 0).reverse(), [readings]);
-  const mq137Trend   = useMemo(() => readings.map(r => r.mq137       ?? 0).reverse(), [readings]);
-  const tgs2620Trend = useMemo(() => readings.map(r => r.tgs2620     ?? 0).reverse(), [readings]);
-  const tgs822Trend  = useMemo(() => readings.map(r => r.tgs822      ?? 0).reverse(), [readings]);
+  const tempTrend    = useMemo(() => readings.flatMap(r => r.temperature == null ? [] : [r.temperature]), [readings]);
+  const humidityTrend= useMemo(() => readings.flatMap(r => r.humidity    == null ? [] : [r.humidity]), [readings]);
+  const rgTrend      = useMemo(() => readings.flatMap(r => r.rgRatio     == null ? [] : [r.rgRatio]), [readings]);
+  const mq137Trend   = useMemo(() => readings.flatMap(r => r.mq137       == null ? [] : [r.mq137]), [readings]);
+  const tgs2620Trend = useMemo(() => readings.flatMap(r => r.tgs2620     == null ? [] : [r.tgs2620]), [readings]);
+  const tgs822Trend  = useMemo(() => readings.flatMap(r => r.tgs822      == null ? [] : [r.tgs822]), [readings]);
 
   /* Time-series for the Sensors tab (oldest → newest) */
   const seriesData = useMemo(() => {
-    return [...readings]
-      .reverse()
-      .map((r) => ({
+    return readings.map((r) => ({
         t: format(new Date(r.timestamp), 'HH:mm:ss'),
         temperature: r.temperature ?? null,
         humidity: r.humidity ?? null,
@@ -83,13 +97,9 @@ export default function OfficerDashboard() {
       }));
   }, [readings]);
 
-  /* Top selling (priced) batches for the Batches tab */
-  const topBatches = useMemo(() => {
-    return batches
-      .filter((b) => b.price !== null && b.price !== undefined)
-      .sort((a, b) => (b.price ?? 0) - (a.price ?? 0))
-      .slice(0, 6);
-  }, [batches]);
+  const batchScopeLabel = scopedBatchId
+    ? `${scopedBatchId} · ${readings.length} batch readings`
+    : 'No batch selected';
 
   const totalRevenue = useMemo(
     () => topBatches.reduce((s, b) => s + (b.price ?? 0), 0),
@@ -112,7 +122,9 @@ export default function OfficerDashboard() {
       value:
         latest?.temperature !== null && latest?.temperature !== undefined
           ? `${latest.temperature.toFixed(1)} °C` : '—',
-      delta: latest ? { value: 'live', direction: 'up', tone: 'positive' } : undefined,
+      delta: latest
+        ? { value: isLive ? 'live' : 'selected batch', direction: 'flat', tone: 'positive' }
+        : undefined,
     },
     {
       label: 'Completed (GLP set)',
@@ -129,7 +141,18 @@ export default function OfficerDashboard() {
   const activeBatch = useMemo<BatchListItem | null>(() => {
     if (!isLive || !fermentationState?.batchId) return null;
     const existing = batches.find((batch) => batch.batchId === fermentationState.batchId);
-    if (existing) return existing;
+    if (existing) {
+      return latest?.batchId === existing.batchId ? {
+        ...existing,
+        lastTimestamp: latest.timestamp,
+        latestTemperature: latest.temperature,
+        latestHumidity: latest.humidity,
+        latestRgRatio: latest.rgRatio,
+        latestMq137: latest.mq137,
+        latestTgs2620: latest.tgs2620,
+        latestTgs822: latest.tgs822,
+      } : existing;
+    }
 
     return {
       batchId: fermentationState.batchId,
@@ -143,7 +166,7 @@ export default function OfficerDashboard() {
       glp: null,
       price: null,
     };
-  }, [batches, fermentationState, isLive]);
+  }, [batches, fermentationState, isLive, latest]);
 
   function openStart() {
     if (isLive && activeBatch) {
@@ -245,9 +268,7 @@ export default function OfficerDashboard() {
           <Badge tone={isLive ? 'live' : 'neutral'}>
             {fermentationStateLoading ? 'Checking sensors…' : isLive ? 'Live' : 'Sensors stopped'}
           </Badge>
-          <DateRangeButton>Last 30 days</DateRangeButton>
-          <FilterButton />
-          {isLive && (
+          {isLive ? (
             <Button
               onClick={handleStopFermentation}
               disabled={starting}
@@ -260,34 +281,75 @@ export default function OfficerDashboard() {
               </svg>
               Stop Live Sensors
             </Button>
+          ) : (
+            <Button
+              onClick={openStart}
+              disabled={fermentationStateLoading || starting}
+              title="Start a new fermentation batch"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+              {starting ? 'Starting...' : 'Start Fermentation'}
+            </Button>
           )}
-
-          <Button
-            onClick={openStart}
-            disabled={fermentationStateLoading || isLive || starting}
-            title={activeBatch
-              ? `Stop fermentation for ${activeBatch.batchId}`
-              : 'Start a new fermentation batch'}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 5v14M5 12h14"/>
-            </svg>
-            {starting ? 'Starting...' : 'Start Fermentation'}
-          </Button>
         </>
       }
     >
       <PerfSummary
         title="Performance Summary"
         description={isLive
-          ? `Live signal from factory ${factoryId} — shared status refreshes every 5s.`
+          ? `Live signal from factory ${factoryId} — dashboards and graphs refresh every second.`
           : `Factory ${factoryId} sensors are currently stopped.`}
         tiles={tiles}
       />
 
       {/* ═════════════ OVERVIEW TAB ═════════════ */}
       {tab === 'overview' && <>
+
+      <Card>
+        <CardBody>
+          <div className="flex flex-wrap items-center justify-between gap-5">
+            <div>
+              <div className="eyebrow">Highest Priced Batch</div>
+              {highestPriceBatch ? (
+                <div className="flex items-end gap-3 mt-1">
+                  <span className="font-mono text-[22px] font-bold text-text-primary">
+                    {highestPriceBatch.batchId}
+                  </span>
+                  <span className="font-display text-[26px] text-accent-primary leading-none">
+                    {fmtCurrency(highestPriceBatch.price ?? 0)}
+                  </span>
+                </div>
+              ) : (
+                <div className="text-sm text-text-muted mt-1">No priced batches yet</div>
+              )}
+              <div className="text-[12px] text-text-muted mt-1">
+                {isLive ? 'The running batch is locked for live monitoring.' : 'Choose which batch to inspect.'}
+              </div>
+            </div>
+            <label className="min-w-[230px]">
+              <span className="eyebrow block mb-2">Reading Batch</span>
+              <select
+                value={scopedBatchId ?? ''}
+                onChange={(event) => setSelectedBatchId(event.target.value)}
+                disabled={isLive || batches.length === 0}
+                className="w-full h-10 rounded-md border border-border bg-elevated px-3 text-sm font-mono text-text-primary disabled:opacity-60"
+              >
+                {scopedBatchId && !batches.some((batch) => batch.batchId === scopedBatchId) ? (
+                  <option value={scopedBatchId}>{scopedBatchId}</option>
+                ) : null}
+                {batches.map((batch) => (
+                  <option key={batch.batchId} value={batch.batchId}>
+                    {batch.batchId}{batch.price != null ? ` · ${fmtCurrency(batch.price)}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </CardBody>
+      </Card>
 
       {/* Active fermentation banner */}
       {activeBatch && (
@@ -418,8 +480,8 @@ export default function OfficerDashboard() {
         <Card>
           <CardHeader
             title="Temperature over Time"
-            subtitle={`°C — last ${seriesData.length} samples`}
-            right={<Badge tone="live">Live</Badge>}
+            subtitle={`°C · ${batchScopeLabel}`}
+            right={<Badge tone={isLive ? 'live' : 'neutral'}>{isLive ? 'Live batch' : 'Batch history'}</Badge>}
           />
           <CardBody>
             {readingsLoading ? (
@@ -440,8 +502,8 @@ export default function OfficerDashboard() {
         <Card>
           <CardHeader
             title="Humidity over Time"
-            subtitle={`% — last ${seriesData.length} samples`}
-            right={<Badge tone="info">Live</Badge>}
+            subtitle={`% · ${batchScopeLabel}`}
+            right={<Badge tone={isLive ? 'live' : 'neutral'}>{isLive ? 'Live batch' : 'Batch history'}</Badge>}
           />
           <CardBody>
             {readingsLoading ? (
@@ -462,8 +524,8 @@ export default function OfficerDashboard() {
         <Card>
           <CardHeader
             title="RG Ratio over Time"
-            subtitle={`Ratio — last ${seriesData.length} samples`}
-            right={<Badge tone="info">Live</Badge>}
+            subtitle={`Ratio · ${batchScopeLabel}`}
+            right={<Badge tone={isLive ? 'live' : 'neutral'}>{isLive ? 'Live batch' : 'Batch history'}</Badge>}
           />
           <CardBody>
             {readingsLoading ? (
@@ -484,8 +546,8 @@ export default function OfficerDashboard() {
         <Card>
           <CardHeader
             title="MQ137 Reading"
-            subtitle={`Last ${seriesData.length} samples`}
-            right={<Badge tone="warn">Live</Badge>}
+            subtitle={batchScopeLabel}
+            right={<Badge tone={isLive ? 'live' : 'neutral'}>{isLive ? 'Live batch' : 'Batch history'}</Badge>}
           />
           <CardBody>
             {readingsLoading ? (
@@ -506,8 +568,8 @@ export default function OfficerDashboard() {
         <Card>
           <CardHeader
             title="TGS2620 Reading"
-            subtitle={`Last ${seriesData.length} samples`}
-            right={<Badge tone="warn">Live</Badge>}
+            subtitle={batchScopeLabel}
+            right={<Badge tone={isLive ? 'live' : 'neutral'}>{isLive ? 'Live batch' : 'Batch history'}</Badge>}
           />
           <CardBody>
             {readingsLoading ? (
@@ -528,8 +590,8 @@ export default function OfficerDashboard() {
         <Card>
           <CardHeader
             title="TGS822 Reading"
-            subtitle={`Last ${seriesData.length} samples`}
-            right={<Badge tone="warn">Live</Badge>}
+            subtitle={batchScopeLabel}
+            right={<Badge tone={isLive ? 'live' : 'neutral'}>{isLive ? 'Live batch' : 'Batch history'}</Badge>}
           />
           <CardBody>
             {readingsLoading ? (
@@ -550,7 +612,7 @@ export default function OfficerDashboard() {
         <Card>
           <CardHeader
             title="All Sensors Combined"
-            subtitle="Temperature · RG Ratio · MQ137 · TGS2620 · TGS822 overlaid"
+            subtitle={`${batchScopeLabel} · all sensors overlaid`}
           />
           <CardBody>
             {readingsLoading ? (
