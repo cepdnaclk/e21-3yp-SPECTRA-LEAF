@@ -1,13 +1,38 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ExternalLink, GitBranch, Leaf, Mail } from "lucide-react";
+import { ExternalLink, GitBranch, Mail } from "lucide-react";
 import Image from "next/image";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { domainAdvisors, supervisors, team } from "@/data/team";
 import { getAssetPath } from "@/lib/paths";
 
 export function Team() {
+  const supervisionProfiles = [
+    ...domainAdvisors.map((advisor, index) => ({
+      code: `D0${index + 1}`,
+      category: "Crop Science",
+      organization: advisor.organization,
+      name: advisor.name,
+      role: advisor.title,
+      description: advisor.contribution,
+      profileUrl: advisor.linkedInUrl || advisor.profileUrl,
+      profileImage: advisor.profileImage,
+      email: null,
+    })),
+    ...supervisors.map((supervisor, index) => ({
+      code: `S0${index + 1}`,
+      category: "Academic Supervisor",
+      organization: "Department of Computer Engineering",
+      name: supervisor.name,
+      role: supervisor.role,
+      description: supervisor.biography,
+      profileUrl: supervisor.profileUrl,
+      profileImage: supervisor.profileImage,
+      email: supervisor.email,
+    })),
+  ];
+
   return (
     <section id="team" className="section team-section">
       <SectionHeading
@@ -51,35 +76,15 @@ export function Team() {
           );
         })}
       </div>
-      <div className="domain-heading">
-        <span>Domain guidance</span>
-        <h3>Crop Science advisors</h3>
-        <p>Domain advisors help connect sensor behaviour with tea oxidation, sampling practice and final Good Leaf Percentage evaluation.</p>
+      <div className="supervision-heading">
+        <span>Domain and academic guidance</span>
+        <h3>Domain supervision</h3>
+        <p>Crop Science and Computer Engineering supervision connect tea-process knowledge with sensing, software, data validation and delivery.</p>
       </div>
-      {domainAdvisors.length > 0 ? (
-        <div className="advisor-grid">
-          {domainAdvisors.map((advisor, index) => (
-            <motion.article key={advisor.name} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.08 }}>
-              <a className="advisor-avatar" href={advisor.profileUrl} target="_blank" rel="noreferrer" aria-label={`Open ${advisor.name}'s Crop Science profile`}>
-                <Image src={getAssetPath(advisor.profileImage)} alt={advisor.name} width={320} height={320} sizes="140px" />
-              </a><span>D0{index + 1}</span>
-              <small>{advisor.organization}</small>
-              <h3><a href={advisor.linkedInUrl || advisor.profileUrl} target="_blank" rel="noreferrer">{advisor.name}<ExternalLink /></a></h3>
-              <h4>{advisor.title}</h4><p>{advisor.contribution}</p>
-            </motion.article>
-          ))}
-        </div>
-      ) : (
-        <div className="advisor-pending"><Leaf /><div><strong>Advisor profiles awaiting confirmation</strong><p>Names, titles and contribution details will be added here as soon as the Crop Science contacts are supplied.</p></div></div>
-      )}
-      <div className="supervisor-heading">
-        <span>Academic guidance</span>
-        <h3>Project supervision</h3>
-      </div>
-      <div className="supervisor-grid">
-        {supervisors.map((supervisor, index) => {
-          const initials = supervisor.name
-            .replace(/^(Ms\.|Dr\.)\s*/, "")
+      <div className="supervision-grid">
+        {supervisionProfiles.map((person, index) => {
+          const initials = person.name
+            .replace(/^(Prof\.|Ms\.|Dr\.)\s*/, "")
             .split(" ")
             .map((part) => part[0])
             .join("")
@@ -87,22 +92,25 @@ export function Team() {
 
           return (
             <motion.article
-              key={supervisor.email}
+              className="supervision-card"
+              key={person.code}
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.08 }}
             >
-              <div className="supervisor-number">S0{index + 1}</div>
-              <a className="supervisor-avatar" href={supervisor.profileUrl} target="_blank" rel="noreferrer" aria-label={`Open ${supervisor.name}'s staff profile`}>
-                {supervisor.profileImage ? <Image src={getAssetPath(supervisor.profileImage)} alt="" width={320} height={320} sizes="132px" /> : initials}
+              <div className="supervision-card-head"><small>{person.category}</small><span>{person.code}</span></div>
+              <a className="supervision-avatar" href={person.profileUrl} target="_blank" rel="noreferrer" aria-label={`Open ${person.name}'s profile`}>
+                {person.profileImage ? <Image src={getAssetPath(person.profileImage)} alt={person.name} width={320} height={320} sizes="116px" /> : initials}
               </a>
-              <div className="supervisor-copy">
-                <small>Department of Computer Engineering</small>
-                <h3><a href={supervisor.profileUrl} target="_blank" rel="noreferrer">{supervisor.name}<ExternalLink /></a></h3>
-                <h4>{supervisor.role}</h4>
-                <p>{supervisor.biography}</p>
-                <a href={`mailto:${supervisor.email}`}><Mail />{supervisor.email}</a>
+              <div className="supervision-copy">
+                <small>{person.organization}</small>
+                <h3><a href={person.profileUrl} target="_blank" rel="noreferrer">{person.name}<ExternalLink /></a></h3>
+                <h4>{person.role}</h4>
+                <p>{person.description}</p>
+              </div>
+              <div className="supervision-card-footer">
+                {person.email ? <a href={`mailto:${person.email}`}><Mail />{person.email}</a> : <a href={person.profileUrl} target="_blank" rel="noreferrer"><ExternalLink />View university profile</a>}
               </div>
             </motion.article>
           );

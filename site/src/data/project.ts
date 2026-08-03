@@ -5,6 +5,7 @@ export const project = {
   description:
     "Spectra Leaf aims to make black-tea oxidation measurable and repeatable by capturing temperature, gas and colour telemetry for live factory guidance and future quality-control models.",
   githubUrl: "https://github.com/cepdnaclk/e21-3yp-SPECTRA-LEAF",
+  projectPageUrl: "https://projects.ce.pdn.ac.lk/3yp/e21/SPECTRA-LEAF/",
   university: "University of Peradeniya",
   faculty: "Faculty of Engineering",
   department: "Department of Computer Engineering",
