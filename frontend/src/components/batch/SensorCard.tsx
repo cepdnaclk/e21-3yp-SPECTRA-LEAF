@@ -10,18 +10,29 @@ interface Props {
 }
 
 function Sparkline({ values, color }: { values: number[]; color: string }) {
-  if (values.length < 2) {
+  if (values.length === 0) {
     return <svg width={100} height={30} />;
   }
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
+  if (values.length === 1) {
+    return (
+      <svg width={100} height={30} className="overflow-visible">
+        <circle cx={97} cy={15} r={2.5} fill={color} />
+      </svg>
+    );
+  }
+  const dataMin = Math.min(...values);
+  const dataMax = Math.max(...values);
+  const span = dataMax - dataMin;
+  const padding = span === 0 ? Math.max(Math.abs(dataMax) * 0.1, 1) : span * 0.12;
+  const domainMin = dataMin - padding;
+  const domainMax = dataMax + padding;
+  const range = domainMax - domainMin;
   const W = 100;
   const H = 30;
   const pts = values
     .map((v, i) => {
       const x = (i / (values.length - 1)) * W;
-      const y = H - ((v - min) / range) * H;
+      const y = H - ((v - domainMin) / range) * H;
       return `${x.toFixed(2)},${y.toFixed(2)}`;
     })
     .join(' ');
@@ -34,7 +45,7 @@ function Sparkline({ values, color }: { values: number[]; color: string }) {
       <polyline points={pts} fill="none" stroke={color} strokeWidth={1.75} />
       <circle
         cx={W}
-        cy={H - ((values[values.length - 1] - min) / range) * H}
+        cy={H - ((values[values.length - 1] - domainMin) / range) * H}
         r={2.5}
         fill={color}
       />
@@ -90,7 +101,7 @@ export function SensorCard({
 
       <div className="mt-3 flex items-center justify-between">
         <div className="text-[11px] text-text-muted">
-          {trend.length > 0 ? `Last ${trend.length} samples` : 'No samples yet'}
+          {trend.length > 0 ? `${trend.length} batch readings` : 'No batch readings yet'}
         </div>
         <Sparkline values={trend} color={color} />
       </div>

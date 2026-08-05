@@ -1,29 +1,42 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { useAuthStore } from '@/store/auth.store';
-import { useFactoryReadings } from '@/hooks/useReadings';
+import { useBatchReadings } from '@/hooks/useReadings';
+import { useFactoryBatches } from '@/hooks/useBatch';
+import { useFermentationState } from '@/hooks/useFermentationState';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { SkeletonBlock } from '@/components/ui/Spinner';
 import { SensorCard } from '@/components/batch/SensorCard';
 import { Table, Thead, Th, Tr, Td } from '@/components/ui/Table';
-import { PageShell, FilterButton } from '@/components/layout/PageShell';
+import { PageShell } from '@/components/layout/PageShell';
 import { PerfSummary, PerfTile } from '@/components/layout/PerfSummary';
 
 export default function SensorsPage() {
   const factoryId = useAuthStore((s) => s.factoryId);
-  const { readings, loading } = useFactoryReadings(factoryId, 15_000, 30);
+  const { batches } = useFactoryBatches(factoryId, 5_000);
+  const { state: fermentationState, isLive } = useFermentationState(factoryId, 1_000);
+  const [selectedBatchId, setSelectedBatchId] = useState('');
+  const scopedBatchId = isLive && fermentationState?.batchId
+    ? fermentationState.batchId
+    : selectedBatchId || fermentationState?.batchId || batches[0]?.batchId || null;
+  const { readings, loading } = useBatchReadings(scopedBatchId, 1_000);
 
-  const latest = readings[0] ?? null;
+  useEffect(() => {
+    if (isLive && fermentationState?.batchId) setSelectedBatchId(fermentationState.batchId);
+  }, [fermentationState?.batchId, isLive]);
 
-  const tempTrend    = useMemo(() => readings.map(r => r.temperature ?? 0).reverse(), [readings]);
-  const humidityTrend= useMemo(() => readings.map(r => r.humidity    ?? 0).reverse(), [readings]);
-  const rgTrend      = useMemo(() => readings.map(r => r.rgRatio     ?? 0).reverse(), [readings]);
-  const mq137Trend   = useMemo(() => readings.map(r => r.mq137       ?? 0).reverse(), [readings]);
-  const tgs2620Trend = useMemo(() => readings.map(r => r.tgs2620     ?? 0).reverse(), [readings]);
-  const tgs822Trend  = useMemo(() => readings.map(r => r.tgs822      ?? 0).reverse(), [readings]);
+  const latest = readings[readings.length - 1] ?? null;
+  const recentReadings = useMemo(() => [...readings].reverse(), [readings]);
+
+  const tempTrend    = useMemo(() => readings.flatMap(r => r.temperature == null ? [] : [r.temperature]), [readings]);
+  const humidityTrend= useMemo(() => readings.flatMap(r => r.humidity    == null ? [] : [r.humidity]), [readings]);
+  const rgTrend      = useMemo(() => readings.flatMap(r => r.rgRatio     == null ? [] : [r.rgRatio]), [readings]);
+  const mq137Trend   = useMemo(() => readings.flatMap(r => r.mq137       == null ? [] : [r.mq137]), [readings]);
+  const tgs2620Trend = useMemo(() => readings.flatMap(r => r.tgs2620     == null ? [] : [r.tgs2620]), [readings]);
+  const tgs822Trend  = useMemo(() => readings.flatMap(r => r.tgs822      == null ? [] : [r.tgs822]), [readings]);
 
   const devices = useMemo(() => {
     const set = new Set<string>();
@@ -33,16 +46,18 @@ export default function SensorsPage() {
 
   const tiles: PerfTile[] = [
     {
-      label: 'Active Devices',
-      sub: 'Streaming sensors',
+      label: 'Batch Devices',
+      sub: scopedBatchId ?? 'No batch selected',
       value: devices.length,
-      delta: { value: 'online', direction: 'up', tone: 'positive' },
+      delta: devices.length
+        ? { value: isLive ? 'online' : 'recorded', direction: 'flat', tone: 'positive' }
+        : undefined,
     },
     {
-      label: 'Stream Window',
-      sub: 'Polling every 15s',
+      label: 'Batch Readings',
+      sub: scopedBatchId ?? 'No batch selected',
       value: `${readings.length}`,
-      delta: { value: 'samples', direction: 'flat' },
+      delta: { value: 'readings', direction: 'flat' },
     },
     {
       label: 'Last Reading',
@@ -62,14 +77,29 @@ export default function SensorsPage() {
       title="Sensor Stream"
       actions={
         <>
-          <Badge tone="live">Live</Badge>
-          <FilterButton />
+          <Badge tone={isLive ? 'live' : 'neutral'}>{isLive ? 'Live batch' : 'Batch history'}</Badge>
+          <select
+            value={scopedBatchId ?? ''}
+            onChange={(event) => setSelectedBatchId(event.target.value)}
+            disabled={isLive || batches.length === 0}
+            className="h-9 rounded-md border border-border bg-elevated px-3 text-sm font-mono text-text-primary disabled:opacity-60"
+            aria-label="Select sensor batch"
+          >
+            {scopedBatchId && !batches.some((batch) => batch.batchId === scopedBatchId) ? (
+              <option value={scopedBatchId}>{scopedBatchId}</option>
+            ) : null}
+            {batches.map((batch) => (
+              <option key={batch.batchId} value={batch.batchId}>{batch.batchId}</option>
+            ))}
+          </select>
         </>
       }
     >
       <PerfSummary
         title="Sensor Health"
-        description={`Real-time stream from factory ${factoryId} — every 15 seconds.`}
+        description={scopedBatchId
+          ? `${isLive ? 'Live' : 'Saved'} readings for ${scopedBatchId} — refreshing every second.`
+          : `No batch readings available for factory ${factoryId}.`}
         tiles={tiles}
       />
 
@@ -138,7 +168,7 @@ export default function SensorsPage() {
       <Card>
         <CardHeader
           title="Recent Readings"
-          subtitle={`${readings.length} samples · live feed`}
+          subtitle={`${scopedBatchId ?? 'No batch'} · ${readings.length} batch readings`}
           right={
             <div className="flex items-center gap-2 text-[12px] text-text-muted">
               <span className="live-dot" />
@@ -166,7 +196,7 @@ export default function SensorsPage() {
                 <Th>TGS822 Reading</Th>
               </Thead>
               <tbody>
-                {readings.map((r, i) => (
+                {recentReadings.map((r, i) => (
                   <Tr key={`${r.timestamp}-${r.deviceId}-${i}`}>
                     <Td className="font-mono text-[12px] text-text-secondary">
                       {format(new Date(r.timestamp), 'MMM dd HH:mm:ss')}

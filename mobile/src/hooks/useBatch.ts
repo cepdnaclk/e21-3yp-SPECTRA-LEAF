@@ -36,14 +36,16 @@ export function useBatchSummary(batchId: string | null) {
   return { summary, loading, error, refresh: fetchOnce };
 }
 
-export function useBatchGraphs(batchId: string | null) {
+export function useBatchGraphs(batchId: string | null, pollMs = 1_000) {
   const [graphs, setGraphs] = useState<BatchGraphs | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
+  const inFlight = useRef(false);
 
   const fetchOnce = useCallback(async () => {
-    if (!batchId) return;
+    if (!batchId || inFlight.current) return;
+    inFlight.current = true;
     try {
       setError(null);
       const res = await api.get(`/batches/${batchId}/graphs`);
@@ -52,15 +54,22 @@ export function useBatchGraphs(batchId: string | null) {
     } catch (e) {
       if (mounted.current) setError(getErrorMessage(e));
     } finally {
+      inFlight.current = false;
       if (mounted.current) setLoading(false);
     }
   }, [batchId]);
 
   useEffect(() => {
     mounted.current = true;
+    setGraphs(null);
+    setLoading(true);
     fetchOnce();
-    return () => { mounted.current = false; };
-  }, [fetchOnce]);
+    const id = pollMs ? setInterval(fetchOnce, pollMs) : undefined;
+    return () => {
+      mounted.current = false;
+      if (id) clearInterval(id);
+    };
+  }, [fetchOnce, pollMs]);
 
   return { graphs, loading, error, refresh: fetchOnce };
 }

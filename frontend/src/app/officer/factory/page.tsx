@@ -13,8 +13,8 @@ import { PerfSummary, PerfTile } from '@/components/layout/PerfSummary';
 
 export default function FactoryPage() {
   const factoryId = useAuthStore((s) => s.factoryId);
-  const { readings, loading: rLoading } = useFactoryReadings(factoryId, 60_000, 50);
-  const { batches, loading: bLoading } = useFactoryBatches(factoryId, 60_000);
+  const { readings, loading: rLoading } = useFactoryReadings(factoryId, 1_000, 50);
+  const { batches, loading: bLoading } = useFactoryBatches(factoryId, 5_000);
 
   const devices = useMemo(() => {
     const map = new Map<string, { lastSeen: string; samples: number }>();
@@ -109,7 +109,7 @@ export default function FactoryPage() {
                 <Thead>
                   <Th>Device ID</Th>
                   <Th>Last Seen</Th>
-                  <Th>Samples</Th>
+                  <Th>Readings</Th>
                   <Th>Status</Th>
                 </Thead>
                 <tbody>

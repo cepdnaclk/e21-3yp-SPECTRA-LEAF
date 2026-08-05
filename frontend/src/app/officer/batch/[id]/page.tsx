@@ -1,8 +1,10 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
+import { api } from '@/lib/api';
+import { useAuthStore } from '@/store/auth.store';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { SkeletonBlock } from '@/components/ui/Spinner';
@@ -11,15 +13,80 @@ import { PageShell } from '@/components/layout/PageShell';
 import { PerfSummary, PerfTile } from '@/components/layout/PerfSummary';
 import { useBatchSummary } from '@/hooks/useBatch';
 import { useBatchGraphs } from '@/hooks/useReadings';
+import { useFermentationState } from '@/hooks/useFermentationState';
 import { fmtCurrency } from '@/lib/utils';
 
 export default function BatchDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const batchId = params?.id ?? null;
+  const factoryId = useAuthStore((state) => state.factoryId);
 
   const { summary, loading: summaryLoading } = useBatchSummary(batchId);
-  const { graphs, loading: graphsLoading } = useBatchGraphs(batchId);
+  const { graphs, loading: graphsLoading, error: graphsError } = useBatchGraphs(batchId, 1_000);
+  const {
+    state: fermentationState,
+    isLive,
+    loading: liveLoading,
+    reload: reloadFermentationState,
+  } = useFermentationState(factoryId, 1_000);
+  const [updatingLiveState, setUpdatingLiveState] = useState(false);
+  const [liveActionError, setLiveActionError] = useState<string | null>(null);
+  const isThisBatchLive = isLive && fermentationState?.batchId === batchId;
+
+  async function startThisBatch() {
+    if (!batchId || !factoryId || isLive) {
+      router.push('/officer');
+      return;
+    }
+
+    setUpdatingLiveState(true);
+    setLiveActionError(null);
+    try {
+      await api.post('/fermentation/control', {
+        status: 'RUNNING',
+        factory_id: factoryId,
+        batch_id: batchId,
+        device_id: fermentationState?.deviceId ?? 'DEV001',
+      });
+      await reloadFermentationState();
+      router.push('/officer');
+    } catch (error: any) {
+      setLiveActionError(
+        error.response?.data?.message
+        ?? error.response?.data?.error
+        ?? 'Failed to start fermentation',
+      );
+      await reloadFermentationState();
+    } finally {
+      setUpdatingLiveState(false);
+    }
+  }
+
+  async function stopThisBatch() {
+    if (!factoryId || !isThisBatchLive) return;
+    if (!window.confirm(`Stop live sensors for ${batchId}?`)) return;
+
+    setUpdatingLiveState(true);
+    setLiveActionError(null);
+    try {
+      await api.post('/fermentation/control', {
+        status: 'STOPPED',
+        factory_id: factoryId,
+        batch_id: batchId,
+        device_id: fermentationState?.deviceId,
+      });
+      await reloadFermentationState();
+    } catch (error: any) {
+      setLiveActionError(
+        error.response?.data?.message
+        ?? error.response?.data?.error
+        ?? 'Failed to stop live sensors',
+      );
+    } finally {
+      setUpdatingLiveState(false);
+    }
+  }
 
   const tempData = useMemo(
     () => (graphs?.temperature ?? []).map((p) => ({
@@ -119,16 +186,42 @@ export default function BatchDetailPage() {
       ]}
       title={batchId ?? '—'}
       actions={
-        <Button variant="secondary" size="sm" onClick={() => router.back()}>
-          ← Back
-        </Button>
+        <>
+          {isThisBatchLive ? (
+            <Button variant="danger" size="sm" onClick={stopThisBatch} disabled={updatingLiveState}>
+              {updatingLiveState ? 'Stopping…' : 'Stop Live Sensors'}
+            </Button>
+          ) : isLive ? (
+            <Button size="sm" onClick={() => router.push('/officer')}>
+              View {fermentationState?.batchId ?? 'Live Batch'}
+            </Button>
+          ) : summary?.glp == null ? (
+            <Button size="sm" onClick={startThisBatch} disabled={liveLoading || updatingLiveState}>
+              {updatingLiveState ? 'Starting…' : 'Start This Batch'}
+            </Button>
+          ) : null}
+          <Button variant="secondary" size="sm" onClick={() => router.back()}>
+            ← Back
+          </Button>
+        </>
       }
     >
+      {liveActionError ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {liveActionError}
+        </div>
+      ) : null}
       <PerfSummary
         title="Batch Overview"
-        description="Sensor readings and batch metadata."
+        description="Sensor readings and batch metadata. Graphs auto-refresh every second."
         tiles={tiles}
       />
+
+      {graphsError ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {graphsError}. Retrying automatically…
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-5">
         <Card>

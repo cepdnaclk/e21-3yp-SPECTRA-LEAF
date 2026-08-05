@@ -42,7 +42,7 @@ function normalizeBatch(item: any): BatchListItem {
   };
 }
 
-export function useFactoryBatches(factoryId: string | null, pollMs = 30_000) {
+export function useFactoryBatches(factoryId: string | null, pollMs = 5_000) {
   const [batches, setBatches] = useState<BatchListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

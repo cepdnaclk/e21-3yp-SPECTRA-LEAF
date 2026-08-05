@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
+  Image,
   Modal,
   Pressable,
   RefreshControl,
@@ -23,10 +24,14 @@ import Loading from '../components/Loading';
 import BrandMark from '../components/BrandMark';
 import ThemeToggle from '../components/ThemeToggle';
 import { useAuthStore } from '../store/authStore';
-import { useFactoryBatches, useFactoryReadings } from '../hooks/useReadings';
-import { useFermentationState } from '../hooks/useFermentationState';
+import { useBatchReadings, useFactoryBatches } from '../hooks/useReadings';
+import { publishFermentationState, useFermentationState } from '../hooks/useFermentationState';
 import { api, getErrorMessage } from '../lib/api';
-import { fmtDate, fmtNumber } from '../lib/format';
+import { fmtCurrency, fmtDate, fmtNumber } from '../lib/format';
+import {
+  hideLiveBatchNotification,
+  showLiveBatchNotification,
+} from '../lib/liveBatchNotifications';
 import { BatchListItem } from '../types';
 import { AppTheme, useAppTheme } from '../theme';
 
@@ -49,17 +54,33 @@ export default function DashboardScreen() {
   const navigation = useNavigation<any>();
   const factoryId = useAuthStore(state => state.factoryId);
   const displayName = useAuthStore(state => state.displayName);
-  const { readings, loading: readingsLoading, error: readingsError, refresh: refreshReadings } =
-    useFactoryReadings(factoryId, 15_000, 24);
+  const profile = useAuthStore(state => state.profile);
+  const liveAlertsEnabled = useAuthStore(state => state.liveAlertsEnabled);
   const { batches, loading: batchesLoading, error: batchesError, refresh: refreshBatches } =
-    useFactoryBatches(factoryId, 15_000);
+    useFactoryBatches(factoryId, 5_000);
   const {
     state: liveState,
     isLive,
     loading: liveLoading,
     error: liveError,
     refresh: refreshLiveState,
-  } = useFermentationState(factoryId, 5_000);
+  } = useFermentationState(factoryId, 1_000);
+  const highestPriceBatch = useMemo(
+    () => batches
+      .filter(batch => batch.price != null)
+      .sort((a, b) => (b.price ?? 0) - (a.price ?? 0))[0] ?? null,
+    [batches],
+  );
+  const [selectedBatchId, setSelectedBatchId] = useState('');
+  const scopedBatchId = isLive && liveState?.batchId
+    ? liveState.batchId
+    : selectedBatchId
+      || liveState?.batchId
+      || highestPriceBatch?.batchId
+      || batches[0]?.batchId
+      || null;
+  const { readings, loading: readingsLoading, error: readingsError, refresh: refreshReadings } =
+    useBatchReadings(scopedBatchId, 1_000);
 
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -86,10 +107,27 @@ export default function DashboardScreen() {
     return () => animation.stop();
   }, [isLive, pulse]);
 
-  const latest = readings[0];
+  useEffect(() => {
+    if (isLive && liveState?.batchId) setSelectedBatchId(liveState.batchId);
+  }, [isLive, liveState?.batchId]);
+
+  const latest = readings[readings.length - 1];
   const activeBatch = useMemo<BatchListItem | null>(() => {
     if (!isLive || !liveState?.batchId) return null;
-    return batches.find(batch => batch.batchId === liveState.batchId) ?? {
+    const existing = batches.find(batch => batch.batchId === liveState.batchId);
+    if (existing) {
+      return latest?.batchId === existing.batchId ? {
+        ...existing,
+        lastTimestamp: latest.timestamp,
+        latestTemperature: latest.temperature,
+        latestHumidity: latest.humidity,
+        latestRgRatio: latest.rgRatio,
+        latestMq137: latest.mq137,
+        latestTgs2620: latest.tgs2620,
+        latestTgs822: latest.tgs822,
+      } : existing;
+    }
+    return {
       batchId: liveState.batchId,
       lastTimestamp: liveState.startedAt ?? '',
       latestTemperature: null,
@@ -101,9 +139,12 @@ export default function DashboardScreen() {
       glp: null,
       price: null,
     };
-  }, [batches, isLive, liveState]);
+  }, [batches, isLive, latest, liveState]);
 
-  const awaitingGlp = batches.filter(batch => batch.glp == null).length;
+  const awaitingGlp = Math.max(
+    0,
+    batches.filter(batch => batch.glp == null).length - (isLive ? 1 : 0),
+  );
   const completed = batches.filter(batch => batch.glp != null).length;
   const loading =
     (readingsLoading || batchesLoading || liveLoading)
@@ -133,13 +174,26 @@ export default function DashboardScreen() {
     }
     setSubmitting(true);
     try {
+      const cleanBatchId = batchId.trim().toUpperCase();
       await api.post('/fermentation/control', {
         status: 'RUNNING',
         factory_id: factoryId,
-        batch_id: batchId.trim().toUpperCase(),
+        batch_id: cleanBatchId,
         device_id: (deviceId.trim() || 'DEV001').toUpperCase(),
+        glp: Number(glp) || 80,
+      });
+      publishFermentationState({
+        factoryId,
+        status: 'RUNNING',
+        batchId: cleanBatchId,
+        deviceId: (deviceId.trim() || 'DEV001').toUpperCase(),
+        startedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
       setStartOpen(false);
+      if (liveAlertsEnabled) {
+        await showLiveBatchNotification(cleanBatchId, factoryId);
+      }
       await Promise.all([refreshLiveState(), refreshBatches(), refreshReadings()]);
     } catch (error) {
       Alert.alert('Could not start', getErrorMessage(error));
@@ -157,6 +211,15 @@ export default function DashboardScreen() {
         batch_id: liveState?.batchId,
         device_id: liveState?.deviceId,
       });
+      publishFermentationState({
+        factoryId,
+        status: 'STOPPED',
+        batchId: null,
+        deviceId: liveState?.deviceId ?? null,
+        startedAt: null,
+        updatedAt: new Date().toISOString(),
+      });
+      await hideLiveBatchNotification();
       await Promise.all([refreshLiveState(), refreshBatches()]);
     } catch (error) {
       Alert.alert('Could not stop', getErrorMessage(error));
@@ -192,6 +255,15 @@ export default function DashboardScreen() {
           batch_id: activeBatch.batchId,
           device_id: liveState?.deviceId,
         });
+        publishFermentationState({
+          factoryId,
+          status: 'STOPPED',
+          batchId: null,
+          deviceId: liveState?.deviceId ?? null,
+          startedAt: null,
+          updatedAt: new Date().toISOString(),
+        });
+        await hideLiveBatchNotification();
       }
       await api.put(`/batches/${activeBatch.batchId}/glp`, { factoryId, glp: value });
       setGlpOpen(false);
@@ -223,9 +295,25 @@ export default function DashboardScreen() {
           <BrandMark compact />
           <View style={styles.topActions}>
             <ThemeToggle compact />
-            <View style={styles.avatar}>
-              <Ionicons name="person-outline" size={20} color={theme.colors.primaryDark} />
-            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open officer profile"
+              onPress={() => navigation.navigate('Profile')}
+              style={({ pressed }) => [styles.avatar, pressed && styles.pressed]}
+            >
+              {profile.avatarUri ? (
+                <Image source={{ uri: profile.avatarUri }} style={styles.avatarImage} />
+              ) : (
+                <Text style={styles.avatarText}>
+                  {profile.displayName
+                    .split(' ')
+                    .map(part => part[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </Text>
+              )}
+            </Pressable>
           </View>
         </View>
         <View style={styles.welcome}>
@@ -316,6 +404,51 @@ export default function DashboardScreen() {
           <AttentionTile label="Completed" value={String(completed).padStart(2, '0')} />
         </View>
 
+        <Card style={styles.priceCard}>
+          <View style={styles.priceTopRow}>
+            <View style={styles.priceCopy}>
+              <Text style={styles.cardEyebrow}>HIGHEST PRICED BATCH</Text>
+              <Text style={styles.priceBatchId}>{highestPriceBatch?.batchId ?? 'Not priced yet'}</Text>
+            </View>
+            <Text style={styles.priceValue}>
+              {highestPriceBatch?.price != null ? fmtCurrency(highestPriceBatch.price) : '—'}
+            </Text>
+          </View>
+          <Text style={styles.batchPickerLabel}>
+            {isLive ? 'LIVE READING BATCH · LOCKED' : 'SELECT READING BATCH'}
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.batchPicker}
+          >
+            {scopedBatchId && !batches.some(batch => batch.batchId === scopedBatchId) ? (
+              <View style={[styles.batchChip, styles.batchChipActive]}>
+                <Text style={[styles.batchChipText, styles.batchChipTextActive]}>{scopedBatchId}</Text>
+              </View>
+            ) : null}
+            {batches.map(batch => {
+              const selected = batch.batchId === scopedBatchId;
+              return (
+                <Pressable
+                  key={batch.batchId}
+                  disabled={isLive}
+                  onPress={() => setSelectedBatchId(batch.batchId)}
+                  style={({ pressed }) => [
+                    styles.batchChip,
+                    selected && styles.batchChipActive,
+                    pressed && !isLive && styles.pressed,
+                  ]}
+                >
+                  <Text style={[styles.batchChipText, selected && styles.batchChipTextActive]}>
+                    {batch.batchId}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </Card>
+
         {activeBatch ? (
           <Card style={styles.workflowCard}>
             <View style={styles.cardTopRow}>
@@ -354,11 +487,11 @@ export default function DashboardScreen() {
 
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionKicker}>LIVE SNAPSHOT</Text>
-            <Text style={styles.sectionTitle}>Chamber pulse</Text>
+            <Text style={styles.sectionKicker}>BATCH READINGS</Text>
+            <Text style={styles.sectionTitle}>{scopedBatchId ?? 'No batch selected'}</Text>
           </View>
           <Pressable onPress={() => navigation.navigate('Sensors')}>
-            <Text style={styles.textAction}>View stream</Text>
+            <Text style={styles.textAction}>View readings</Text>
           </Pressable>
         </View>
 
@@ -585,7 +718,10 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.borderActive,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
+  avatarImage: { width: '100%', height: '100%' },
+  avatarText: { color: theme.colors.primaryDark, fontSize: 13, fontWeight: '900' },
   hero: {
     minHeight: 330,
     borderRadius: 32,
@@ -681,6 +817,27 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
   attentionValueActive: { color: '#031008' },
   attentionLabel: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '800', textTransform: 'uppercase' },
   attentionLabelActive: { color: '#174B2C' },
+  priceCard: { marginTop: 12 },
+  priceTopRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  priceCopy: { flex: 1, marginRight: 12 },
+  priceBatchId: { color: theme.colors.text, fontSize: 20, fontWeight: '900', marginTop: 5 },
+  priceValue: { color: theme.colors.primary, fontSize: 23, fontWeight: '900' },
+  batchPickerLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 1, marginTop: 18 },
+  batchPicker: { gap: 8, paddingTop: 9, paddingRight: 4 },
+  batchChip: {
+    minWidth: 74,
+    height: 34,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  batchChipActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  batchChipText: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '900' },
+  batchChipTextActive: { color: '#031008' },
   workflowCard: { marginTop: 12 },
   cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   cardEyebrow: { color: theme.colors.primary, fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
@@ -759,7 +916,7 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
   batchStatus: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '900', textTransform: 'uppercase' },
   batchStatusLive: { color: theme.colors.primary },
   pressed: { opacity: 0.75, transform: [{ scale: 0.99 }] },
-  bottomSpace: { height: 118 },
+  bottomSpace: { height: 130 },
   backdrop: { flex: 1, backgroundColor: theme.colors.overlay, justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: theme.colors.surface,

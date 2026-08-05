@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Alert,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,10 +12,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
+import * as ImagePicker from 'expo-image-picker';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import ThemeToggle from '../components/ThemeToggle';
+import { getErrorMessage } from '../lib/api';
+import {
+  hideLiveBatchNotification,
+  requestLiveBatchNotificationAccess,
+} from '../lib/liveBatchNotifications';
 import { useAuthStore } from '../store/authStore';
 import { AppTheme, useAppTheme } from '../theme';
 
@@ -23,11 +31,15 @@ export default function ProfileScreen() {
   const styles = makeStyles(theme);
   const profile = useAuthStore(state => state.profile);
   const updateProfile = useAuthStore(state => state.updateProfile);
+  const changePassword = useAuthStore(state => state.changePassword);
   const signOut = useAuthStore(state => state.signOut);
+  const liveAlertsEnabled = useAuthStore(state => state.liveAlertsEnabled);
+  const setLiveAlertsEnabled = useAuthStore(state => state.setLiveAlertsEnabled);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(profile);
-  const [liveAlerts, setLiveAlerts] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
+  const [showPasswords, setShowPasswords] = useState(false);
 
   const startEditing = () => {
     setForm(profile);
@@ -43,8 +55,89 @@ export default function ProfileScreen() {
   const confirmSignOut = () => {
     Alert.alert('End officer session?', 'You will return to the SpectraLeaf login screen.', [
       { text: 'Stay signed in', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: signOut },
+      {
+        text: 'Sign out',
+        style: 'destructive',
+        onPress: () => {
+          void hideLiveBatchNotification();
+          signOut();
+        },
+      },
     ]);
+  };
+
+  const pickProfileImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Photo access needed', 'Allow photo access to choose an officer profile image.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    const asset = result.assets?.[0];
+    if (result.canceled || !asset) return;
+
+    try {
+      const extension = asset.fileName?.split('.').pop()?.toLowerCase() || 'jpg';
+      const destination = FileSystem.documentDirectory
+        ? `${FileSystem.documentDirectory}officer-profile-${Date.now()}.${extension}`
+        : asset.uri;
+      if (destination !== asset.uri) {
+        await FileSystem.copyAsync({ from: asset.uri, to: destination });
+      }
+      if (
+        profile.avatarUri &&
+        FileSystem.documentDirectory &&
+        profile.avatarUri.startsWith(FileSystem.documentDirectory)
+      ) {
+        await FileSystem.deleteAsync(profile.avatarUri, { idempotent: true });
+      }
+      updateProfile({ avatarUri: destination });
+    } catch (error) {
+      Alert.alert('Photo not saved', getErrorMessage(error));
+    }
+  };
+
+  const savePassword = () => {
+    if (passwords.next !== passwords.confirm) {
+      Alert.alert('Passwords do not match', 'Enter the same new password in both fields.');
+      return;
+    }
+    if (!changePassword(passwords.current, passwords.next)) {
+      Alert.alert(
+        'Password not changed',
+        passwords.next.length < 8
+          ? 'The new password must contain at least eight characters.'
+          : 'The current password is incorrect.',
+      );
+      return;
+    }
+    setPasswords({ current: '', next: '', confirm: '' });
+    Alert.alert('Password changed', 'Use the new password the next time you sign in on this device.');
+  };
+
+  const changeLiveAlerts = async (enabled: boolean) => {
+    if (!enabled) {
+      setLiveAlertsEnabled(false);
+      await hideLiveBatchNotification();
+      return;
+    }
+
+    if (await requestLiveBatchNotificationAccess()) {
+      setLiveAlertsEnabled(true);
+      return;
+    }
+
+    setLiveAlertsEnabled(false);
+    Alert.alert(
+      'Notifications are off',
+      'Allow SpectraLeaf notifications in your device settings to show live batches.',
+    );
   };
 
   return (
@@ -66,16 +159,28 @@ export default function ProfileScreen() {
 
         <View style={styles.identity}>
           <View style={styles.identityPattern} />
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {profile.displayName
-                .split(' ')
-                .map(part => part[0])
-                .join('')
-                .slice(0, 2)
-                .toUpperCase()}
-            </Text>
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Change profile photo"
+            onPress={pickProfileImage}
+            style={({ pressed }) => [styles.avatar, pressed && styles.pressed]}
+          >
+            {profile.avatarUri ? (
+              <Image source={{ uri: profile.avatarUri }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>
+                {profile.displayName
+                  .split(' ')
+                  .map(part => part[0])
+                  .join('')
+                  .slice(0, 2)
+                  .toUpperCase()}
+              </Text>
+            )}
+            <View style={styles.avatarEdit}>
+              <Ionicons name="camera" size={13} color="#031008" />
+            </View>
+          </Pressable>
           <Badge label="Officer mode" variant="live" />
           <Text style={styles.name}>{profile.displayName}</Text>
           <Text style={styles.role}>Factory Officer · {profile.factoryId}</Text>
@@ -92,7 +197,7 @@ export default function ProfileScreen() {
           <View style={styles.modeCopy}>
             <Text style={styles.modeTitle}>Officer session active</Text>
             <Text style={styles.modeText}>
-              Local preview validation is enabled. Production authentication can be connected later.
+              Your officer account and profile are stored on this device.
             </Text>
           </View>
         </View>
@@ -149,14 +254,52 @@ export default function ProfileScreen() {
           ) : null}
         </Card>
 
+        <SectionHeader kicker="SECURITY" title="Change officer password" />
+        <Card style={styles.securityCard}>
+          <PasswordField
+            label="CURRENT PASSWORD"
+            value={passwords.current}
+            onChangeText={current => setPasswords({ ...passwords, current })}
+            visible={showPasswords}
+          />
+          <PasswordField
+            label="NEW PASSWORD"
+            value={passwords.next}
+            onChangeText={next => setPasswords({ ...passwords, next })}
+            visible={showPasswords}
+          />
+          <PasswordField
+            label="CONFIRM NEW PASSWORD"
+            value={passwords.confirm}
+            onChangeText={confirm => setPasswords({ ...passwords, confirm })}
+            visible={showPasswords}
+            last
+          />
+          <View style={styles.securityActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={showPasswords ? 'Hide passwords' : 'Show passwords'}
+              onPress={() => setShowPasswords(current => !current)}
+              style={styles.visibilityButton}
+            >
+              <Ionicons
+                name={showPasswords ? 'eye-off-outline' : 'eye-outline'}
+                size={19}
+                color={theme.colors.primary}
+              />
+            </Pressable>
+            <Button title="Update password" onPress={savePassword} style={styles.passwordButton} />
+          </View>
+        </Card>
+
         <SectionHeader kicker="SHIFT PREFERENCES" title="How the app behaves" />
         <Card style={styles.preferenceCard}>
           <PreferenceRow
             icon="notifications-outline"
             title="Live state alerts"
             description="Surface start and stop changes from other devices."
-            value={liveAlerts}
-            onChange={setLiveAlerts}
+            value={liveAlertsEnabled}
+            onChange={value => void changeLiveAlerts(value)}
           />
           <PreferenceRow
             icon="sync-outline"
@@ -185,11 +328,11 @@ export default function ProfileScreen() {
 
         <View style={styles.versionRow}>
           <View style={styles.versionMark}>
-            <Ionicons name="leaf" size={16} color="#031008" />
+            <Image source={require('../assets/images/Logo.png')} style={styles.versionLogo} />
           </View>
           <View>
             <Text style={styles.versionName}>SpectraLeaf Officer</Text>
-            <Text style={styles.versionMeta}>Mobile workspace · version 1.0.0</Text>
+            <Text style={styles.versionMeta}>Mobile workspace · version 1.0.1</Text>
           </View>
         </View>
 
@@ -286,6 +429,41 @@ function PreferenceRow({
   );
 }
 
+function PasswordField({
+  label,
+  value,
+  onChangeText,
+  visible,
+  last,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  visible: boolean;
+  last?: boolean;
+}) {
+  const theme = useAppTheme();
+  const styles = makeStyles(theme);
+  return (
+    <View style={[styles.passwordField, !last && styles.fieldBorder]}>
+      <Ionicons name="lock-closed-outline" size={17} color={theme.colors.primary} />
+      <View style={styles.passwordCopy}>
+        <Text style={styles.fieldLabel}>{label}</Text>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          style={styles.passwordInput}
+          secureTextEntry={!visible}
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="Enter password"
+          placeholderTextColor={theme.colors.textMuted}
+        />
+      </View>
+    </View>
+  );
+}
+
 const makeStyles = (theme: AppTheme) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { flex: 1 },
@@ -331,6 +509,20 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 14,
   },
   avatarText: { color: theme.colors.primary, fontSize: 21, fontWeight: '900' },
+  avatarImage: { width: '100%', height: '100%', borderRadius: 22 },
+  avatarEdit: {
+    position: 'absolute',
+    width: 25,
+    height: 25,
+    right: -6,
+    bottom: -6,
+    borderRadius: 13,
+    backgroundColor: theme.colors.primary,
+    borderWidth: 2,
+    borderColor: '#F7FFF9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   name: { color: '#031008', fontSize: 30, fontWeight: '900', letterSpacing: -1, marginTop: 18 },
   role: { color: '#3F5647', fontSize: 12, fontWeight: '700', marginTop: 4 },
   shiftTag: {
@@ -393,6 +585,28 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
   },
   editActions: { flexDirection: 'row', gap: 9, marginTop: 16, marginBottom: 10 },
   actionButton: { flex: 1 },
+  securityCard: { paddingVertical: 5, borderRadius: 24 },
+  passwordField: { minHeight: 66, flexDirection: 'row', alignItems: 'center' },
+  passwordCopy: { flex: 1, marginLeft: 12 },
+  passwordInput: {
+    height: 35,
+    color: theme.colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+    paddingVertical: 0,
+  },
+  securityActions: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, marginBottom: 8 },
+  visibilityButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.borderActive,
+    backgroundColor: theme.colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  passwordButton: { flex: 1 },
   preferenceCard: { paddingVertical: 5, borderRadius: 24 },
   preferenceRow: { minHeight: 78, flexDirection: 'row', alignItems: 'center' },
   preferenceCopy: { flex: 1, marginHorizontal: 11 },
@@ -415,7 +629,9 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
     justifyContent: 'center',
     marginRight: 11,
   },
+  versionLogo: { width: 22, height: 22, resizeMode: 'contain' },
   versionName: { color: theme.colors.text, fontSize: 12, fontWeight: '900' },
   versionMeta: { color: theme.colors.textMuted, fontSize: 9, marginTop: 3 },
-  bottomSpace: { height: 116 },
+  bottomSpace: { height: 130 },
+  pressed: { opacity: 0.78 },
 });

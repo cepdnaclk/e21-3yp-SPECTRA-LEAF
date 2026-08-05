@@ -1,4 +1,4 @@
-import { GitBranch, Leaf, MoveUpRight } from "lucide-react";
+import { ExternalLink, GitBranch, Leaf, MoveUpRight } from "lucide-react";
 import { navigation } from "@/data/navigation";
 import { project } from "@/data/project";
 
@@ -19,6 +19,9 @@ export function Footer() {
           <p>{project.university}</p>
           <p>{project.faculty}</p>
           <p>{project.department}</p>
+          <a className="footer-project-link" href={project.projectPageUrl} target="_blank" rel="noreferrer">
+            <ExternalLink /> Official project profile <MoveUpRight />
+          </a>
         </div>
         <div>
           <h3>Repository</h3>

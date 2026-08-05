@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -19,23 +20,16 @@ import { useFermentationState } from '../hooks/useFermentationState';
 import { fmtDate } from '../lib/format';
 import { AppTheme, useAppTheme } from '../theme';
 
-const checklistItems = [
-  'Chamber cleaned and prepared',
-  'Sensor device mounted securely',
-  'Previous shift notes reviewed',
-];
-
 export default function FactoryScreen() {
   const theme = useAppTheme();
   const styles = makeStyles(theme);
   const factoryId = useAuthStore(state => state.factoryId);
   const { readings, loading: readingsLoading, error: readingsError, refresh: refreshReadings } =
-    useFactoryReadings(factoryId, 20_000, 60);
+    useFactoryReadings(factoryId, 1_000, 60);
   const { batches, loading: batchesLoading, error: batchesError, refresh: refreshBatches } =
-    useFactoryBatches(factoryId, 20_000);
-  const { isLive, state: liveState, refresh: refreshLive } = useFermentationState(factoryId, 5_000);
+    useFactoryBatches(factoryId, 5_000);
+  const { isLive, state: liveState, refresh: refreshLive } = useFermentationState(factoryId, 1_000);
   const [refreshing, setRefreshing] = useState(false);
-  const [checked, setChecked] = useState<boolean[]>([true, true, false]);
 
   const devices = useMemo(() => {
     const latestByDevice = new Map<string, string>();
@@ -52,17 +46,12 @@ export default function FactoryScreen() {
   }, [readings]);
 
   const completed = batches.filter(batch => batch.glp != null).length;
-  const readiness = Math.round((checked.filter(Boolean).length / checked.length) * 100);
   const error = readingsError || batchesError;
 
   const onRefresh = async () => {
     setRefreshing(true);
     await Promise.all([refreshReadings(), refreshBatches(), refreshLive()]);
     setRefreshing(false);
-  };
-
-  const toggleCheck = (index: number) => {
-    setChecked(current => current.map((value, itemIndex) => itemIndex === index ? !value : value));
   };
 
   return (
@@ -90,7 +79,7 @@ export default function FactoryScreen() {
           <View style={styles.factoryPatternTwo} />
           <View style={styles.factoryHeroTop}>
             <View style={styles.factoryMark}>
-              <Ionicons name="leaf" size={22} color="#031008" />
+              <Image source={require('../assets/images/Logo.png')} style={styles.factoryLogo} />
             </View>
             <Badge label={isLive ? 'Producing' : 'Ready'} variant={isLive ? 'live' : 'priced'} />
           </View>
@@ -138,38 +127,6 @@ export default function FactoryScreen() {
             </Text>
           </View>
           <View style={[styles.operationDot, isLive && styles.operationDotLive]} />
-        </Card>
-
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionKicker}>SHIFT PREP</Text>
-            <Text style={styles.sectionTitle}>Officer checklist</Text>
-          </View>
-          <Text style={styles.readiness}>{readiness}% ready</Text>
-        </View>
-
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${readiness}%` }]} />
-        </View>
-
-        <Card style={styles.checklist}>
-          {checklistItems.map((item, index) => (
-            <Pressable
-              key={item}
-              onPress={() => toggleCheck(index)}
-              style={({ pressed }) => [
-                styles.checkRow,
-                index > 0 && styles.checkRowBorder,
-                pressed && styles.pressed,
-              ]}
-            >
-              <View style={[styles.checkBox, checked[index] && styles.checkBoxDone]}>
-                {checked[index] ? <Ionicons name="checkmark" size={14} color="#031008" /> : null}
-              </View>
-              <Text style={[styles.checkText, checked[index] && styles.checkTextDone]}>{item}</Text>
-              <Text style={styles.checkIndex}>0{index + 1}</Text>
-            </Pressable>
-          ))}
         </Card>
 
         <View style={styles.sectionHeader}>
@@ -278,6 +235,7 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  factoryLogo: { width: 27, height: 27, resizeMode: 'contain' },
   factoryCode: { color: '#031008', fontSize: 39, fontWeight: '900', letterSpacing: -1.5, marginTop: 24 },
   factoryName: { color: '#1D5A35', fontSize: 12, fontWeight: '800', marginTop: 3 },
   factoryStats: { flexDirection: 'row', marginTop: 24 },
@@ -320,31 +278,6 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
   operationMeta: { color: theme.colors.textMuted, fontSize: 9, lineHeight: 14, marginTop: 4 },
   operationDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: theme.colors.borderActive },
   operationDotLive: { backgroundColor: theme.colors.primary },
-  readiness: { color: theme.colors.primary, fontSize: 11, fontWeight: '900', marginBottom: 3 },
-  progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: theme.colors.border,
-    overflow: 'hidden',
-    marginBottom: 10,
-  },
-  progressFill: { height: 4, borderRadius: 2, backgroundColor: theme.colors.primary },
-  checklist: { paddingVertical: 6, borderRadius: 23 },
-  checkRow: { minHeight: 58, flexDirection: 'row', alignItems: 'center' },
-  checkRowBorder: { borderTopWidth: 1, borderTopColor: theme.colors.border },
-  checkBox: {
-    width: 25,
-    height: 25,
-    borderRadius: 9,
-    borderWidth: 1,
-    borderColor: theme.colors.borderActive,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkBoxDone: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
-  checkText: { color: theme.colors.text, fontSize: 12, fontWeight: '700', flex: 1, marginHorizontal: 11 },
-  checkTextDone: { color: theme.colors.textSecondary },
-  checkIndex: { color: theme.colors.textMuted, fontSize: 9, fontWeight: '900' },
   deviceRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -372,5 +305,5 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
   statusText: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '900', letterSpacing: 0.7 },
   statusTextOnline: { color: theme.colors.primary },
   pressed: { opacity: 0.7 },
-  bottomSpace: { height: 116 },
+  bottomSpace: { height: 130 },
 });

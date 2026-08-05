@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
   RefreshControl,
@@ -15,7 +15,7 @@ import EmptyState from '../components/EmptyState';
 import Loading from '../components/Loading';
 import LineChart from '../components/LineChart';
 import { useAuthStore } from '../store/authStore';
-import { useFactoryReadings } from '../hooks/useReadings';
+import { useBatchReadings, useFactoryBatches } from '../hooks/useReadings';
 import { useFermentationState } from '../hooks/useFermentationState';
 import { fmtDate, fmtNumber } from '../lib/format';
 import { SensorReading } from '../types';
@@ -46,30 +46,34 @@ export default function SensorsScreen() {
   const theme = useAppTheme();
   const styles = makeStyles(theme);
   const factoryId = useAuthStore(state => state.factoryId);
-  const { readings, loading, error, refresh } = useFactoryReadings(factoryId, 10_000, 30);
-  const { isLive, state: liveState, refresh: refreshLive } = useFermentationState(factoryId, 5_000);
+  const { batches, refresh: refreshBatches } = useFactoryBatches(factoryId, 5_000);
+  const { isLive, state: liveState, refresh: refreshLive } = useFermentationState(factoryId, 1_000);
+  const [selectedBatchId, setSelectedBatchId] = useState('');
+  const scopedBatchId = isLive && liveState?.batchId
+    ? liveState.batchId
+    : selectedBatchId || liveState?.batchId || batches[0]?.batchId || null;
+  const { readings, loading, error, refresh } = useBatchReadings(scopedBatchId, 1_000);
   const [refreshing, setRefreshing] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [trendMetric, setTrendMetric] = useState<TrendMetric>('temperature');
 
-  const latest = readings[0];
-  const streamReadings = useMemo(
-    () => readings.filter(reading => !liveState?.batchId || reading.batchId === liveState.batchId),
-    [liveState?.batchId, readings],
-  );
+  useEffect(() => {
+    if (isLive && liveState?.batchId) setSelectedBatchId(liveState.batchId);
+  }, [isLive, liveState?.batchId]);
+
+  const latest = readings[readings.length - 1];
+  const recentReadings = useMemo(() => [...readings].reverse(), [readings]);
   const trendPoints = useMemo(
-    () => streamReadings
-      .slice()
-      .reverse()
+    () => readings
       .map(reading => ({ timestamp: reading.timestamp, value: reading[trendMetric] }))
       .filter((point): point is { timestamp: string; value: number } => point.value != null),
-    [streamReadings, trendMetric],
+    [readings, trendMetric],
   );
   const trendOption = trendOptions.find(option => option.key === trendMetric)!;
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([refresh(), refreshLive()]);
+    await Promise.all([refresh(), refreshBatches(), refreshLive()]);
     setRefreshing(false);
   };
 
@@ -103,14 +107,53 @@ export default function SensorsScreen() {
           </View>
           <View style={styles.streamCopy}>
             <Text style={[styles.streamTitle, isLive && styles.streamTitleLive]}>
-              {isLive ? `${liveState?.batchId ?? 'Batch'} is streaming` : 'Stream is paused'}
+              {isLive
+                ? `${liveState?.batchId ?? 'Batch'} is streaming`
+                : scopedBatchId
+                  ? `${scopedBatchId} batch history`
+                  : 'No batch selected'}
             </Text>
             <Text style={[styles.streamMeta, isLive && styles.streamMetaLive]}>
               {latest?.deviceId || liveState?.deviceId || 'No device'} · {fmtDate(latest?.timestamp) || 'No signal yet'}
             </Text>
           </View>
-          <Badge label={isLive ? 'Live' : 'Last data'} variant={isLive ? 'live' : 'neutral'} />
+          <Badge label={isLive ? 'Live' : 'Batch'} variant={isLive ? 'live' : 'neutral'} />
         </View>
+
+        <View style={styles.batchSelectorHeader}>
+          <Text style={styles.sectionKicker}>{isLive ? 'LIVE BATCH' : 'READING BATCH'}</Text>
+          <Text style={styles.batchSelectorMeta}>{scopedBatchId ?? 'No batch'}</Text>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.batchSelector}
+        >
+          {scopedBatchId && !batches.some(batch => batch.batchId === scopedBatchId) ? (
+            <View style={[styles.batchChip, styles.batchChipActive]}>
+              <Text style={[styles.batchChipText, styles.batchChipTextActive]}>{scopedBatchId}</Text>
+            </View>
+          ) : null}
+          {batches.map(batch => {
+            const selected = batch.batchId === scopedBatchId;
+            return (
+              <Pressable
+                key={batch.batchId}
+                disabled={isLive}
+                onPress={() => setSelectedBatchId(batch.batchId)}
+                style={({ pressed }) => [
+                  styles.batchChip,
+                  selected && styles.batchChipActive,
+                  pressed && !isLive && styles.pressed,
+                ]}
+              >
+                <Text style={[styles.batchChipText, selected && styles.batchChipTextActive]}>
+                  {batch.batchId}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
 
         {error ? (
           <Pressable onPress={onRefresh} style={styles.errorCard}>
@@ -122,10 +165,10 @@ export default function SensorsScreen() {
 
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionKicker}>LATEST SAMPLE</Text>
+            <Text style={styles.sectionKicker}>LATEST BATCH READING</Text>
             <Text style={styles.sectionTitle}>Six-sensor view</Text>
           </View>
-          <Text style={styles.autoRefresh}>AUTO · 10 SEC</Text>
+          <Text style={styles.autoRefresh}>AUTO · 1 SEC</Text>
         </View>
 
         {loading && readings.length === 0 ? <Loading label="Reading chamber sensors" /> : null}
@@ -174,7 +217,7 @@ export default function SensorsScreen() {
         <Card style={styles.trendCard}>
           <View style={styles.trendHeader}>
             <View>
-              <Text style={styles.sectionKicker}>LIVE ANALYSIS</Text>
+              <Text style={styles.sectionKicker}>{isLive ? 'LIVE ANALYSIS' : 'BATCH ANALYSIS'}</Text>
               <Text style={styles.trendTitle}>{trendOption.label} signal</Text>
             </View>
             <Text style={styles.trendCount}>{trendPoints.length} PTS</Text>
@@ -210,7 +253,7 @@ export default function SensorsScreen() {
             <Text style={styles.sectionKicker}>SIGNAL LOG</Text>
             <Text style={styles.sectionTitle}>Recent telemetry</Text>
           </View>
-          <Text style={styles.sampleCount}>{streamReadings.length} samples</Text>
+          <Text style={styles.sampleCount}>{readings.length} batch readings</Text>
         </View>
 
         {!loading && readings.length === 0 ? (
@@ -219,7 +262,7 @@ export default function SensorsScreen() {
           </Card>
         ) : null}
 
-        {streamReadings.slice(0, 12).map((reading, index) => {
+        {recentReadings.map((reading, index) => {
           const key = `${reading.timestamp}-${index}`;
           const open = expanded === key;
           return (
@@ -231,7 +274,7 @@ export default function SensorsScreen() {
               <View style={[styles.logRow, open && styles.logRowOpen]}>
                 <View style={styles.timeline}>
                   <View style={[styles.timelineDot, index === 0 && styles.timelineDotLive]} />
-                  {index < Math.min(streamReadings.length, 12) - 1 ? <View style={styles.timelineLine} /> : null}
+                  {index < recentReadings.length - 1 ? <View style={styles.timelineLine} /> : null}
                 </View>
                 <View style={styles.logBody}>
                   <View style={styles.logTop}>
@@ -312,6 +355,28 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
   streamTitleLive: { color: '#031008' },
   streamMeta: { color: theme.colors.textMuted, fontSize: 9, marginTop: 3 },
   streamMetaLive: { color: '#1D5A35' },
+  batchSelectorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 18,
+  },
+  batchSelectorMeta: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '900' },
+  batchSelector: { gap: 8, paddingTop: 10, paddingRight: 4 },
+  batchChip: {
+    minWidth: 76,
+    height: 35,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  batchChipActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  batchChipText: { color: theme.colors.textMuted, fontSize: 10, fontWeight: '900' },
+  batchChipTextActive: { color: '#031008' },
   errorCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -407,5 +472,5 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
   expandedLabel: { color: theme.colors.textMuted, fontSize: 8, fontWeight: '800', textTransform: 'uppercase' },
   expandedValue: { color: theme.colors.text, fontSize: 12, fontWeight: '900', marginTop: 4 },
   pressed: { opacity: 0.76, transform: [{ scale: 0.995 }] },
-  bottomSpace: { height: 116 },
+  bottomSpace: { height: 130 },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -17,19 +17,21 @@ import ThemeToggle from '../components/ThemeToggle';
 import { useAuthStore } from '../store/authStore';
 import { AppTheme, useAppTheme } from '../theme';
 
-const DEFAULT_LOGIN_EMAIL =
-  process.env.EXPO_PUBLIC_DEFAULT_LOGIN_EMAIL ?? 'officer@spectraleaf.local';
-const DEFAULT_LOGIN_PASSWORD =
-  process.env.EXPO_PUBLIC_DEFAULT_LOGIN_PASSWORD ?? '';
-
 export default function LoginScreen() {
   const theme = useAppTheme();
   const styles = makeStyles(theme);
   const signIn = useAuthStore(state => state.signIn);
-  const [email, setEmail] = useState(DEFAULT_LOGIN_EMAIL);
-  const [passcode, setPasscode] = useState(DEFAULT_LOGIN_PASSWORD);
+  const loginEmail = useAuthStore(state => state.loginEmail);
+  const loginPassword = useAuthStore(state => state.loginPassword);
+  const [email, setEmail] = useState(loginEmail);
+  const [passcode, setPasscode] = useState(loginPassword);
   const [showPasscode, setShowPasscode] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setEmail(loginEmail);
+    setPasscode(loginPassword);
+  }, [loginEmail, loginPassword]);
 
   const submit = () => {
     const cleanEmail = email.trim().toLowerCase();
@@ -41,15 +43,11 @@ export default function LoginScreen() {
       setError('Passcode must contain at least four characters.');
       return;
     }
-    if (
-      DEFAULT_LOGIN_PASSWORD &&
-      (cleanEmail !== DEFAULT_LOGIN_EMAIL.toLowerCase() || passcode !== DEFAULT_LOGIN_PASSWORD)
-    ) {
-      setError('Enter the configured officer account credentials.');
+    if (!signIn(cleanEmail, passcode)) {
+      setError('Admin email or password is incorrect.');
       return;
     }
     setError('');
-    signIn(cleanEmail);
   };
 
   return (
@@ -98,14 +96,14 @@ export default function LoginScreen() {
               </View>
             </View>
 
-            <Text style={styles.label}>WORK EMAIL</Text>
+            <Text style={styles.label}>ADMIN EMAIL</Text>
             <View style={[styles.inputWrap, error && !email.includes('@') ? styles.inputError : null]}>
               <Ionicons name="mail-outline" size={18} color={theme.colors.textMuted} />
               <TextInput
                 value={email}
                 onChangeText={setEmail}
                 style={styles.input}
-                placeholder="name@spectraleaf.com"
+                placeholder="admin@spectraleaf.com"
                 placeholderTextColor={theme.colors.textMuted}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -114,14 +112,14 @@ export default function LoginScreen() {
               />
             </View>
 
-            <Text style={styles.label}>PASSCODE</Text>
+            <Text style={styles.label}>PASSWORD</Text>
             <View style={[styles.inputWrap, error && passcode.length < 4 ? styles.inputError : null]}>
               <Ionicons name="lock-closed-outline" size={18} color={theme.colors.textMuted} />
               <TextInput
                 value={passcode}
                 onChangeText={setPasscode}
                 style={styles.input}
-                placeholder="Enter 4+ characters"
+                placeholder="Enter password"
                 placeholderTextColor={theme.colors.textMuted}
                 secureTextEntry={!showPasscode}
                 returnKeyType="done"

@@ -1,0 +1,41 @@
+# Dependencies and local build output
+node_modules/
+**/node_modules/
+.expo/
+**/.expo/
+dist/
+**/dist*/
+build/
+**/build/
+.next/
+out/
+coverage/
+**/.gradle/
+mobile/.gradle-build-release*/
+
+# Local configuration and credentials
+.env
+.env.*
+**/.env
+**/.env.*
+!mobile/.env.example
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# The mobile build does not import the other applications or project media
+/.git/
+/.github/
+/backend/
+/frontend/
+/site/
+/docs/
+
+# Logs and editor files
+*.log
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

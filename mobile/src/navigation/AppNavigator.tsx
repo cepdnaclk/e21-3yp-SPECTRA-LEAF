@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { enableScreens } from 'react-native-screens';
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -16,6 +16,7 @@ import BatchDetailScreen from '../screens/BatchDetailScreen';
 import FactoryScreen from '../screens/FactoryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import LoginScreen from '../screens/LoginScreen';
+import LiveBatchNotificationSync from '../components/LiveBatchNotificationSync';
 import { useAuthStore } from '../store/authStore';
 import { AppTheme, useAppTheme } from '../theme';
 
@@ -59,7 +60,7 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const theme = useAppTheme();
   const styles = makeTabStyles(theme);
-  const bottom = Math.max(insets.bottom, 12);
+  const bottom = Math.max(insets.bottom + 8, 20);
 
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { bottom }]}>
@@ -148,6 +149,7 @@ function AppNavigator() {
 export default function RootNavigator() {
   const theme = useAppTheme();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const accountReady = useAuthStore(state => state.hasHydrated);
   const baseTheme = theme.mode === 'dark' ? DarkTheme : DefaultTheme;
   const navigationTheme = {
     ...baseTheme,
@@ -162,16 +164,31 @@ export default function RootNavigator() {
     },
   };
 
+  if (!accountReady) {
+    return (
+      <View style={[styles.loading, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={[styles.loadingText, { color: theme.colors.textMuted }]}>Loading officer desk</Text>
+      </View>
+    );
+  }
+
   if (!isAuthenticated) {
     return <LoginScreen />;
   }
 
   return (
     <NavigationContainer theme={navigationTheme}>
+      <LiveBatchNotificationSync />
       <AppNavigator />
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  loadingText: { fontSize: 12, fontWeight: '700', marginTop: 12 },
+});
 
 const makeTabStyles = (theme: AppTheme) => StyleSheet.create({
   wrap: { position: 'absolute', left: 14, right: 14 },

@@ -2,11 +2,10 @@
   "expo": {
     "name": "SpectraLeaf Officer",
     "slug": "spectraleaf-officer",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./src/assets/images/Logo.png",
+    "icon": "./src/assets/images/app-icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
     "splash": {
       "image": "./src/assets/images/Logo.png",
       "resizeMode": "contain",
@@ -19,16 +18,43 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.spectraleaf.officer",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "Choose an officer profile photo for SpectraLeaf."
       }
     },
     "android": {
       "package": "com.spectraleaf.officer",
+      "versionCode": 2,
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.READ_MEDIA_IMAGES"
+      ],
       "adaptiveIcon": {
-        "foregroundImage": "./src/assets/images/Logo.png",
+        "foregroundImage": "./src/assets/images/adaptive-icon.png",
         "backgroundColor": "#0f5132"
       }
     },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose an officer profile photo for SpectraLeaf.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0",
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "44a82f5d-a691-4fad-beff-1e881651b5c4"

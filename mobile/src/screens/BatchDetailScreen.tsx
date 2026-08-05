@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,13 +11,15 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Badge from '../components/Badge';
+import Button from '../components/Button';
 import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
 import Loading from '../components/Loading';
 import LineChart from '../components/LineChart';
 import { useBatchGraphs, useBatchSummary } from '../hooks/useBatch';
 import { useAuthStore } from '../store/authStore';
-import { useFermentationState } from '../hooks/useFermentationState';
+import { publishFermentationState, useFermentationState } from '../hooks/useFermentationState';
+import { api, getErrorMessage } from '../lib/api';
 import { fmtCurrency, fmtDate, fmtNumber } from '../lib/format';
 import { GraphPoint } from '../types';
 import { AppStackParamList } from '../navigation/AppNavigator';
@@ -35,15 +38,90 @@ export default function BatchDetailScreen() {
   const theme = useAppTheme();
   const styles = makeStyles(theme);
   const route = useRoute<RouteProp<AppStackParamList, 'BatchDetail'>>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const factoryId = useAuthStore(state => state.factoryId);
   const { batchId } = route.params;
   const { summary, loading: summaryLoading, error: summaryError } = useBatchSummary(batchId);
-  const { graphs, loading: graphsLoading, error: graphsError } = useBatchGraphs(batchId);
-  const { isLive, state: liveState } = useFermentationState(factoryId, 5_000);
+  const { graphs, loading: graphsLoading, error: graphsError } = useBatchGraphs(batchId, 1_000);
+  const { isLive, state: liveState, loading: liveLoading, refresh: refreshLive } =
+    useFermentationState(factoryId, 1_000);
+  const [updatingLiveState, setUpdatingLiveState] = useState(false);
 
   const live = isLive && liveState?.batchId === batchId;
   const status = live ? 'Live' : summary?.glp != null ? 'Completed' : 'Needs GLP';
+
+  const showLiveDashboard = () => {
+    navigation.navigate('Tabs', { screen: 'Dashboard' });
+  };
+
+  const startThisBatch = async () => {
+    if (isLive) {
+      showLiveDashboard();
+      return;
+    }
+
+    setUpdatingLiveState(true);
+    try {
+      const now = new Date().toISOString();
+      await api.post('/fermentation/control', {
+        status: 'RUNNING',
+        factory_id: factoryId,
+        batch_id: batchId,
+        device_id: liveState?.deviceId ?? 'DEV001',
+      });
+      publishFermentationState({
+        factoryId,
+        status: 'RUNNING',
+        batchId,
+        deviceId: liveState?.deviceId ?? 'DEV001',
+        startedAt: now,
+        updatedAt: now,
+      });
+      await refreshLive();
+      showLiveDashboard();
+    } catch (error) {
+      await refreshLive();
+      Alert.alert('Could not start fermentation', getErrorMessage(error));
+    } finally {
+      setUpdatingLiveState(false);
+    }
+  };
+
+  const stopThisBatch = async () => {
+    setUpdatingLiveState(true);
+    try {
+      await api.post('/fermentation/control', {
+        status: 'STOPPED',
+        factory_id: factoryId,
+        batch_id: batchId,
+        device_id: liveState?.deviceId,
+      });
+      publishFermentationState({
+        factoryId,
+        status: 'STOPPED',
+        batchId: null,
+        deviceId: liveState?.deviceId ?? null,
+        startedAt: null,
+        updatedAt: new Date().toISOString(),
+      });
+      await refreshLive();
+    } catch (error) {
+      Alert.alert('Could not stop live sensors', getErrorMessage(error));
+    } finally {
+      setUpdatingLiveState(false);
+    }
+  };
+
+  const confirmStop = () => {
+    Alert.alert(
+      'Stop the live sensor stream?',
+      `Batch ${batchId} will stop streaming on web and mobile.`,
+      [
+        { text: 'Keep running', style: 'cancel' },
+        { text: 'Stop stream', style: 'destructive', onPress: stopThisBatch },
+      ],
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -83,6 +161,30 @@ export default function BatchDetailScreen() {
               live={live}
             />
           </View>
+          <View style={styles.heroAction}>
+            {live ? (
+              <Button
+                title="Stop live sensors"
+                variant="secondary"
+                loading={updatingLiveState}
+                onPress={confirmStop}
+              />
+            ) : isLive ? (
+              <Button
+                title={`View ${liveState?.batchId ?? 'live batch'}`}
+                onPress={showLiveDashboard}
+              />
+            ) : summary?.glp == null ? (
+              <Button
+                title="Start this batch"
+                loading={updatingLiveState}
+                disabled={liveLoading}
+                onPress={startThisBatch}
+              />
+            ) : (
+              <Button title="View live dashboard" variant="secondary" onPress={showLiveDashboard} />
+            )}
+          </View>
         </View>
 
         {summaryLoading ? <Loading label="Loading batch summary" /> : null}
@@ -98,7 +200,7 @@ export default function BatchDetailScreen() {
             <Text style={styles.sectionKicker}>SIGNAL SHAPE</Text>
             <Text style={styles.sectionTitle}>Sensor history</Text>
           </View>
-          <Text style={styles.sectionMeta}>LAST 30 POINTS</Text>
+          <Text style={styles.sectionMeta}>{live ? 'LIVE · 1 SEC' : 'BATCH HISTORY'}</Text>
         </View>
 
         {graphsLoading ? <Loading label="Building signal history" /> : null}
@@ -168,7 +270,7 @@ export default function BatchDetailScreen() {
           ))
         ) : (
           <Card>
-            <EmptyState title="No temperature history" message="Samples appear after the device begins reporting." />
+            <EmptyState title="No temperature history" message="Batch readings appear after the device begins reporting." />
           </Card>
         )}
 
@@ -236,6 +338,7 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
   heroSubtitle: { color: '#4A5E51', fontSize: 11, fontWeight: '700', marginTop: 5 },
   heroSubtitleLive: { color: '#1D5A35' },
   heroStats: { flexDirection: 'row', marginTop: 28, gap: 8 },
+  heroAction: { marginTop: 16 },
   heroStat: {
     flex: 1,
     minHeight: 60,
