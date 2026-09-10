@@ -32,7 +32,20 @@ html[data-theme="light"] {
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; background: var(--forest); color-scheme: dark; }
+html {
+  scroll-behavior: smooth;
+  background: var(--forest);
+  color-scheme: dark;
+  scrollbar-color: rgba(157, 173, 159, .42) transparent;
+  scrollbar-width: thin;
+}
+html[data-theme="light"] { scrollbar-color: rgba(92, 109, 98, .48) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 999px; background: rgba(157, 173, 159, .42); background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(156, 240, 91, .72); background-clip: padding-box; }
+html[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(92, 109, 98, .48); background-clip: padding-box; }
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(22, 138, 76, .72); background-clip: padding-box; }
 section[id], [id^="dashboard-role-"] { scroll-margin-top: 92px; }
 body {
   margin: 0;
