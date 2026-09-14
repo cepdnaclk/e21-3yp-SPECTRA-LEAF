@@ -1,97 +1,160 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowUpRight, Database, Gauge, ScanLine, Sparkles } from "lucide-react";
-import { SectionHeading } from "@/components/layout/SectionHeading";
+import { Database, Gauge, ScanLine, Sparkles } from "lucide-react";
 import { project } from "@/data/project";
 
-const icons = [ScanLine, Gauge, Database, Sparkles];
-const accents = [
-  { text: "text-lime", border: "border-lime/40", glow: "shadow-[0_0_45px_rgba(156,240,91,0.12)]" },
-  { text: "text-tea", border: "border-tea/40", glow: "shadow-[0_0_45px_rgba(36,200,117,0.12)]" },
-  { text: "text-cyan", border: "border-cyan/40", glow: "shadow-[0_0_45px_rgba(86,200,216,0.12)]" },
-  { text: "text-copper", border: "border-copper/40", glow: "shadow-[0_0_45px_rgba(198,122,67,0.12)]" },
+const chapters = [
+  {
+    icon: ScanLine,
+    verb: "Observe",
+    note: "Replace instinct-only checks with a view of the living leaf bed.",
+    accent: "text-lime",
+    line: "bg-lime",
+    wash: "from-lime/[0.08]",
+    glow: "shadow-[0_0_24px_rgba(156,240,91,0.3)]",
+  },
+  {
+    icon: Gauge,
+    verb: "Measure",
+    note: "Give the shift team immediate context while the batch is active.",
+    accent: "text-tea",
+    line: "bg-tea",
+    wash: "from-tea/[0.08]",
+    glow: "shadow-[0_0_24px_rgba(36,200,117,0.3)]",
+  },
+  {
+    icon: Database,
+    verb: "Understand",
+    note: "Keep every signal attached to its batch and final quality result.",
+    accent: "text-cyan",
+    line: "bg-cyan",
+    wash: "from-cyan/[0.08]",
+    glow: "shadow-[0_0_24px_rgba(86,200,216,0.3)]",
+  },
+  {
+    icon: Sparkles,
+    verb: "Automate",
+    note: "Turn accumulated evidence into future endpoint intelligence.",
+    accent: "text-copper",
+    line: "bg-copper",
+    wash: "from-copper/[0.08]",
+    glow: "shadow-[0_0_24px_rgba(198,122,67,0.3)]",
+  },
 ] as const;
-const outcomes = ["Observe", "Measure", "Understand", "Automate"];
 
 export function Objectives() {
   return (
-    <section id="objectives" className="section objectives overflow-hidden">
-      <SectionHeading
-        index="02"
-        eyebrow="Key objectives"
-        title="A deliberate path from observation to automation."
-        description="Four connected capabilities create value now while preparing the system for future intelligence."
-      />
+    <section id="objectives" className="section objectives overflow-visible">
+      <motion.header
+        className="grid grid-cols-1 gap-7 border-t [border-color:var(--line)] pt-6 lg:grid-cols-[120px_minmax(0,1fr)_minmax(260px,340px)] lg:gap-10"
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-10%" }}
+        transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <div className="flex gap-4 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--sage)]">
+          <span className="text-tea">02</span>
+          <span>Objectives</span>
+        </div>
+        <div>
+          <p className="mb-5 font-mono text-[10px] uppercase tracking-[0.16em] text-lime">Journey / 01—04</p>
+          <h2 className="m-0 max-w-[900px] text-[clamp(44px,6vw,86px)] font-medium leading-[0.98] tracking-[-0.06em] text-[color:var(--cream)]">
+            From a human reading<br />
+            <span className="font-light text-[color:var(--sage)]">to a system that learns.</span>
+          </h2>
+        </div>
+        <div className="self-end border-l [border-color:var(--line)] pl-6 lg:pb-2">
+          <p className="m-0 text-[15px] leading-7 text-[color:var(--sage)]">
+            Four deliberate moves connect the factory floor to future intelligence—without removing expert judgement from the process.
+          </p>
+        </div>
+      </motion.header>
 
-      <div className="relative mt-20 -mx-[max(24px,calc((100vw-1440px)/2))] overflow-x-auto px-[max(24px,calc((100vw-1440px)/2))] pb-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="relative min-w-[980px] pb-4 pt-4 md:min-w-0">
-          <div className="pointer-events-none absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-sage/15" aria-hidden="true" />
-          <motion.div
-            className="pointer-events-none absolute left-0 top-1/2 h-px w-full origin-left -translate-y-1/2 bg-gradient-to-r from-lime/70 via-tea/70 to-copper/70"
-            initial={{ scaleX: 0 }}
-            whileInView={{ scaleX: 1 }}
-            viewport={{ once: true, amount: 0.6 }}
-            transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1] }}
+      <div className="mt-20 grid gap-12 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-16">
+        <motion.aside
+          className="h-fit lg:sticky lg:top-28"
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
+        >
+          <div className="flex items-center gap-3 font-mono text-[9px] uppercase tracking-[0.15em] text-tea">
+            <span className="h-2 w-2 rounded-full bg-tea shadow-[0_0_14px_rgba(36,200,117,0.75)]" />
+            Mission path
+          </div>
+          <p className="mt-6 max-w-[190px] text-[13px] leading-6 text-[color:var(--sage)]">
+            Each chapter makes the next possible. The value is in the continuity, not an isolated feature.
+          </p>
+          <div className="mt-9 hidden items-center gap-3 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--sage)] lg:flex">
+            <span>Present</span>
+            <span className="h-px w-12 bg-gradient-to-r from-tea to-transparent" />
+            <span>Future</span>
+          </div>
+        </motion.aside>
+
+        <div className="relative border-y [border-color:var(--line)]">
+          <div className="pointer-events-none absolute bottom-0 left-[34px] top-0 w-px bg-gradient-to-b from-lime via-tea to-copper md:left-[43px]" aria-hidden="true" />
+          <motion.span
+            className="pointer-events-none absolute left-[30px] top-0 z-20 h-2.5 w-2.5 rounded-full bg-lime shadow-[0_0_20px_rgba(156,240,91,0.9)] md:left-[39px]"
+            animate={{ top: ["1%", "98%"], opacity: [0, 1, 1, 0] }}
+            transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
             aria-hidden="true"
           />
 
-          <div className="relative grid grid-cols-4 gap-4">
-            {project.objectives.map((objective, index) => {
-              const Icon = icons[index];
-              const accent = accents[index];
-              const isTop = index % 2 === 0;
+          {project.objectives.map((objective, index) => {
+            const chapter = chapters[index];
+            const Icon = chapter.icon;
 
-              return (
-                <motion.article
-                  key={objective.title}
-                  className={`group relative flex min-h-[430px] flex-col ${isTop ? "justify-end pb-[calc(50%+2.25rem)]" : "pt-[calc(50%+2.25rem)]"}`}
-                  initial={{ opacity: 0, y: isTop ? -24 : 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.35 }}
-                  transition={{ delay: index * 0.13, duration: 0.7, ease: "easeOut" }}
-                >
-                  <span
-                    className={`pointer-events-none absolute left-1/2 h-9 w-px -translate-x-1/2 ${isTop ? "bottom-1/2 bg-gradient-to-t" : "top-1/2 bg-gradient-to-b"} from-transparent to-sage/35`}
-                    aria-hidden="true"
-                  />
-                  <motion.div
-                    className={`absolute left-1/2 top-1/2 z-10 grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border bg-forest text-xs font-medium tracking-[0.16em] transition-transform duration-500 group-hover:scale-110 ${accent.border} ${accent.text}`}
-                    initial={{ scale: 0 }}
-                    whileInView={{ scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.13 + 0.2, type: "spring", stiffness: 220, damping: 14 }}
-                  >
-                    <span className="absolute inset-1 rounded-full border border-sage/10" />
-                    {String(index + 1).padStart(2, "0")}
-                  </motion.div>
+            return (
+              <motion.article
+                key={objective.title}
+                className="group relative grid min-h-[210px] grid-cols-[70px_minmax(0,1fr)] overflow-hidden border-b [border-color:var(--line)] last:border-b-0 md:grid-cols-[88px_minmax(210px,0.8fr)_minmax(260px,1.2fr)_120px]"
+                initial={{ opacity: 0, x: index % 2 === 0 ? 34 : -34 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, amount: 0.35 }}
+                transition={{ duration: 0.75, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <span className={`pointer-events-none absolute inset-0 origin-left scale-x-0 bg-gradient-to-r ${chapter.wash} to-transparent transition-transform duration-700 ease-out group-hover:scale-x-100`} aria-hidden="true" />
 
-                  <div className={`relative overflow-hidden border bg-deep-green/55 p-5 backdrop-blur-md transition duration-500 group-hover:-translate-y-2 group-hover:bg-deep-green/90 ${accent.border} ${accent.glow}`}>
-                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent opacity-60" />
-                    <div className="mb-8 flex items-start justify-between gap-4">
-                      <div className={`grid h-10 w-10 place-items-center border border-sage/20 bg-forest/50 ${accent.text}`}>
-                        <Icon size={17} strokeWidth={1.5} aria-hidden="true" />
-                      </div>
-                      <span className="pt-1 font-mono text-[9px] uppercase tracking-[0.16em] text-sage/60">Phase {String(index + 1).padStart(2, "0")}</span>
-                    </div>
-                    <h3 className="mb-3 text-xl font-medium leading-tight tracking-[-0.035em] text-cream">{objective.title}</h3>
-                    <p className="min-h-[4.5rem] text-[13px] leading-6 text-sage">{objective.text}</p>
-                    <div className="mt-6 flex items-center justify-between border-t border-sage/15 pt-4 font-mono text-[9px] uppercase tracking-[0.15em] text-sage/55">
-                      <span>{outcomes[index]}</span>
-                      <ArrowUpRight className={`h-4 w-4 transition duration-300 group-hover:-translate-y-1 group-hover:translate-x-1 ${accent.text}`} aria-hidden="true" />
-                    </div>
+                <div className="relative z-10 flex justify-center pt-8">
+                  <div className={`grid h-9 w-9 place-items-center rounded-full border bg-[color:var(--forest)] [border-color:var(--line)] ${chapter.accent} ${chapter.glow}`}>
+                    <Icon size={15} strokeWidth={1.5} aria-hidden="true" />
                   </div>
-                </motion.article>
-              );
-            })}
-          </div>
+                </div>
+
+                <div className="relative z-10 py-8 pr-5 md:flex md:flex-col md:justify-center md:py-10">
+                  <span className={`mb-3 font-mono text-[9px] uppercase tracking-[0.16em] ${chapter.accent}`}>
+                    Chapter {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <h3 className="m-0 text-[clamp(25px,2.4vw,38px)] font-medium leading-none tracking-[-0.045em] text-[color:var(--cream)]">
+                    {objective.title}
+                  </h3>
+                </div>
+
+                <div className="relative z-10 col-start-2 px-0 pb-8 pr-5 md:col-start-auto md:flex md:flex-col md:justify-center md:border-l md:px-8 md:py-10 [border-color:var(--line)]">
+                  <p className="m-0 max-w-[520px] text-[13px] leading-6 text-[color:var(--sage)]">{objective.text}</p>
+                  <p className="mb-0 mt-4 font-mono text-[9px] leading-5 text-[color:var(--sage)] opacity-60">{chapter.note}</p>
+                </div>
+
+                <div className="relative z-10 col-start-2 flex items-center justify-between border-t [border-color:var(--line)] py-4 pr-5 md:col-start-auto md:flex-col md:justify-center md:border-l md:border-t-0 md:px-4 md:py-10">
+                  <strong className={`font-mono text-[10px] uppercase tracking-[0.15em] ${chapter.accent}`}>{chapter.verb}</strong>
+                  <span className="font-mono text-4xl font-light tracking-[-0.08em] text-[color:var(--sage)] opacity-20 md:mt-auto md:text-6xl">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                </div>
+
+                <span className={`absolute bottom-0 left-0 h-px w-full origin-left scale-x-0 ${chapter.line} transition-transform duration-700 group-hover:scale-x-100`} aria-hidden="true" />
+              </motion.article>
+            );
+          })}
         </div>
       </div>
 
-      <div className="mt-2 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.16em] text-sage/45">
-        <span>Manual signal</span>
-        <span className="mx-6 hidden h-px flex-1 bg-sage/15 sm:block" />
-        <span>Intelligent response</span>
+      <div className="mt-10 flex items-center gap-5 font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--sage)] opacity-60">
+        <span>Human observation</span>
+        <span className="h-px flex-1 bg-gradient-to-r from-lime via-tea to-copper" />
+        <span>Assisted intelligence</span>
       </div>
     </section>
   );

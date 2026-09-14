@@ -153,7 +153,7 @@ export function ProductVideos() {
         <div className="product-video-grid">
           <div className="product-video-copy">
             <div className="section-kicker">
-              <span>03</span>
+              <span>FILM</span>
               <span>Complete product film</span>
             </div>
             <h2 id="product-video-title">From leaf to intelligence.</h2>
