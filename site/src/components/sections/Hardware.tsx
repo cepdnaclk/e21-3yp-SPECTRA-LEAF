@@ -150,38 +150,35 @@ export function Hardware() {
             <motion.article
               className="component-card"
               key={component.model}
-              initial={{ opacity: 0, y: reducedMotion ? 0 : 54, scale: reducedMotion ? 1 : 0.975 }}
+              initial={{ opacity: 0, y: reducedMotion ? 0 : 40, scale: reducedMotion ? 1 : 0.98 }}
               whileInView={{ opacity: 1, y: 0, scale: 1 }}
-              viewport={{ once: true, amount: 0.18 }}
-              transition={{ duration: 0.68, ease: [0.22, 1, 0.36, 1] }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
             >
               <figure className="component-media">
                 <Image
                   src={getAssetPath(component.image)}
                   alt={component.alt}
                   fill
-                  sizes="(max-width: 760px) calc(100vw - 56px), (max-width: 1100px) 46vw, 42vw"
+                  sizes="(max-width: 760px) 100vw, (max-width: 1100px) 46vw, 42vw"
                 />
                 <figcaption><ComponentIcon /> {component.model}</figcaption>
               </figure>
               <div className="component-panel">
                 <div className="component-card-head">
-                  <span>CHANNEL 0{index + 1} / 06</span>
-                  <small>{component.model}</small>
+                  <span>Channel 0{index + 1} / 06</span>
+                  <small>{component.domain}</small>
                 </div>
                 <div className="component-copy">
-                  <div className="component-icon"><ComponentIcon /></div>
-                  <small>{component.domain}</small>
                   <h3>{component.name}</h3>
                   <p>{component.description}</p>
                 </div>
-                <div className="component-reason">
-                  <small>WHY WE USE IT</small>
-                  <p>{component.reason}</p>
-                </div>
+                <p className="component-reason">
+                  <small>Why</small> {component.reason}
+                </p>
                 <div className="component-specs">
-                  <span><small>READS</small><strong>{component.reads}</strong></span>
-                  <span><small>OUTPUT</small><strong>{component.output}</strong></span>
+                  <span><small>Reads</small><strong>{component.reads}</strong></span>
+                  <span><small>Output</small><strong>{component.output}</strong></span>
                 </div>
               </div>
             </motion.article>

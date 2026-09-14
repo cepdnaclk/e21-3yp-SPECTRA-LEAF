@@ -1,7 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowUpRight, BrainCircuit, CloudCog, Gauge, RadioTower, RefreshCw, ShieldCheck } from "lucide-react";
+import {
+  ArrowUpRight,
+  BrainCircuit,
+  CloudCog,
+  Gauge,
+  RadioTower,
+  RefreshCw,
+  ShieldCheck,
+} from "lucide-react";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 
 const features = [
@@ -70,29 +78,70 @@ export function KeyFeatures() {
         title="One platform connecting the leaf, the edge and the cloud."
         description="The current prototype combines practical sensing, reliable telemetry and usable factory insight while preparing every batch for future intelligence."
       />
+
       <div className="features-grid">
         {features.map((feature, index) => {
           const Icon = feature.icon;
+
           return (
             <motion.article
+              className="feature-item"
               key={feature.number}
-              initial={{ opacity: 0, y: 28 }}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.06 }}
+              viewport={{
+                once: true,
+                amount: 0.2,
+              }}
+              transition={{
+                delay: index * 0.06,
+                duration: 0.55,
+                ease: [0.22, 1, 0.36, 1],
+              }}
             >
-              <div className="feature-card-head">
-                <span>CAPABILITY / {feature.number}</span>
-                <i aria-hidden="true"><ArrowUpRight /></i>
+              {/* Feature number */}
+              <div className="feature-number">
+                {feature.number}
               </div>
-              <h3>{feature.title}</h3>
-              <p>{feature.text}</p>
-              <div className="feature-visual" aria-hidden="true">
-                <div className="feature-visual-icon"><Icon /></div>
-                <div className="feature-readout"><strong>{feature.value}</strong><small>{feature.readout}</small></div>
-                <div className="feature-data-track">{Array.from({ length: 7 }, (_, item) => <i key={item} />)}</div>
+
+              {/* Main content */}
+              <div className="feature-main">
+                {/* Top metadata */}
+                <div className="feature-topline">
+                  <span>{feature.readout}</span>
+
+                  <Icon
+                    className="feature-icon"
+                    aria-hidden="true"
+                  />
+                </div>
+
+                {/* Title */}
+                <h3>{feature.title}</h3>
+
+                {/* Description */}
+                <p>{feature.text}</p>
+
+                {/* Bottom information */}
+                <div className="feature-footer">
+                  <div className="feature-value">
+                    <strong>{feature.value}</strong>
+                    <span>{feature.readout}</span>
+                  </div>
+
+                  <div className="feature-tags">
+                    {feature.tags.map((tag) => (
+                      <span key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="feature-tags">{feature.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
+
+              {/* Arrow */}
+              <ArrowUpRight
+                className="feature-arrow"
+                aria-hidden="true"
+              />
             </motion.article>
           );
         })}
@@ -100,3 +149,4 @@ export function KeyFeatures() {
     </section>
   );
 }
+
