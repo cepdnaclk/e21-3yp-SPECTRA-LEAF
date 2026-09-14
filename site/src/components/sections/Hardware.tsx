@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import {
   Activity,
   Camera,
@@ -14,7 +13,6 @@ import {
 import Image from "next/image";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { Reveal } from "@/components/ui/Reveal";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { getAssetPath } from "@/lib/paths";
 
 const components = [
@@ -108,7 +106,6 @@ const firmware = [
 ];
 
 export function Hardware() {
-  const reducedMotion = useReducedMotion();
 
   return (
     <section id="hardware" className="section hardware">
@@ -147,13 +144,9 @@ export function Hardware() {
           const ComponentIcon = component.Icon;
 
           return (
-            <motion.article
+            <article data-reveal
               className="component-card"
               key={component.model}
-              initial={{ opacity: 0, y: reducedMotion ? 0 : 40, scale: reducedMotion ? 1 : 0.98 }}
-              whileInView={{ opacity: 1, y: 0, scale: 1 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
             >
               <figure className="component-media">
                 <Image
@@ -181,7 +174,7 @@ export function Hardware() {
                   <span><small>Output</small><strong>{component.output}</strong></span>
                 </div>
               </div>
-            </motion.article>
+            </article>
           );
         })}
       </div>

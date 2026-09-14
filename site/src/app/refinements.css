@@ -1,0 +1,241 @@
+/* Surface and motion treatment only. Existing section geometry stays in globals.css. */
+.site-refined {
+  --surface-radius: 5px;
+  --surface-rule: color-mix(in srgb, var(--sage) 24%, transparent);
+  --surface-quiet: color-mix(in srgb, var(--deep) 32%, var(--forest));
+}
+
+.site-refined .section { --section-travel: 0; }
+.site-refined .section::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  content: "";
+  background: var(--line);
+  pointer-events: none;
+}
+.site-refined .section::after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  content: "";
+  transform: scaleX(var(--section-travel));
+  transform-origin: left;
+  background: var(--tea);
+  opacity: .55;
+  pointer-events: none;
+}
+.site-refined .section-heading { padding-top: 20px; border-top: 1px solid var(--surface-rule); }
+.site-refined .section-heading h2 { font-weight: 510; letter-spacing: -.05em; line-height: 1.06; }
+.site-refined .section-heading > p { padding-left: 20px; border-left: 1px solid var(--line); }
+.site-refined .section-kicker { line-height: 1.65; }
+.site-refined .section-kicker span:first-child { font-variant-numeric: tabular-nums; }
+.heading-sentence { display: block; max-width: 100%; text-wrap: balance; }
+.heading-word { display: inline-block; overflow: clip; vertical-align: top; padding-bottom: .13em; margin-bottom: -.13em; white-space: nowrap; }
+.heading-word:not(:last-child) { margin-right: .22em; }
+.heading-word [data-word] { display: inline-block; }
+
+/* Small, tactile controls; circles remain only where their shape communicates a function. */
+.site-refined :is(.button, .github-link, .mobile-menu, .conclusion a) { border-radius: var(--surface-radius); box-shadow: none; }
+.site-refined .button { transition: background .25s, border-color .25s, color .25s; }
+.site-refined .button:hover { transform: none; }
+.site-refined :is(.button, .conclusion a, .footer-github, .footer-project-link) svg { transition: translate .25s ease; }
+.site-refined :is(.button, .conclusion a, .footer-github, .footer-project-link):is(:hover, :focus-visible) svg { translate: 3px 0; }
+.site-refined .navbar-scrolled { box-shadow: 0 1px 0 var(--line); }
+.site-refined .hero h1 em { text-shadow: none; }
+.site-refined .hero-description { max-width: 54ch; }
+
+/* Introduction: a photo spread, open method notes and two comparison registers. */
+.site-refined :is(.metrics, .process-overview, .compare-card) { border-radius: var(--surface-radius); background: transparent; box-shadow: none; }
+.site-refined .metrics { border-right: 0; border-left: 0; }
+.site-refined .metrics strong { color: var(--cream); font-variant-numeric: tabular-nums; }
+.site-refined .metrics small { color: var(--tea); }
+.site-refined .process-copy { background: var(--surface-quiet); }
+.site-refined .process-image figcaption span { border-radius: 3px; }
+.site-refined .process-steps div { border: 0; border-top: 1px solid var(--surface-rule); border-radius: 0; }
+.site-refined .process-steps .is-active { border-color: var(--tea); background: color-mix(in srgb, var(--tea) 5%, transparent); }
+.site-refined .automation-card { border: 0; border-top: 1px solid var(--surface-rule); border-radius: 0; background: transparent; }
+.site-refined .automation-card > span { color: var(--tea); }
+.site-refined .automation-card h4 { font-weight: 500; }
+.site-refined .compare-card { border-right: 0; border-left: 0; }
+.site-refined .compare-title { background: var(--surface-quiet); }
+.site-refined .compare-row { line-height: 1.6; }
+
+/* Objectives and architecture keep their existing row journeys. */
+.site-refined :is(.objectives, .architecture) [class*="shadow-"] { box-shadow: none; }
+.site-refined :is(.objectives, .architecture) .text-lime { color: var(--lime); }
+.site-refined :is(.objectives, .architecture) .text-tea { color: var(--tea); }
+.site-refined :is(.objectives, .architecture) .text-cyan { color: var(--cyan); }
+.site-refined :is(.objectives, .architecture) .text-copper { color: var(--copper); }
+.site-refined :is(.objectives, .architecture) .group { transition: background-color .3s; }
+.site-refined :is(.objectives, .architecture) .group:hover { background-color: color-mix(in srgb, var(--tea) 3%, transparent); }
+
+/* Feature specimens: a restrained rule, an unboxed icon and a large readout. */
+.site-refined .features-grid article {
+  border: 1px solid var(--line);
+  border-top-color: var(--surface-rule);
+  border-radius: var(--surface-radius);
+  background: transparent;
+  box-shadow: none;
+  transition: border-color .3s, background-color .3s;
+}
+.site-refined .features-grid article::before {
+  position: absolute; top: -1px; left: 26px; width: 32px; height: 2px;
+  content: ""; background: var(--feature-accent); transition: width .4s ease;
+}
+.site-refined .features-grid article:is(:hover, :focus-within)::before { width: 72px; }
+.site-refined .features-grid:has(article:hover) article,
+.site-refined .features-grid article:hover { scale: 1; filter: none; box-shadow: none; }
+.site-refined .features-grid article:hover { border-color: var(--surface-rule); background: var(--surface-quiet); }
+.site-refined .feature-icon { padding: 5px; border: 0; border-radius: 0; background: none; }
+.site-refined .feature-number { color: var(--sage); }
+.site-refined .feature-item h3 { font-weight: 500; line-height: 1.12; }
+.site-refined .feature-value strong { color: var(--cream); font-weight: 400; }
+.site-refined .feature-item .feature-tags span { padding: 4px 0; border: 0; border-radius: 0; background: none; }
+.site-refined .feature-item .feature-tags span + span { padding-left: 12px; border-left: 1px solid var(--line); }
+.site-refined .feature-arrow { display: none; }
+
+/* Hardware keeps its stacked panels; opaque surfaces preserve legibility while overlapping. */
+.site-refined :is(.hardware-image, .component-stack .component-card, .pcb-feature) { border-radius: var(--surface-radius); box-shadow: none; }
+.site-refined .component-stack .component-card { border-color: var(--surface-rule); background: var(--hardware-card); box-shadow: 0 -12px 30px color-mix(in srgb, var(--forest) 35%, transparent); }
+.site-refined .controller-copy { border-width: 1px 0; border-color: var(--surface-rule); border-radius: 0; background: none; }
+.site-refined .controller-tags span { padding: 6px 0; border-width: 0 0 1px; color: var(--copper); }
+.site-refined .component-panel { background: var(--hardware-card); }
+.site-refined .component-reason { border-radius: 3px; background: var(--surface-quiet); }
+.site-refined .component-specs strong { font-weight: 500; }
+.site-refined .pcb-feature { background: var(--surface-quiet); border-color: var(--surface-rule); }
+.site-refined .telemetry-terminal { border-radius: var(--surface-radius); box-shadow: none; }
+.site-refined .terminal-wave i { animation: none; opacity: .5; }
+
+/* Services and software read like registers instead of nested tiles. */
+.site-refined :is(.cloud-architecture, .stack-board, .security-panel, .ai-architecture, .ml-visual) {
+  border-width: 1px 0;
+  border-color: var(--surface-rule);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.site-refined :is(.cloud-node, .ai-node, .stack-grid > div, .security-flow > span) {
+  border-width: 1px 0 0;
+  border-color: var(--surface-rule);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.site-refined .cloud-grid article { border-color: var(--line); border-radius: 0; background: transparent; box-shadow: none; transition: background .3s; }
+.site-refined .cloud-grid article:is(:hover, :focus) { transform: none; background: var(--surface-quiet); }
+.site-refined .cloud-grid h3 { font-weight: 500; }
+.site-refined .endpoint-panel { border-width: 1px 0; border-radius: 0; background: none; }
+.site-refined .code-panel { border-radius: var(--surface-radius); }
+.site-refined .software-feature { border-width: 1px 0 0; border-radius: 0; background: none; }
+.site-refined .software-feature h3 { font-weight: 500; }
+.site-refined .security-flow > span { border-left: 1px solid var(--line); }
+
+/* Dataset stages and the model share fine dividers and clear, honest status labels. */
+.site-refined .pipeline-summary span { border: 0; border-radius: 0; background: none; }
+.site-refined .pipeline-grid > div { border-radius: 0; background: transparent; }
+.site-refined .pipeline-grid i { box-shadow: none; width: 16px; height: 1px; border-radius: 0; }
+.site-refined :is(.future-label, .roadmap-label) { border-width: 0 0 1px; color: var(--copper); }
+.site-refined :is(.ml-inputs div, .ml-outputs div) { border-width: 0 0 1px; border-radius: 0; background: none; }
+.site-refined :is(.ml-inputs div, .ml-outputs div) > svg:first-child { width: 15px; height: 15px; flex: 0 0 auto; color: var(--cyan); stroke-width: 1.5; }
+.site-refined .ml-outputs div > svg:first-child { color: var(--tea); }
+.site-refined .ml-core > svg { filter: none; }
+.site-refined .brain-rings { opacity: .55; }
+
+/* The light theme uses paper-like depth and slow ambient colour rather than dark-theme glow. */
+html[data-theme="light"] body.site-refined {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(22, 138, 76, .075), transparent 28rem),
+    radial-gradient(circle at 88% 42%, rgba(86, 200, 216, .065), transparent 32rem),
+    linear-gradient(135deg, #f7faf7 0%, #f2f7f3 48%, #faf8f2 100%);
+  background-size: 120% 120%, 125% 125%, 100% 100%;
+  animation: lightFieldDrift 18s ease-in-out infinite alternate;
+}
+html[data-theme="light"] .site-refined {
+  --surface-rule: rgba(27, 57, 39, .2);
+  --surface-quiet: rgba(230, 240, 233, .46);
+}
+html[data-theme="light"] .site-refined :is(.process-copy, .testing-panel, .compare-title) {
+  background: linear-gradient(145deg, rgba(230, 240, 233, .7), rgba(255, 255, 255, .36));
+}
+html[data-theme="light"] .site-refined :is(.ai-architecture, .ml-visual) {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(22, 138, 76, .08), transparent 36%),
+    linear-gradient(110deg, rgba(255,255,255,.44), rgba(230,240,233,.2));
+}
+html[data-theme="light"] .site-refined :is(.features-grid article, .cloud-grid article, .team-grid article, .supervision-card):is(:hover, :focus-within) {
+  background: rgba(255, 255, 255, .48);
+}
+html[data-theme="light"] .site-refined .component-stack .component-card {
+  box-shadow: 0 -12px 30px rgba(27, 57, 39, .07);
+}
+
+/* Product views retain their real screen frames; surrounding descriptions are open. */
+.site-refined .role-grid article { border-width: 1px 0 0; border-radius: 0; background: transparent; }
+.site-refined :is(.role-dashboard-panel figure, .dashboard-desktop) { border-radius: var(--surface-radius); box-shadow: 0 16px 44px rgba(0,0,0,.12); }
+.site-refined .mobile-dashboard-companion { border-width: 1px 0; border-radius: 0; background: transparent; }
+.site-refined .role-dashboard-panel figcaption { border-radius: 3px; }
+.site-refined .product-video-meta > span { border-width: 1px 0 0; background: none; backdrop-filter: none; }
+.site-refined .product-video-sticky::after { opacity: .35; }
+.site-refined .product-video-moments li.is-active { box-shadow: inset 2px 0 var(--tea); }
+
+/* Test controls remain prominent; individual checks become concise ruled entries. */
+.site-refined .testing-layout { border-radius: var(--surface-radius); overflow: hidden; }
+.site-refined .testing-panel { background: var(--surface-quiet); }
+.site-refined .testing-tabs button { cursor: pointer; }
+.site-refined .testing-tabs button.active { background: var(--surface-quiet); box-shadow: inset 2px 0 var(--tea); }
+.site-refined .testing-checks div { border-width: 0 0 1px; border-radius: 0; }
+.site-refined .testing-panel-head em { border-width: 0 0 1px; }
+.site-refined .testing-note { background: none; }
+
+/* Project photography and people get the emphasis. */
+.site-refined :is(.gallery-item, .lightbox-content) { border-radius: var(--surface-radius); }
+.site-refined .gallery-item img { filter: saturate(.85); }
+.site-refined .gallery-overlay small { color: #c2cdc5; }
+.site-refined .gallery-expand { border-radius: 3px; }
+.site-refined .roadmap-grid article { border-radius: 0; background: transparent; }
+.site-refined .roadmap-grid article > span { padding-bottom: 7px; border-bottom: 1px solid var(--tea); }
+.site-refined .roadmap-grid svg { display: none; }
+.site-refined .roadmap-grid h3 { font-weight: 500; }
+.site-refined :is(.team-grid article, .supervision-card) { border-width: 1px 0 0; border-color: var(--surface-rule); border-radius: 0; background: transparent; box-shadow: none; }
+.site-refined .supervision-grid:has(.supervision-card:hover) .supervision-card,
+.site-refined .supervision-card:hover { transform: none; filter: none; box-shadow: none; }
+.site-refined :is(.member-avatar, .supervision-avatar) { border-radius: 5px; background: var(--deep); border-color: var(--line); }
+.site-refined .member-avatar i { display: none; }
+.site-refined .member-links a { border-radius: 4px; }
+.site-refined :is(.member-links a, .supervision-card-footer a):is(:hover, :focus-visible) { color: var(--tea); border-color: var(--tea); }
+.site-refined .conclusion-telemetry { display: none; }
+.site-refined .leaf-veins { opacity: .5; }
+.site-refined .conclusion h2 { font-weight: 500; }
+.site-refined .footer { border-top: 1px solid var(--line); }
+.site-refined .footer a { text-underline-offset: 5px; text-decoration-thickness: 1px; }
+.site-refined .footer a:hover { text-decoration: underline; }
+
+@media (max-width: 1100px) and (min-width: 761px) {
+  /* Keep the journey's columns inside the narrower content area. */
+  .site-refined .objectives article.group { grid-template-columns: 70px minmax(0,.8fr) minmax(0,1.2fr) 90px; }
+  .site-refined .architecture article.group { grid-template-columns: 70px minmax(0,.8fr) minmax(0,1.2fr); }
+}
+@media (max-width: 760px) {
+  .site-refined .section-heading { padding-top: 16px; }
+  .site-refined .section-heading > p { padding-left: 0; border-left: 0; }
+  .site-refined .section-heading h2 { line-height: 1.08; }
+  .site-refined .testing-tabs button.active { box-shadow: inset 0 -2px var(--tea); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="light"] body.site-refined { animation: none; }
+  .site-refined .section::after { transform: none; opacity: .2; }
+  .site-refined [data-journey-pulse] { display: none; }
+  .site-refined .testing-scroll-story { height: auto; }
+  .site-refined .testing-sticky { position: relative; top: auto; height: auto; padding: 30px 0; }
+  .site-refined .testing-layout { min-height: 0; }
+}
+
+@keyframes lightFieldDrift {
+  from { background-position: 0% 0%, 100% 45%, 0 0; }
+  to { background-position: 9% 7%, 91% 53%, 0 0; }
+}

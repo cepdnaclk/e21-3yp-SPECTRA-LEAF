@@ -1,7 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Database, Gauge, ScanLine, Sparkles } from "lucide-react";
+import { Database, Gauge, GitBranch, ScanLine } from "lucide-react";
 import { project } from "@/data/project";
 
 const chapters = [
@@ -33,7 +32,7 @@ const chapters = [
     glow: "shadow-[0_0_24px_rgba(86,200,216,0.3)]",
   },
   {
-    icon: Sparkles,
+    icon: GitBranch,
     verb: "Automate",
     note: "Turn accumulated evidence into future endpoint intelligence.",
     accent: "text-copper",
@@ -46,12 +45,8 @@ const chapters = [
 export function Objectives() {
   return (
     <section id="objectives" className="section objectives overflow-visible">
-      <motion.header
+      <header data-reveal
         className="grid grid-cols-1 gap-7 border-t [border-color:var(--line)] pt-6 lg:grid-cols-[120px_minmax(0,1fr)_minmax(260px,340px)] lg:gap-10"
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-10%" }}
-        transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
       >
         <div className="flex gap-4 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--sage)]">
           <span className="text-tea">02</span>
@@ -69,15 +64,11 @@ export function Objectives() {
             Four deliberate moves connect the factory floor to future intelligence—without removing expert judgement from the process.
           </p>
         </div>
-      </motion.header>
+      </header>
 
       <div className="mt-20 grid gap-12 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-16">
-        <motion.aside
+        <aside data-reveal
           className="h-fit lg:sticky lg:top-28"
-          initial={{ opacity: 0, x: -20 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
         >
           <div className="flex items-center gap-3 font-mono text-[9px] uppercase tracking-[0.15em] text-tea">
             <span className="h-2 w-2 rounded-full bg-tea shadow-[0_0_14px_rgba(36,200,117,0.75)]" />
@@ -91,14 +82,12 @@ export function Objectives() {
             <span className="h-px w-12 bg-gradient-to-r from-tea to-transparent" />
             <span>Future</span>
           </div>
-        </motion.aside>
+        </aside>
 
         <div className="relative border-y [border-color:var(--line)]">
           <div className="pointer-events-none absolute bottom-0 left-[34px] top-0 w-px bg-gradient-to-b from-lime via-tea to-copper md:left-[43px]" aria-hidden="true" />
-          <motion.span
+          <span data-journey-pulse
             className="pointer-events-none absolute left-[30px] top-0 z-20 h-2.5 w-2.5 rounded-full bg-lime shadow-[0_0_20px_rgba(156,240,91,0.9)] md:left-[39px]"
-            animate={{ top: ["1%", "98%"], opacity: [0, 1, 1, 0] }}
-            transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
             aria-hidden="true"
           />
 
@@ -107,13 +96,9 @@ export function Objectives() {
             const Icon = chapter.icon;
 
             return (
-              <motion.article
+              <article data-reveal
                 key={objective.title}
                 className="group relative grid min-h-[210px] grid-cols-[70px_minmax(0,1fr)] overflow-hidden border-b [border-color:var(--line)] last:border-b-0 md:grid-cols-[88px_minmax(210px,0.8fr)_minmax(260px,1.2fr)_120px]"
-                initial={{ opacity: 0, x: index % 2 === 0 ? 34 : -34 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, amount: 0.35 }}
-                transition={{ duration: 0.75, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
               >
                 <span className={`pointer-events-none absolute inset-0 origin-left scale-x-0 bg-gradient-to-r ${chapter.wash} to-transparent transition-transform duration-700 ease-out group-hover:scale-x-100`} aria-hidden="true" />
 
@@ -145,7 +130,7 @@ export function Objectives() {
                 </div>
 
                 <span className={`absolute bottom-0 left-0 h-px w-full origin-left scale-x-0 ${chapter.line} transition-transform duration-700 group-hover:scale-x-100`} aria-hidden="true" />
-              </motion.article>
+              </article>
             );
           })}
         </div>

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import "./refinements.css";
 import { productionUrl } from "@/lib/paths";
 
 const socialImage = new URL("og.png", productionUrl).toString();
@@ -80,7 +81,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased site-refined`}
       >
         {children}
       </body>

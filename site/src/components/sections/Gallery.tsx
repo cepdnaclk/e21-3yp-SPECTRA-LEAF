@@ -48,15 +48,12 @@ export function Gallery() {
       />
       <div className="gallery-grid">
         {gallery.map((item, index) => (
-          <motion.button
+          <button data-reveal
             key={item.title}
             ref={(node) => { if (selected === index) openerRef.current = node; }}
             type="button"
             className={`gallery-item gallery-${item.accent} ${index === 1 || index === 6 ? "gallery-wide" : ""}`}
             onClick={(event) => { openerRef.current = event.currentTarget; setSelected(index); }}
-            initial={{ opacity: 0, y: 22 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
           >
             {item.image ? (
               <Image
@@ -72,7 +69,7 @@ export function Gallery() {
             )}
             <span className="gallery-overlay"><small>{item.category}</small><strong>{item.title}</strong></span>
             <Expand className="gallery-expand" aria-hidden="true" />
-          </motion.button>
+          </button>
         ))}
       </div>
       <AnimatePresence>

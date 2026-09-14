@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import Image from "next/image";
 import { BarChart3, Building2, Check, Factory, Monitor, Radio, Smartphone } from "lucide-react";
 import { SectionHeading } from "@/components/layout/SectionHeading";
@@ -54,25 +53,21 @@ export function DashboardPreview() {
 
       <div className="role-grid" aria-label="Dashboard functionality by user role">
         {roles.map(({ id, Icon, title, scope, features }, index) => (
-          <motion.article key={id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.08 }}>
+          <article data-reveal key={id}>
             <div className="role-card-head"><Icon /><span>{String(index + 1).padStart(2, "0")}</span></div>
             <small>{scope}</small><h3>{title}</h3>
             <ul>{features.map((feature) => <li key={feature}><Check />{feature}</li>)}</ul>
             <a href={`#dashboard-role-${id}`}>View interface <Monitor /></a>
-          </motion.article>
+          </article>
         ))}
       </div>
 
       <div className="role-dashboard-gallery">
         {roles.map(({ id, Icon, title, scope, summary, image, width, height }, index) => (
-          <motion.article
+          <article data-reveal
             id={`dashboard-role-${id}`}
             className="role-dashboard-panel"
             key={id}
-            initial={{ opacity: 0, y: 34 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.16 }}
-            transition={{ duration: 0.65 }}
           >
             <div className="role-dashboard-copy">
               <span><Icon /> ROLE {String(index + 1).padStart(2, "0")} · {scope}</span>
@@ -94,14 +89,14 @@ export function DashboardPreview() {
               />
               <figcaption>{title} · {scope}</figcaption>
             </figure>
-          </motion.article>
+          </article>
         ))}
       </div>
 
-      <motion.div className="mobile-dashboard-companion" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+      <div data-reveal className="mobile-dashboard-companion">
         <div><span className="chip-label">MOBILE COMPANION</span><h3>Live batch context travels with the factory officer.</h3><p>The mobile interface keeps active batches, latest readings and sensor trends visible away from the desktop command centre.</p></div>
         <figure><Image src={getAssetPath("/assets/images/dashbord/mobile_dashbord.jpeg")} alt="Spectra Leaf mobile dashboard" width={812} height={1600} sizes="(max-width: 760px) 68vw, 280px" /><figcaption><Smartphone /> Field-ready monitoring</figcaption></figure>
-      </motion.div>
+      </div>
     </section>
   );
 }

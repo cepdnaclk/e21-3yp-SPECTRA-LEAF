@@ -463,7 +463,6 @@ html[data-theme="light"] .theme-icon-dark { opacity: 1; transform: rotate(0) sca
 .ml-inputs, .ml-outputs { display: grid; gap: 8px; }
 .ml-inputs > span, .ml-outputs > span { margin-bottom: 10px; color: var(--sage); font: 9px var(--font-geist-mono); letter-spacing: .12em; }
 .ml-inputs div, .ml-outputs div { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 13px; border: 1px solid var(--line); color: var(--sage); font-size: 12px; }
-.ml-inputs i { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); }
 .ml-outputs svg { width: 16px; color: var(--tea); }
 .ml-outputs div svg:last-child { margin-left: auto; color: var(--sage); }
 .ml-core { position: relative; display: grid; place-items: center; min-height: 300px; text-align: center; }

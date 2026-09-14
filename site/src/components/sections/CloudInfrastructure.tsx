@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { ArrowRight, Braces, Cloud, Database, Factory, KeyRound, Laptop, Network, RefreshCcw, ShieldCheck } from "lucide-react";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 
@@ -65,9 +64,9 @@ export function CloudInfrastructure() {
         {services.map(([Icon, title, text], index) => {
           const ServiceIcon = Icon as typeof Cloud;
           return (
-            <motion.article key={title as string} tabIndex={0} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.055 }}>
+            <article data-reveal key={title as string} tabIndex={0}>
               <ServiceIcon /><span>0{index + 1}</span><h3>{title as string}</h3><p>{text as string}</p>
-            </motion.article>
+            </article>
           );
         })}
       </div>

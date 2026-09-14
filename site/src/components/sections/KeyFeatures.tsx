@@ -1,11 +1,10 @@
 "use client";
 
-import { motion } from "framer-motion";
 import {
   ArrowUpRight,
-  BrainCircuit,
   CloudCog,
   Gauge,
+  GitBranch,
   RadioTower,
   RefreshCw,
   ShieldCheck,
@@ -59,7 +58,7 @@ const features = [
     tags: ["COGNITO", "WEB + MOBILE"],
   },
   {
-    icon: BrainCircuit,
+    icon: GitBranch,
     number: "06",
     title: "Quality-ready evidence",
     text: "Completed sensor profiles can be paired with expert Good Leaf Percentage results for future model development.",
@@ -80,24 +79,13 @@ export function KeyFeatures() {
       />
 
       <div className="features-grid">
-        {features.map((feature, index) => {
+        {features.map((feature) => {
           const Icon = feature.icon;
 
           return (
-            <motion.article
+            <article data-reveal
               className="feature-item"
               key={feature.number}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{
-                once: true,
-                amount: 0.2,
-              }}
-              transition={{
-                delay: index * 0.06,
-                duration: 0.55,
-                ease: [0.22, 1, 0.36, 1],
-              }}
             >
               {/* Feature number */}
               <div className="feature-number">
@@ -142,7 +130,7 @@ export function KeyFeatures() {
                 className="feature-arrow"
                 aria-hidden="true"
               />
-            </motion.article>
+            </article>
           );
         })}
       </div>
