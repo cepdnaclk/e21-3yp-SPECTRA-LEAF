@@ -21,16 +21,6 @@ const cloudFlow = [
   [Laptop, "Web + mobile", "Role-specific views through Cognito"],
 ];
 
-const payload = `{
-  "device_id": "SL-EDGE-01",
-  "batch_id": "SLF-024",
-  "timestamp": "2026-07-24T10:30:00Z",
-  "temperature_c": 27.8,
-  "gas_response": 342,
-  "colour_stage": 0.68,
-  "state": "RUNNING"
-}`;
-
 export function CloudInfrastructure() {
   return (
     <section id="cloud" className="section cloud-section">
@@ -69,22 +59,6 @@ export function CloudInfrastructure() {
             </article>
           );
         })}
-      </div>
-      <div className="api-layout">
-        <div className="endpoint-panel">
-          <span className="chip-label">SECURE REST SURFACE</span>
-          <h3>Dashboard endpoints</h3>
-          {[
-            ["POST", "/api/fermentation/control"],
-            ["GET", "/api/batches"],
-            ["GET", "/api/batches/{batchId}/telemetry"],
-            ["POST", "/api/batches/{batchId}/quality"],
-          ].map(([method, path]) => <div key={path}><span>{method}</span><code>{path}</code></div>)}
-        </div>
-        <div className="code-panel">
-          <div><span>telemetry.payload.json</span><i /><i /><i /></div>
-          <pre><code>{payload}</code></pre>
-        </div>
       </div>
     </section>
   );

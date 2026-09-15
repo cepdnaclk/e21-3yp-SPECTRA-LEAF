@@ -1,26 +1,23 @@
 "use client";
 
-import {
-  Activity,
-  Camera,
-  Droplets,
-  FlaskConical,
-  Info,
-  ScanLine,
-  Thermometer,
-  Wifi,
-} from "lucide-react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { Camera } from "lucide-react";
 import Image from "next/image";
+import { useRef, useState } from "react";
+import type { CSSProperties, UIEvent } from "react";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { Reveal } from "@/components/ui/Reveal";
 import { getAssetPath } from "@/lib/paths";
 
+gsap.registerPlugin(useGSAP, ScrollTrigger);
+
 const components = [
   {
-    Icon: Thermometer,
     model: "DS18B20 / 1-WIRE",
     name: "Temperature probe",
-    image: "/assets/images/hardware_components/ds18b20-probe.jpg",
+    image: "/assets/images/hardware_components/ds18b20-probe.png",
     alt: "Stainless steel DS18B20 temperature probe with a wired 1-Wire connection",
     domain: "LEAF-BED THERMAL",
     description: "The stainless probe sits inside the tea bed and records process temperature without exposing the sensing element to moisture.",
@@ -29,10 +26,9 @@ const components = [
     output: "°C · DIGITAL",
   },
   {
-    Icon: Droplets,
     model: "DHT22 / AM2302",
     name: "Humidity sensor",
-    image: "/assets/images/hardware_components/dht22-humidity.jpg",
+    image: "/assets/images/hardware_components/dht22-humidity.png",
     alt: "DHT22 digital relative humidity sensor",
     domain: "CHAMBER CLIMATE",
     description: "A calibrated capacitive channel measures relative humidity around the leaf bed so moisture conditions can be compared across batches.",
@@ -41,10 +37,9 @@ const components = [
     output: "%RH · DIGITAL",
   },
   {
-    Icon: Camera,
     model: "ESP32-CAM / OV2640",
     name: "Vision edge module",
-    image: "/assets/images/hardware_components/esp32-cam.jpg",
+    image: "/assets/images/hardware_components/esp32-cam.png",
     alt: "ESP32-CAM edge module with an OV2640 camera",
     domain: "VISUAL CONTEXT",
     description: "The Wi-Fi camera module captures chamber imagery and coordinates sensor data with the batch and device identity used by the cloud platform.",
@@ -53,10 +48,9 @@ const components = [
     output: "2 MP · WI-FI",
   },
   {
-    Icon: FlaskConical,
     model: "WINSEN MQ137",
     name: "Ammonia response sensor",
-    image: "/assets/images/hardware_components/mq137.jpg",
+    image: "/assets/images/hardware_components/mq137.png",
     alt: "Winsen MQ137 semiconductor ammonia gas sensor",
     domain: "NH₃ / AMINE RESPONSE",
     description: "The MQ137 supplies an analog response sensitive to ammonia and organic amines. Spectra Leaf follows its calibrated trend during oxidation.",
@@ -65,10 +59,9 @@ const components = [
     output: "ANALOG · ADC",
   },
   {
-    Icon: Activity,
     model: "FIGARO TGS2620",
     name: "Organic-vapor sensor",
-    image: "/assets/images/hardware_components/tgs2620.jpg",
+    image: "/assets/images/hardware_components/tgs2620.png",
     alt: "Figaro TGS2620 organic solvent vapor sensor",
     domain: "ALCOHOL / VOC RESPONSE",
     description: "A low-power metal-oxide channel responds strongly to alcohol and organic solvent vapors, adding a volatile-compound profile to each batch.",
@@ -77,10 +70,9 @@ const components = [
     output: "ANALOG · ADC",
   },
   {
-    Icon: ScanLine,
     model: "FIGARO TGS822",
     name: "Solvent-vapor sensor",
-    image: "/assets/images/hardware_components/tgs822.jpg",
+    image: "/assets/images/hardware_components/tgs822.png",
     alt: "Red Figaro TGS822 organic solvent vapor sensor",
     domain: "SOLVENT RESPONSE",
     description: "The TGS822 adds a complementary organic-solvent response, helping the system compare the shape and timing of volatile changes.",
@@ -106,6 +98,69 @@ const firmware = [
 ];
 
 export function Hardware() {
+  const [activeSensor, setActiveSensor] = useState(0);
+  const activeSensorRef = useRef(0);
+  const storyRef = useRef<HTMLDivElement>(null);
+  const wheelRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    const story = storyRef.current;
+    const wheel = wheelRef.current;
+    if (!story || !wheel) return;
+
+    const media = gsap.matchMedia();
+    media.add("(min-width: 901px) and (prefers-reduced-motion: no-preference)", () => {
+      const cutouts = gsap.utils.toArray<HTMLElement>(".sensor-orbit-cutout", story);
+      const timeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: story,
+          start: "top 72px",
+          end: () => `+=${Math.max(window.innerHeight * 0.82 * (components.length - 1), 2600)}`,
+          scrub: 0.55,
+          snap: {
+            snapTo: 1 / (components.length - 1),
+            duration: { min: 0.18, max: 0.42 },
+            delay: 0.08,
+            ease: "power1.inOut",
+          },
+          pin: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          onUpdate: (self) => {
+            const next = Math.min(components.length - 1, Math.round(self.progress * (components.length - 1)));
+            if (next !== activeSensorRef.current) {
+              activeSensorRef.current = next;
+              setActiveSensor(next);
+            }
+          },
+        },
+      });
+
+      timeline
+        .to(wheel, { rotation: -60 * (components.length - 1), ease: "none" }, 0)
+        .to(cutouts, { rotation: 60 * (components.length - 1), ease: "none" }, 0);
+
+      return () => timeline.kill();
+    });
+
+    return () => media.revert();
+  }, { scope: storyRef });
+
+  const syncScrollableSensor = (event: UIEvent<HTMLDivElement>) => {
+    if (!window.matchMedia("(max-width: 900px), (prefers-reduced-motion: reduce)").matches) return;
+
+    const firstPanel = event.currentTarget.querySelector<HTMLElement>(".sensor-detail");
+    if (!firstPanel) return;
+
+    const next = Math.min(
+      components.length - 1,
+      Math.max(0, Math.round(event.currentTarget.scrollLeft / firstPanel.offsetWidth)),
+    );
+    if (next !== activeSensorRef.current) {
+      activeSensorRef.current = next;
+      setActiveSensor(next);
+    }
+  };
 
   return (
     <section id="hardware" className="section hardware">
@@ -139,62 +194,76 @@ export function Hardware() {
         <span className="chip-label">HARDWARE COMPONENTS</span>
         <h3>One synchronized sensor array, six distinct signals.</h3>
       </div>
-      <div className="component-stack">
-        {components.map((component, index) => {
-          const ComponentIcon = component.Icon;
+      <div
+        ref={storyRef}
+        className="sensor-story"
+        data-reveal
+        style={{
+          "--mobile-wheel-rotation": `${activeSensor * -60}deg`,
+          "--mobile-cutout-rotation": `${activeSensor * 60}deg`,
+        } as CSSProperties}
+      >
+        <strong className="sensor-story-count">{String(activeSensor + 1).padStart(2, "0")} / {String(components.length).padStart(2, "0")}</strong>
 
-          return (
-            <article data-reveal
-              className="component-card"
-              key={component.model}
-            >
-              <figure className="component-media">
-                <Image
-                  src={getAssetPath(component.image)}
-                  alt={component.alt}
-                  fill
-                  sizes="(max-width: 760px) 100vw, (max-width: 1100px) 46vw, 42vw"
-                />
-                <figcaption><ComponentIcon /> {component.model}</figcaption>
-              </figure>
-              <div className="component-panel">
-                <div className="component-card-head">
-                  <span>Channel 0{index + 1} / 06</span>
-                  <small>{component.domain}</small>
+        <div className="sensor-story-layout">
+          <div className="sensor-orbit-stage" aria-hidden="true">
+            <div ref={wheelRef} className="sensor-orbit-wheel">
+              <i className="sensor-orbit-ring" />
+              {components.map((component, index) => (
+                <div
+                  className={`sensor-orbit-node ${activeSensor === index ? "is-active" : ""}`}
+                  key={component.model}
+                  style={{
+                    "--sensor-angle": `${index * 60}deg`,
+                    "--sensor-angle-inverse": `${index * -60}deg`,
+                  } as CSSProperties}
+                >
+                  <div className="sensor-orbit-cutout">
+                    <Image
+                      src={getAssetPath(component.image)}
+                      alt=""
+                      fill
+                      sizes="96px"
+                      loading="lazy"
+                    />
+                    <span>0{index + 1}</span>
+                  </div>
                 </div>
-                <div className="component-copy">
-                  <h3>{component.name}</h3>
-                  <p>{component.description}</p>
-                </div>
-                <p className="component-reason">
-                  <small>Why</small> {component.reason}
-                </p>
-                <div className="component-specs">
-                  <span><small>Reads</small><strong>{component.reads}</strong></span>
-                  <span><small>Output</small><strong>{component.output}</strong></span>
-                </div>
-              </div>
-            </article>
-          );
-        })}
-      </div>
-      <Reveal className="component-calibration-note">
-        <Info />
-        <p><strong>Measurement note</strong> Gas channels are stored as response signals until chamber calibration maps them to concentration. This avoids presenting raw ADC values as ppm.</p>
-      </Reveal>
+              ))}
+            </div>
+          </div>
 
-      <Reveal className="pcb-feature">
-        <div className="pcb-copy">
-          <span className="chip-label">TEAM-DESIGNED HARDWARE</span>
-          <h3>Custom control PCB</h3>
-          <p>The Spectra Leaf V1.0 board consolidates ESP32-CAM control, temperature and humidity inputs, three conditioned gas channels, relay interfaces and regulated power on one project-specific PCB.</p>
-          <ul>
-            <li>Labelled connections for repeatable sensor assembly</li>
-            <li>Integrated controller, display and relay interfaces</li>
-            <li>A compact base for field trials and enclosure revisions</li>
-          </ul>
+          <div className="sensor-detail-viewport" onScroll={syncScrollableSensor}>
+            <div className="sensor-detail-track">
+              {components.map((component, index) => {
+                return (
+                  <article
+                    className={`sensor-detail ${index === activeSensor ? "is-active" : index < activeSensor ? "is-before" : "is-after"}`}
+                    aria-hidden={index !== activeSensor}
+                    key={component.model}
+                  >
+                    <span className="sensor-detail-model">CHANNEL {String(index + 1).padStart(2, "0")} · {component.model}</span>
+                    <h3>{component.name}</h3>
+                    <p>{component.description}</p>
+                    <div className="sensor-detail-reason">
+                      <small>WHY THIS SIGNAL MATTERS</small>
+                      <p>{component.reason}</p>
+                    </div>
+                    <div className="sensor-detail-specs">
+                      <span><small>READS</small><strong>{component.reads}</strong></span>
+                      <span><small>OUTPUT</small><strong>{component.output}</strong></span>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
         </div>
-        <figure>
+
+      </div>
+
+      <div className="pcb-feature" data-hardware-pair>
+        <figure data-hardware-visual>
           <Image
             src={getAssetPath("/assets/images/PCB/PCB.png")}
             alt="Spectra Leaf V1.0 custom PCB with labelled ESP32, sensor, display, relay and power connections"
@@ -204,29 +273,35 @@ export function Hardware() {
           />
           <figcaption>Spectra Leaf V1.0 · Team-designed control PCB</figcaption>
         </figure>
-      </Reveal>
+        <div className="pcb-copy" data-hardware-copy>
+          <span className="chip-label">TEAM-DESIGNED HARDWARE</span>
+          <h3>Custom control PCB</h3>
+          <p>The Spectra Leaf V1.0 board consolidates ESP32-CAM control, temperature and humidity inputs, three conditioned gas channels, relay interfaces and regulated power on one project-specific PCB.</p>
+          <ul>
+            <li>Labelled connections for repeatable sensor assembly</li>
+            <li>Integrated controller, display and relay interfaces</li>
+            <li>A compact base for field trials and enclosure revisions</li>
+          </ul>
+        </div>
+      </div>
 
-      <div className="firmware-layout">
-        <Reveal>
+      <div className="firmware-layout" data-hardware-pair>
+        <div className="firmware-copy" data-hardware-copy>
           <span className="chip-label">FIRMWARE SEQUENCE</span>
           <h3>A loop designed to recover, report and continue.</h3>
           <div className="firmware-flow">
             {firmware.map((step, index) => <div key={step}><span>{String(index + 1).padStart(2, "0")}</span><p>{step}</p></div>)}
           </div>
-        </Reveal>
-        <Reveal className="telemetry-terminal" delay={0.12}>
-          <div className="terminal-head"><span><i /> LIVE EDGE SIMULATION</span><small>DEMONSTRATION VALUES</small></div>
-          <div className="terminal-grid">
-            <span>Leaf temperature<strong>27.2 °C</strong></span>
-            <span>Relative humidity<strong>53.0 %RH</strong></span>
-            <span>MQ137 response<strong>ADC 1860</strong></span>
-            <span>TGS2620 response<strong>ADC 1672</strong></span>
-            <span>TGS822 response<strong>ADC 1548</strong></span>
-            <span>ESP32-CAM<strong>FRAME READY</strong></span>
-          </div>
-          <div className="terminal-status"><span><i /> DEVICE STATE <strong>RUNNING</strong></span><span><Wifi /> MQTT <strong>CONNECTED</strong></span></div>
-          <div className="terminal-wave" aria-hidden="true">{Array.from({ length: 34 }, (_, index) => <i key={index} style={{ height: `${18 + ((index * 17) % 58)}%` }} />)}</div>
-        </Reveal>
+        </div>
+        <div className="firmware-sequence-visual" data-hardware-visual>
+          <Image
+            src={getAssetPath("/assets/images/frameare sequense/dashbord.png")}
+            alt="Spectra Leaf firmware sequence dashboard"
+            width={1632}
+            height={944}
+            sizes="(max-width: 760px) 100vw, 46vw"
+          />
+        </div>
       </div>
     </section>
   );

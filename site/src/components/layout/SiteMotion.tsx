@@ -40,6 +40,20 @@ export function SiteMotion() {
         }, 0.22);
       });
 
+      // Hardware image/copy pairs enter from their physical sides to reinforce the layout.
+      select("[data-hardware-pair]").forEach((pair: HTMLElement) => {
+        const visual = pair.querySelector<HTMLElement>("[data-hardware-visual]");
+        const copy = pair.querySelector<HTMLElement>("[data-hardware-copy]");
+        if (!visual || !copy) return;
+        const visualX = pair.classList.contains("pcb-feature") ? -46 : 46;
+        const timeline = gsap.timeline({
+          scrollTrigger: { trigger: pair, start: "top 88%", once: true },
+          defaults: { duration: 1, ease: "power3.out", clearProps: "transform,opacity" },
+        });
+        timeline.from(visual, { x: visualX, opacity: 0, scale: .97 });
+        timeline.from(copy, { x: -visualX, opacity: 0 }, 0.12);
+      });
+
       select("[data-reveal]:not(.section-heading), .cloud-node, .ai-node, .stack-grid > div, .role-grid > article, .metrics > div, .firmware-flow > div, .process-steps > div").forEach((element: HTMLElement) => {
         // Children of a reveal are already carried by their parent animation.
         if (element.parentElement?.closest("[data-reveal]")) return;
@@ -86,7 +100,7 @@ export function SiteMotion() {
           });
         });
         const listeners: (() => void)[] = [];
-        select(".feature-item, .cloud-grid article, .software-feature, .roadmap-grid article").forEach((card: HTMLElement) => {
+        select(".cloud-grid article, .software-feature, .roadmap-grid article").forEach((card: HTMLElement) => {
           const icon = card.querySelector(".feature-icon, :scope > svg");
           if (!icon) return;
           const hover = gsap.to(icon, { y: -3, duration: 0.3, ease: "power2.out", paused: true });
@@ -105,6 +119,19 @@ export function SiteMotion() {
         });
         return () => listeners.forEach((remove) => remove());
       });
+
+      const galleryGrid = select(".gallery-grid")[0];
+      if (galleryGrid) {
+        gsap.from(select("[data-gallery-card]"), {
+          opacity: 0,
+          y: 18,
+          duration: 0.65,
+          stagger: 0.055,
+          ease: "power2.out",
+          clearProps: "transform,opacity",
+          scrollTrigger: { trigger: galleryGrid, start: "top 90%", once: true },
+        });
+      }
 
       const footer = document.querySelector(".footer");
       if (footer) gsap.from(footer.querySelectorAll(".footer-grid > div"), {

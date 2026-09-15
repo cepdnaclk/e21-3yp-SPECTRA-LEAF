@@ -95,7 +95,13 @@ export function DashboardPreview() {
 
       <div data-reveal className="mobile-dashboard-companion">
         <div><span className="chip-label">MOBILE COMPANION</span><h3>Live batch context travels with the factory officer.</h3><p>The mobile interface keeps active batches, latest readings and sensor trends visible away from the desktop command centre.</p></div>
-        <figure><Image src={getAssetPath("/assets/images/dashbord/mobile_dashbord.jpeg")} alt="Spectra Leaf mobile dashboard" width={812} height={1600} sizes="(max-width: 760px) 68vw, 280px" /><figcaption><Smartphone /> Field-ready monitoring</figcaption></figure>
+        <figure>
+          <div className="mobile-dashboard-shots">
+            <Image className="mobile-shot mobile-shot-dark" src={getAssetPath("/assets/images/dashbord/mobile_dashbord_dark.jpeg")} alt="Spectra Leaf mobile dashboard in dark mode" width={812} height={1599} sizes="(max-width: 760px) 68vw, 280px" />
+            <Image className="mobile-shot mobile-shot-light" src={getAssetPath("/assets/images/dashbord/mobile_dashbord_light.jpeg")} alt="Spectra Leaf mobile dashboard in light mode" width={812} height={1599} sizes="(max-width: 760px) 68vw, 280px" />
+          </div>
+          <figcaption><Smartphone /> Field-ready monitoring</figcaption>
+        </figure>
       </div>
     </section>
   );

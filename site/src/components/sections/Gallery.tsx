@@ -48,7 +48,7 @@ export function Gallery() {
       />
       <div className="gallery-grid">
         {gallery.map((item, index) => (
-          <button data-reveal
+          <button data-gallery-card
             key={item.title}
             ref={(node) => { if (selected === index) openerRef.current = node; }}
             type="button"
@@ -59,10 +59,11 @@ export function Gallery() {
               <Image
                 src={getAssetPath(item.image)}
                 alt={item.alt}
-                width={1200}
-                height={800}
+                width={item.width}
+                height={item.height}
                 sizes="(max-width: 760px) 100vw, (max-width: 1200px) 45vw, 35vw"
-                priority={index === 0}
+                loading="lazy"
+                decoding="async"
               />
             ) : (
               <div className="gallery-placeholder" aria-hidden="true"><ImageIcon /><span>PROJECT IMAGE PLACEHOLDER</span><i /><i /><i /></div>
@@ -82,8 +83,8 @@ export function Gallery() {
                 <Image
                   src={getAssetPath(active.image)}
                   alt={active.alt}
-                  width={1600}
-                  height={1000}
+                  width={active.width}
+                  height={active.height}
                   sizes="(max-width: 760px) calc(100vw - 32px), 90vw"
                   priority
                 />

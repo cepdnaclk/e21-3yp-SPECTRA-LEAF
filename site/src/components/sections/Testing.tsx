@@ -116,7 +116,6 @@ export function Testing() {
           </div>
         </div>
       </div>
-      <div className="testing-note">Security validation scope includes SRP authentication, no plaintext password transmission, JWT authorization, token refresh and intermittent Wi-Fi session handling. Hardware scope includes watchdog behaviour and Device Shadow resynchronization.</div>
     </section>
   );
 }
