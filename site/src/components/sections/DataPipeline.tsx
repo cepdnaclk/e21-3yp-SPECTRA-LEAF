@@ -1,7 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ArrowRight, BrainCircuit, Database, Factory, ScanLine, Tags } from "lucide-react";
+import { ArrowRight, Database, Factory, Gauge, GitBranch, ScanLine, Tag } from "lucide-react";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { Reveal } from "@/components/ui/Reveal";
 
@@ -16,9 +15,9 @@ const stages = [
 
 const aiFlow = [
   [Database, "DynamoDB", "Raw readings + batch records"],
-  [Tags, "Labelled dataset", "Sensor profile + final GLP"],
-  [BrainCircuit, "ML training", "Feature engineering + validation"],
-  [ScanLine, "Operational guidance", "Future stage estimate + alert"],
+  [Tag, "Labelled dataset", "Sensor profile + final GLP"],
+  [GitBranch, "ML training", "Feature engineering + validation"],
+  [Gauge, "Operational guidance", "Future stage estimate + alert"],
 ];
 
 export function DataPipeline() {
@@ -50,22 +49,18 @@ export function DataPipeline() {
       </Reveal>
 
       <div className="pipeline-summary" aria-hidden="true">
-        <span><Factory /> Physical batch</span><ArrowRight /><span><ScanLine /> Edge sensing</span><ArrowRight /><span><Database /> Labelled profile</span><ArrowRight /><span><BrainCircuit /> Future model</span>
+        <span><Factory /> Physical batch</span><ArrowRight /><span><ScanLine /> Edge sensing</span><ArrowRight /><span><Database /> Labelled profile</span><ArrowRight /><span><GitBranch /> Future model</span>
       </div>
       <div className="pipeline-grid">
         {stages.map(([stage, explanation], index) => (
-          <motion.div
+          <div data-reveal
             key={stage}
-            initial={{ opacity: 0.25 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-10%" }}
-            transition={{ delay: index * 0.07 }}
           >
             <span>{String(index + 1).padStart(2, "0")}</span>
             <h3>{stage}</h3>
             <p>{explanation}</p>
             <i aria-hidden="true" />
-          </motion.div>
+          </div>
         ))}
       </div>
     </section>

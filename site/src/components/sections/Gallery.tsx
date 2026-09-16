@@ -48,24 +48,29 @@ export function Gallery() {
       />
       <div className="gallery-grid">
         {gallery.map((item, index) => (
-          <motion.button
+          <button data-gallery-card
             key={item.title}
             ref={(node) => { if (selected === index) openerRef.current = node; }}
             type="button"
             className={`gallery-item gallery-${item.accent} ${index === 1 || index === 6 ? "gallery-wide" : ""}`}
             onClick={(event) => { openerRef.current = event.currentTarget; setSelected(index); }}
-            initial={{ opacity: 0, y: 22 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
           >
             {item.image ? (
-              <Image src={getAssetPath(item.image)} alt={item.alt} width={1200} height={800} sizes="(max-width: 760px) 100vw, 35vw" />
+              <Image
+                src={getAssetPath(item.image)}
+                alt={item.alt}
+                width={item.width}
+                height={item.height}
+                sizes="(max-width: 760px) 100vw, (max-width: 1200px) 45vw, 35vw"
+                loading="lazy"
+                decoding="async"
+              />
             ) : (
               <div className="gallery-placeholder" aria-hidden="true"><ImageIcon /><span>PROJECT IMAGE PLACEHOLDER</span><i /><i /><i /></div>
             )}
             <span className="gallery-overlay"><small>{item.category}</small><strong>{item.title}</strong></span>
             <Expand className="gallery-expand" aria-hidden="true" />
-          </motion.button>
+          </button>
         ))}
       </div>
       <AnimatePresence>
@@ -74,7 +79,16 @@ export function Gallery() {
             <button ref={closeRef} className="lightbox-close" type="button" onClick={close} aria-label="Close gallery"><X /></button>
             <button className="lightbox-prev" type="button" onClick={() => step(-1)} aria-label="Previous image"><ChevronLeft /></button>
             <motion.div className={`lightbox-content gallery-${active.accent}`} initial={{ scale: 0.96 }} animate={{ scale: 1 }}>
-              {active.image ? <Image src={getAssetPath(active.image)} alt={active.alt} width={1600} height={1000} sizes="90vw" /> : <div className="gallery-placeholder"><ImageIcon /><span>IMAGE TO BE ADDED</span></div>}
+              {active.image ? (
+                <Image
+                  src={getAssetPath(active.image)}
+                  alt={active.alt}
+                  width={active.width}
+                  height={active.height}
+                  sizes="(max-width: 760px) calc(100vw - 32px), 90vw"
+                  priority
+                />
+              ) : <div className="gallery-placeholder"><ImageIcon /><span>IMAGE TO BE ADDED</span></div>}
               <div><small>{active.category} · {String((selected ?? 0) + 1).padStart(2, "0")} / {String(gallery.length).padStart(2, "0")}</small><h3>{active.title}</h3><p>{active.alt}</p></div>
             </motion.div>
             <button className="lightbox-next" type="button" onClick={() => step(1)} aria-label="Next image"><ChevronRight /></button>

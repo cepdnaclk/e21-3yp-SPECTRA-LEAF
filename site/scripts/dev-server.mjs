@@ -4,7 +4,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const host = process.env.HOST ?? "127.0.0.1";
-const preferredPort = Number.parseInt(process.env.PORT ?? "4100", 10);
+// 3000 is the conventional Next.js development port and is available in
+// restricted Windows environments where the 4100 range may be reserved.
+const preferredPort = Number.parseInt(process.env.PORT ?? "3000", 10);
 const portAttempts = 20;
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const nextBin = path.resolve(scriptDir, "../node_modules/next/dist/bin/next");

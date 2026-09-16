@@ -4,6 +4,7 @@ import { LoadingIntro } from "@/components/layout/LoadingIntro";
 import { Navbar } from "@/components/layout/Navbar";
 import { ScrollProgress } from "@/components/layout/ScrollProgress";
 import { SmoothScroll } from "@/components/layout/SmoothScroll";
+import { SiteMotion } from "@/components/layout/SiteMotion";
 import { Architecture } from "@/components/sections/Architecture";
 import { CloudInfrastructure } from "@/components/sections/CloudInfrastructure";
 import { Conclusion } from "@/components/sections/Conclusion";
@@ -50,6 +51,7 @@ export default function Home() {
         <Conclusion />
       </main>
       <Footer />
+      <SiteMotion />
     </SmoothScroll>
   );
 }

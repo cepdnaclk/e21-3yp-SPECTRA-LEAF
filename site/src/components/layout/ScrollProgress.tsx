@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 export function ScrollProgress() {
-  const barRef = useRef<HTMLSpanElement>(null);
+  const circleRef = useRef<SVGCircleElement>(null);
 
   useEffect(() => {
     let frame = 0;
@@ -11,7 +11,7 @@ export function ScrollProgress() {
       frame = 0;
       const range = document.documentElement.scrollHeight - window.innerHeight;
       const progress = range > 0 ? Math.min(1, Math.max(0, window.scrollY / range)) : 0;
-      if (barRef.current) barRef.current.style.transform = `scaleX(${progress})`;
+      if (circleRef.current) circleRef.current.style.strokeDashoffset = `${100 - progress * 100}`;
     };
     const scroll = () => {
       if (!frame) frame = window.requestAnimationFrame(update);
@@ -26,5 +26,13 @@ export function ScrollProgress() {
     };
   }, []);
 
-  return <div className="page-progress" aria-hidden="true"><span ref={barRef} /></div>;
+  return (
+    <div className="page-progress" aria-hidden="true">
+      <svg viewBox="0 0 44 44" focusable="false">
+        <circle className="page-progress-track" cx="22" cy="22" r="19" />
+        <circle ref={circleRef} className="page-progress-value" cx="22" cy="22" r="19" pathLength="100" />
+      </svg>
+      <span className="page-progress-arrow" />
+    </div>
+  );
 }

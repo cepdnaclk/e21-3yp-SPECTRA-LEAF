@@ -10,7 +10,7 @@ export const backupRoot = path.resolve(siteRoot, ".video-backup");
 export const publicAssets = path.resolve(siteRoot, "public", "assets");
 export const videoNames = ["video1.mp4", "video2.mp4"];
 export const scrubVideoNames = ["video1-scrub.mp4", "video2-scrub.mp4"];
-export const completeVideoNames = ["complete vedio.mp4", "complete-vedio-scroll.mp4"];
+export const completeVideoNames = ["complete-vedio-scroll-optimized.mp4"];
 export const legacyVideoNames = ["vedio1.mp4", "vedio2.mp4"];
 
 export function assertInside(parent, child, label) {

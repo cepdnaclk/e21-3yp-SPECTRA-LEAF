@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { SectionHeading } from "@/components/layout/SectionHeading";
 import { project } from "@/data/project";
@@ -17,9 +16,9 @@ export function Roadmap() {
       <div className="roadmap-label">FUTURE OBJECTIVES</div>
       <div className="roadmap-grid">
         {project.roadmap.map((item, index) => (
-          <motion.article key={item} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.05 }}>
+          <article data-reveal key={item}>
             <span>{String(index + 1).padStart(2, "0")}</span><h3>{item}</h3><ArrowUpRight /><small>{index < 3 ? "SYSTEM SCALE" : index < 6 ? "INTELLIGENCE" : "DEPLOYMENT"}</small>
-          </motion.article>
+          </article>
         ))}
       </div>
     </section>

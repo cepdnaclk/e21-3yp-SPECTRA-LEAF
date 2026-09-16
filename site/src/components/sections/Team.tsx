@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { ExternalLink, GitBranch, Mail } from "lucide-react";
 import Image from "next/image";
 import { SectionHeading } from "@/components/layout/SectionHeading";
@@ -46,7 +45,7 @@ export function Team() {
           const initials = member.name.split(" ").map((part) => part[0]).join("").slice(0, 2);
           const memberProfileUrl = member.linkedInUrl || member.profileUrl;
           return (
-            <motion.article key={member.registrationNumber} initial={{ opacity: 0, y: 26 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.08 }}>
+            <article data-reveal key={member.registrationNumber}>
               <div className="member-number">0{index + 1}</div>
               <div className="member-avatar">
                 {member.profileImage ? (
@@ -72,7 +71,7 @@ export function Team() {
                 {member.githubUrl && <a href={member.githubUrl} aria-label={`${member.name} on GitHub`}><GitBranch /></a>}
                 <span>{member.email}</span>
               </div>
-            </motion.article>
+            </article>
           );
         })}
       </div>
@@ -82,7 +81,7 @@ export function Team() {
         <p>Crop Science and Computer Engineering supervision connect tea-process knowledge with sensing, software, data validation and delivery.</p>
       </div>
       <div className="supervision-grid">
-        {supervisionProfiles.map((person, index) => {
+        {supervisionProfiles.map((person) => {
           const initials = person.name
             .replace(/^(Prof\.|Ms\.|Dr\.)\s*/, "")
             .split(" ")
@@ -91,13 +90,9 @@ export function Team() {
             .slice(0, 2);
 
           return (
-            <motion.article
+            <article data-reveal
               className="supervision-card"
               key={person.code}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.08 }}
             >
               <div className="supervision-card-head"><small>{person.category}</small><span>{person.code}</span></div>
               <a className="supervision-avatar" href={person.profileUrl} target="_blank" rel="noreferrer" aria-label={`Open ${person.name}'s profile`}>
@@ -112,7 +107,7 @@ export function Team() {
               <div className="supervision-card-footer">
                 {person.email ? <a href={`mailto:${person.email}`}><Mail />{person.email}</a> : <a href={person.profileUrl} target="_blank" rel="noreferrer"><ExternalLink />View university profile</a>}
               </div>
-            </motion.article>
+            </article>
           );
         })}
       </div>
