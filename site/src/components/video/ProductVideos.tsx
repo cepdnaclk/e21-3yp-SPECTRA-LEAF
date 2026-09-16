@@ -9,38 +9,29 @@ import { getAssetPath } from "@/lib/paths";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
-const filmSource = "/assets/complete-vedio-scroll.mp4";
+const filmSource = "/assets/complete-vedio-scroll-optimized.mp4?v=20260916c";
 
 const moments = [
   {
-    label: "OBSERVE",
-    title: "Read the fermentation process.",
-    description: "Temperature, gas and colour become a live picture of the changing tea leaf.",
+    label: "SENSOR ASSEMBLY",
+    title: "Build the sensing layer.",
+    description: "Mount the temperature, humidity, gas and vision sensors that observe the leaf bed.",
   },
   {
-    label: "CONNECT",
-    title: "Carry every signal forward.",
-    description: "ESP32 telemetry moves securely from the production floor into the cloud.",
+    label: "PUMP + PCB",
+    title: "Integrate flow control and the custom PCB.",
+    description: "Connect the pump system, relay interfaces and the project-specific controller board.",
   },
   {
-    label: "DECIDE",
-    title: "Turn process data into action.",
-    description: "The dashboard gives operators timely context for a more consistent batch.",
+    label: "FINAL DEVICE",
+    title: "Complete the full device assembly.",
+    description: "Bring sensing, flow control, enclosure and edge connectivity together as one operational unit.",
   },
 ];
-
-function formatTime(seconds: number) {
-  const safeSeconds = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
-  const minutes = Math.floor(safeSeconds / 60);
-  return `${String(minutes).padStart(2, "0")}:${String(safeSeconds % 60).padStart(2, "0")}`;
-}
 
 export function ProductVideos() {
   const sectionRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const progressRef = useRef<HTMLSpanElement>(null);
-  const statusRef = useRef<HTMLSpanElement>(null);
-  const timeRef = useRef<HTMLSpanElement>(null);
   const momentRefs = useRef<Array<HTMLLIElement | null>>([]);
   const reduced = useReducedMotion();
 
@@ -52,41 +43,38 @@ export function ProductVideos() {
 
       let metadataReady = false;
       let targetProgress = 0;
+      let renderedProgress = 0;
+      let lastSeekAt = 0;
       let frameRequest = 0;
       let trigger: ScrollTrigger | undefined;
 
       const updateInterface = (progress: number) => {
-        if (progressRef.current) {
-          progressRef.current.style.transform = `scaleX(${progress})`;
-        }
-
-        const currentTime = metadataReady ? progress * media.duration : 0;
-        if (timeRef.current) {
-          timeRef.current.textContent = `${formatTime(currentTime)} / ${formatTime(media.duration)}`;
-        }
-        if (statusRef.current) {
-          statusRef.current.textContent =
-            progress >= 0.998 ? "FILM COMPLETE · CONTINUE DOWN" : progress > 0.002 ? "SCROLLING FILM" : "SCROLL TO START";
-        }
-
         const activeMoment = Math.min(moments.length - 1, Math.floor(progress * moments.length));
         momentRefs.current.forEach((moment, index) => {
           if (!moment) return;
           const isDone = progress >= (index + 1) / moments.length;
-          moment.classList.toggle("is-active", index === activeMoment && progress < 0.998);
+          moment.classList.toggle("is-active", index === activeMoment);
           moment.classList.toggle("is-done", isDone);
         });
       };
 
-      const renderFrame = () => {
+      const renderFrame = (timestamp: number) => {
         frameRequest = 0;
         if (!metadataReady) return;
 
-        const targetTime = Math.min(media.duration - 0.001, targetProgress * media.duration);
-        if (Math.abs(media.currentTime - targetTime) > 1 / 30) {
+        const distance = targetProgress - renderedProgress;
+        renderedProgress += distance * 0.14;
+        if (Math.abs(distance) < 0.00015) renderedProgress = targetProgress;
+
+        const targetTime = Math.min(media.duration - 0.001, renderedProgress * media.duration);
+        const settled = renderedProgress === targetProgress;
+        if (!media.seeking && (timestamp - lastSeekAt >= 32 || settled) && Math.abs(media.currentTime - targetTime) > 1 / 60) {
           media.currentTime = targetTime;
+          lastSeekAt = timestamp;
         }
-        updateInterface(targetProgress);
+        updateInterface(renderedProgress);
+
+        if (!settled || media.seeking) frameRequest = window.requestAnimationFrame(renderFrame);
       };
 
       const queueFrame = (progress: number) => {
@@ -94,14 +82,27 @@ export function ProductVideos() {
         if (!frameRequest) frameRequest = window.requestAnimationFrame(renderFrame);
       };
 
+      const onSeeked = () => {
+        if (!frameRequest && Math.abs(targetProgress - renderedProgress) > 0.00015) {
+          frameRequest = window.requestAnimationFrame(renderFrame);
+        }
+      };
+
       const onMetadata = () => {
         metadataReady = Number.isFinite(media.duration) && media.duration > 0;
+        if (!metadataReady) return;
+        const scrollHeight = Math.max(420, Math.min(760, media.duration * 20));
+        if (!reduced) section.style.height = `${scrollHeight}svh`;
+        else section.style.removeProperty("height");
         media.pause();
-        queueFrame(trigger?.progress ?? 0);
+        renderedProgress = trigger?.progress ?? 0;
+        queueFrame(renderedProgress);
+        window.requestAnimationFrame(() => ScrollTrigger.refresh());
       };
 
       media.addEventListener("loadedmetadata", onMetadata);
       media.addEventListener("durationchange", onMetadata);
+      media.addEventListener("seeked", onSeeked);
       if (media.readyState >= HTMLMediaElement.HAVE_METADATA) onMetadata();
 
       if (!reduced) {
@@ -122,6 +123,7 @@ export function ProductVideos() {
         media.pause();
         media.removeEventListener("loadedmetadata", onMetadata);
         media.removeEventListener("durationchange", onMetadata);
+        media.removeEventListener("seeked", onSeeked);
       };
     },
     { scope: sectionRef, dependencies: [reduced] },
@@ -143,7 +145,7 @@ export function ProductVideos() {
             playsInline
             preload="auto"
             controls={reduced}
-            aria-label="Complete Spectra Leaf product film"
+            aria-label="Spectra Leaf device assembly film"
           >
             Your browser does not support the product film.
           </video>
@@ -153,21 +155,15 @@ export function ProductVideos() {
         <div className="product-video-grid">
           <div className="product-video-copy">
             <div className="section-kicker">
-              <span>FILM</span>
-              <span>Complete product film</span>
+              <span>ASSEMBLY FILM</span>
+              <span>Scroll-driven build sequence</span>
             </div>
-            <h2 id="product-video-title">From leaf to intelligence.</h2>
+            <h2 id="product-video-title">From components to one complete device.</h2>
             <p className="product-video-lead">
-              Follow the complete Spectra Leaf journey from fermentation sensing to connected, operator-ready insight.
+              Scroll through the three assembly stages, from the first sensor connection to the finished enclosure.
             </p>
 
-            <div className="product-video-meta" aria-label="Product film details">
-              <span><small>Film</small><strong>Complete story</strong></span>
-              <span><small>Duration</small><strong>30 seconds</strong></span>
-              <span><small>Playback</small><strong>{reduced ? "Manual controls" : "Scroll controlled"}</strong></span>
-            </div>
-
-            <ol className="product-video-moments" aria-label="Film chapters">
+            <ol className="product-video-moments" aria-label="Device assembly stages">
               {moments.map((moment, index) => (
                 <li
                   key={moment.label}
@@ -184,21 +180,7 @@ export function ProductVideos() {
               ))}
             </ol>
 
-            <div className="product-video-note">
-              <i aria-hidden="true" />
-              <span>{reduced ? "Use the video controls to watch the film" : "Keep scrolling to move through the film"}</span>
-            </div>
           </div>
-
-          <div className="product-video-bar" aria-live="polite">
-            <span>PRODUCT FILM / COMPLETE</span>
-            <span ref={statusRef}>{reduced ? "MANUAL PLAYBACK" : "SCROLL TO START"}</span>
-          </div>
-
-          <div className="product-video-progress" aria-hidden="true">
-            <span ref={progressRef} />
-          </div>
-          <span ref={timeRef} className="product-video-time" aria-hidden="true">00:00 / 00:30</span>
         </div>
       </div>
     </section>
