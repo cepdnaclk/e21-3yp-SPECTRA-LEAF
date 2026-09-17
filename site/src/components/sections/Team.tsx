@@ -8,17 +8,6 @@ import { getAssetPath } from "@/lib/paths";
 
 export function Team() {
   const supervisionProfiles = [
-    ...domainAdvisors.map((advisor, index) => ({
-      code: `D0${index + 1}`,
-      category: "Crop Science",
-      organization: advisor.organization,
-      name: advisor.name,
-      role: advisor.title,
-      description: advisor.contribution,
-      profileUrl: advisor.linkedInUrl || advisor.profileUrl,
-      profileImage: advisor.profileImage,
-      email: null,
-    })),
     ...supervisors.map((supervisor, index) => ({
       code: `S0${index + 1}`,
       category: "Academic Supervisor",
@@ -29,6 +18,17 @@ export function Team() {
       profileUrl: supervisor.profileUrl,
       profileImage: supervisor.profileImage,
       email: supervisor.email,
+    })),
+    ...domainAdvisors.map((advisor, index) => ({
+      code: `D0${index + 1}`,
+      category: "Domain supervision",
+      organization: advisor.organization,
+      name: advisor.name,
+      role: advisor.title,
+      description: advisor.contribution,
+      profileUrl: advisor.linkedInUrl || advisor.profileUrl,
+      profileImage: advisor.profileImage,
+      email: null,
     })),
   ];
 
@@ -76,8 +76,8 @@ export function Team() {
         })}
       </div>
       <div className="supervision-heading">
-        <span>Domain and academic guidance</span>
-        <h3>Domain supervision</h3>
+        <span>Academic and domain guidance</span>
+        <h3>Academic supervision</h3>
         <p>Crop Science and Computer Engineering supervision connect tea-process knowledge with sensing, software, data validation and delivery.</p>
       </div>
       <div className="supervision-grid">

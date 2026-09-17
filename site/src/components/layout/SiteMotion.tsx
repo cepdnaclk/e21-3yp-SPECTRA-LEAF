@@ -90,6 +90,15 @@ export function SiteMotion() {
         });
       });
 
+      // Engineering visuals retain their exact UI details, with a restrained scroll drift.
+      select(".pcb-feature [data-hardware-visual], .firmware-sequence-visual").forEach((visual: HTMLElement) => {
+        gsap.fromTo(visual, { "--hardware-scroll-y": "18px" }, {
+          "--hardware-scroll-y": "-18px",
+          ease: "none",
+          scrollTrigger: { trigger: visual, start: "top bottom", end: "bottom top", scrub: 0.55 },
+        });
+      });
+
       // Only decorative photography moves; engineering diagrams and dashboards stay exact.
       const desktop = gsap.matchMedia();
       desktop.add("(min-width: 900px) and (hover: hover) and (pointer: fine)", () => {

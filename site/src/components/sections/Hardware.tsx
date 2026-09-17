@@ -3,7 +3,7 @@
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Camera } from "lucide-react";
+import { Cpu } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState } from "react";
 import type { CSSProperties, UIEvent } from "react";
@@ -168,25 +168,25 @@ export function Hardware() {
         index="05"
         eyebrow="Hardware system"
         title="Six physical channels read the changing leaf bed."
-        description="The device combines temperature, humidity, imaging and three complementary gas-response sensors around an ESP32-CAM edge node."
+        description="The device combines temperature, humidity, imaging and three complementary gas-response sensors around a central ESP32 controller."
       />
       <div className="hardware-hero">
-        <Reveal className="hardware-image">
+        <Reveal className="hardware-image hardware-image--esp32">
           <Image
-            src={getAssetPath("/assets/images/hardware_design/image_2.png")}
-            alt="Spectra Leaf hardware design integrating controller boards, a display, pumps and a sample chamber"
-            width={2730}
-            height={1536}
-            sizes="(max-width: 760px) 100vw, 62vw"
+            src={getAssetPath("/assets/images/ESP32/main_hardware_esp32.png")}
+            alt="ESP32 controller board used as the main Spectra Leaf hardware controller"
+            width={611}
+            height={408}
+            sizes="(max-width: 760px) 88vw, 56vw"
           />
-          <span>HARDWARE DESIGN / EDGE NODE 01</span>
+          <span>MAIN CONTROLLER / ESP32</span>
         </Reveal>
         <Reveal className="controller-copy" delay={0.1}>
           <span className="chip-label">MAIN CONTROLLER</span>
-          <Camera />
-          <h3>ESP32-CAM edge controller</h3>
-          <p>The ESP32-CAM coordinates synchronized sensing, adds OV2640 visual context and publishes batch-linked telemetry over secure Wi-Fi. Device Shadow commands keep the physical node aligned with fermentation sessions.</p>
-          <div className="controller-tags"><span>OV2640 CAMERA</span><span>2.4 GHz WI-FI</span><span>MQTT/TLS</span><span>EDGE CAPTURE</span></div>
+          <Cpu />
+          <h3>ESP32 controller</h3>
+          <p>The ESP32 is the device control hub. It reads the sensor channels, coordinates pump and relay actions, manages the local display and publishes batch-linked telemetry over secure Wi-Fi.</p>
+          <div className="controller-tags"><span>DUAL-CORE MCU</span><span>2.4 GHz WI-FI</span><span>I²C / ADC</span><span>MQTT/TLS</span></div>
         </Reveal>
       </div>
 

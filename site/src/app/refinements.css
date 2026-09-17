@@ -129,7 +129,10 @@
   overflow: hidden;
   border: 0;
   border-radius: 0;
-  background: radial-gradient(circle at 7% 50%, rgba(36,200,117,.13), transparent 34%);
+  background:
+    radial-gradient(ellipse at 15% 52%, rgba(36,200,117,.14), transparent 43%),
+    linear-gradient(90deg, rgba(7,30,18,.22), transparent 70%);
+  box-shadow: none;
   color: #f3f1e8;
 }
 .site-refined .sensor-story-count {
@@ -142,16 +145,26 @@
   font: 8px var(--font-geist-mono);
   letter-spacing: .1em;
 }
-.site-refined .sensor-story-layout { display: grid; grid-template-columns: 43% 57%; height: 100%; }
+.site-refined .sensor-story-layout { display: grid; grid-template-columns: 37% 63%; height: 100%; }
 .site-refined .sensor-orbit-stage {
   position: relative;
   min-width: 0;
   overflow: hidden;
-  background:
-    linear-gradient(rgba(157,173,159,.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(157,173,159,.045) 1px, transparent 1px);
-  background-size: 42px 42px;
+  border: 0;
+  background: transparent;
 }
+.site-refined .sensor-orbit-stage::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background:
+    linear-gradient(rgba(157,173,159,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(157,173,159,.05) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(90deg, #000 18%, rgba(0,0,0,.65) 55%, transparent 100%);
+  pointer-events: none;
+}
+.site-refined .sensor-orbit-stage::after { display: none; }
 .site-refined .sensor-orbit-wheel {
   position: absolute;
   z-index: 3;
@@ -199,7 +212,9 @@
   transition: opacity .3s ease;
   will-change: transform;
 }
+.site-refined .sensor-orbit-cutout::before { display: none; }
 .site-refined .sensor-orbit-cutout img {
+  z-index: 1;
   padding: 20px;
   object-fit: contain;
   filter: drop-shadow(0 13px 10px rgba(0,0,0,.4));
@@ -207,6 +222,7 @@
   transition: transform .45s cubic-bezier(.22,1,.36,1), filter .35s ease;
 }
 .site-refined .sensor-orbit-cutout span {
+  z-index: 2;
   position: absolute;
   right: 3px;
   bottom: 3px;
@@ -227,7 +243,13 @@
   filter: drop-shadow(0 28px 22px rgba(0,0,0,.52));
   transform: scale(3.35);
 }
-.site-refined .sensor-detail-viewport { position: relative; min-width: 0; overflow: hidden; padding: clamp(48px, 6vw, 86px) clamp(24px, 4vw, 64px); }
+.site-refined .sensor-detail-viewport {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  padding: clamp(52px, 7vw, 98px) clamp(42px, 6vw, 104px);
+  background: transparent;
+}
 .site-refined .sensor-detail-track { position: relative; width: 100%; height: 100%; }
 .site-refined .sensor-detail {
   position: absolute;
@@ -237,7 +259,7 @@
   height: 100%;
   flex-direction: column;
   justify-content: center;
-  padding: clamp(32px, 4vw, 60px);
+  padding: clamp(28px, 3vw, 54px) 0;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -257,22 +279,71 @@
   transform: translate3d(0,0,0) scale(1);
   transition-delay: 0s;
 }
-.site-refined .sensor-detail-model { color: #72d5c2; font: 8px var(--font-geist-mono); letter-spacing: .1em; }
-.site-refined .sensor-detail h3 { max-width: 620px; margin: clamp(30px, 5vh, 48px) 0 18px; font-size: clamp(42px, 4.4vw, 68px); font-weight: 500; line-height: .98; letter-spacing: -.05em; }
-.site-refined .sensor-detail > p { max-width: 650px; margin: 0; color: #a9b8ad; font-size: 13px; line-height: 1.65; }
-.site-refined .sensor-detail-reason { max-width: 670px; margin-top: clamp(34px, 6vh, 58px); padding: 0; }
-.site-refined .sensor-detail-reason small { color: #d79563; font: 8px var(--font-geist-mono); letter-spacing: .09em; }
-.site-refined .sensor-detail-reason p { margin: 8px 0 0; color: #dbe3dd; font-size: 12px; line-height: 1.55; }
+.site-refined .sensor-detail-model { color: #72d5c2; font: 10px var(--font-geist-mono); letter-spacing: .1em; }
+.site-refined .sensor-detail h3 { max-width: 760px; margin: clamp(30px, 5vh, 48px) 0 18px; font-size: clamp(46px, 4.8vw, 76px); font-weight: 500; line-height: .98; letter-spacing: -.05em; }
+.site-refined .sensor-detail > p { max-width: 760px; margin: 0; color: #a9b8ad; font-size: clamp(15px, 1.05vw, 18px); line-height: 1.65; }
+.site-refined .sensor-detail-reason { max-width: 780px; margin-top: clamp(34px, 6vh, 58px); padding: 0; }
+.site-refined .sensor-detail-reason small { color: #d79563; font: 10px var(--font-geist-mono); letter-spacing: .09em; }
+.site-refined .sensor-detail-reason p { margin: 10px 0 0; color: #dbe3dd; font-size: clamp(14px, .9vw, 16px); line-height: 1.6; }
 .site-refined .sensor-detail-specs { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
-.site-refined .sensor-detail-specs > span { display: grid; gap: 6px; padding: 13px 0; }
+.site-refined .sensor-detail-specs > span { display: grid; gap: 7px; padding: 18px 0; }
 .site-refined .sensor-detail-specs > span + span { padding-left: 0; }
-.site-refined .sensor-detail-specs small { color: #83958a; font: 7px var(--font-geist-mono); }
-.site-refined .sensor-detail-specs strong { color: #f3f1e8; font: 9px var(--font-geist-mono); }
+.site-refined .sensor-detail-specs small { color: #83958a; font: 9px var(--font-geist-mono); }
+.site-refined .sensor-detail-specs strong { color: #f3f1e8; font: 12px var(--font-geist-mono); }
 
-/* Hardware keeps its stacked panels; opaque surfaces preserve legibility while overlapping. */
+/* The controller board sits directly on the page beside open text. */
+.site-refined .hardware-hero {
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+  gap: clamp(48px, 7vw, 120px);
+  align-items: center;
+  min-height: clamp(480px, 42vw, 650px);
+}
 .site-refined :is(.hardware-image, .component-stack .component-card) { border-radius: var(--surface-radius); box-shadow: none; }
+.site-refined .hardware-image--esp32 {
+  display: grid;
+  order: 2;
+  min-height: clamp(430px, 39vw, 600px);
+  place-items: center;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.site-refined .hardware-image--esp32::before {
+  position: absolute;
+  z-index: 0;
+  inset: 7% 0;
+  content: "";
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(36,200,117,.13), transparent 68%);
+  pointer-events: none;
+}
+.site-refined .hardware-image--esp32::after { display: none; }
+.site-refined .hardware-image--esp32 img {
+  position: relative;
+  z-index: 1;
+  width: min(88%, 690px);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 28px 38px rgba(0,0,0,.4));
+  animation: controllerBoardFloat 7s ease-in-out infinite;
+}
+.site-refined .hardware-image--esp32 > span { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .site-refined .hardware-image--esp32:hover img { animation: none; transform: translate3d(0,-10px,0) scale(1.04); }
+}
 .site-refined .component-stack .component-card { border-color: var(--surface-rule); background: var(--hardware-card); box-shadow: 0 -12px 30px color-mix(in srgb, var(--forest) 35%, transparent); }
-.site-refined .controller-copy { border-width: 1px 0; border-color: var(--surface-rule); border-radius: 0; background: none; }
+.site-refined .controller-copy {
+  order: 1;
+  min-width: 0;
+  padding: clamp(20px, 3vw, 44px) 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.site-refined .controller-copy > svg { width: 37px; height: 37px; margin: 28px 0; }
+.site-refined .controller-copy h3 { font-size: clamp(42px, 4vw, 66px); line-height: 1.02; }
+.site-refined .controller-copy p { max-width: 590px; font-size: clamp(15px, 1.1vw, 18px); }
 .site-refined .controller-tags span { padding: 6px 0; border-width: 0 0 1px; color: var(--copper); }
 .site-refined .component-panel { background: var(--hardware-card); }
 .site-refined .component-reason { border-radius: 3px; background: var(--surface-quiet); }
@@ -288,11 +359,39 @@
   background: transparent;
 }
 .site-refined .pcb-copy { padding: clamp(24px, 3vw, 50px) 0; }
-.site-refined .pcb-feature figure { min-height: clamp(440px, 45vw, 610px); border-radius: 8px; }
+.site-refined .pcb-feature figure {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: clamp(440px, 45vw, 610px);
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
+  transform: translate3d(0, var(--hardware-scroll-y, 0), 0);
+}
+.site-refined .pcb-feature figure::after { display: none; }
 .site-refined .pcb-feature figure img,
-.site-refined .firmware-sequence-visual img { transition: transform .7s cubic-bezier(.22,1,.36,1), filter .45s ease; }
+.site-refined .firmware-sequence-visual img {
+  transition: transform .7s cubic-bezier(.22,1,.36,1), filter .45s ease;
+}
+.site-refined .pcb-feature figure img {
+  width: 100%;
+  height: auto;
+  max-height: clamp(420px, 43vw, 580px);
+  object-fit: contain;
+  object-position: left center;
+  filter: drop-shadow(0 28px 42px rgba(0,0,0,.24));
+  animation: hardwareVisualFloat 7s ease-in-out infinite;
+}
+.site-refined .pcb-feature figcaption {
+  right: auto;
+  bottom: 8px;
+  left: 0;
+  color: var(--sage);
+  text-shadow: none;
+}
 @media (hover: hover) and (pointer: fine) {
-  .site-refined .pcb-feature:hover figure img { transform: scale(1.025); }
+  .site-refined .pcb-feature:hover figure img { animation: none; filter: drop-shadow(0 40px 58px rgba(0,0,0,.3)); transform: translate3d(10px,-9px,0) scale(1.035); }
   .site-refined .firmware-sequence-visual:hover img { filter: drop-shadow(0 36px 56px rgba(0,0,0,.28)); transform: translate3d(0,-6px,0) scale(1.012); }
 }
 .site-refined .telemetry-terminal { border-radius: var(--surface-radius); box-shadow: none; }
@@ -305,6 +404,7 @@
   place-items: center;
   overflow: hidden;
   background: transparent;
+  transform: translate3d(0, var(--hardware-scroll-y, 0), 0);
 }
 .site-refined .firmware-sequence-visual img {
   display: block;
@@ -675,25 +775,71 @@ html[data-theme="light"] .site-refined .roadmap-grid article:nth-child(even) { b
 html[data-theme="light"] .site-refined :is(.team-grid article, .supervision-card) { background: rgba(222, 239, 228, .4); }
 html[data-theme="light"] .site-refined .sensor-story {
   color: #10251a;
+  border: 0;
   background:
-    radial-gradient(circle at 3% 54%, rgba(36,200,117,.2), transparent 32%),
-    radial-gradient(circle at 82% 20%, rgba(86,200,216,.16), transparent 34%);
+    radial-gradient(ellipse at 13% 52%, rgba(36,200,117,.12), transparent 46%),
+    linear-gradient(90deg, rgba(223,244,231,.45), transparent 76%);
   box-shadow: none;
 }
 html[data-theme="light"] .site-refined .sensor-story-count { color: #147a43; }
 html[data-theme="light"] .site-refined .sensor-orbit-stage {
-  background:
-    linear-gradient(rgba(20,105,59,.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(20,105,59,.06) 1px, transparent 1px),
-    radial-gradient(circle at 0 50%, rgba(36,200,117,.16), transparent 58%);
-  background-size: 42px 42px, 42px 42px, auto;
+  border: 0;
+  background: transparent;
 }
+html[data-theme="light"] .site-refined .sensor-orbit-stage::before {
+  background:
+    linear-gradient(rgba(20,105,59,.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20,105,59,.055) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+html[data-theme="light"] .site-refined .pcb-feature figure img { mix-blend-mode: multiply; filter: drop-shadow(0 26px 38px rgba(30,80,52,.18)); }
+html[data-theme="light"] .site-refined .pcb-feature:hover figure img { filter: drop-shadow(0 38px 54px rgba(30,80,52,.24)); }
+
+/* In light mode the ML illustration becomes an editorial field rather than a dark panel. */
+html[data-theme="light"] .site-refined .ml-workbench {
+  border-color: rgba(22,112,64,.22);
+  background: linear-gradient(120deg, rgba(229,244,234,.96), rgba(239,247,248,.88));
+  box-shadow: 0 24px 60px rgba(29,91,57,.08);
+}
+html[data-theme="light"] .site-refined .ml-artboard { background: #eaf5ed; }
+html[data-theme="light"] .site-refined .ml-artboard > img {
+  opacity: 1;
+  filter: brightness(1.04) saturate(.88) contrast(.98);
+  mix-blend-mode: normal;
+}
+html[data-theme="light"] .site-refined .ml-artboard-shade {
+  background:
+    linear-gradient(90deg, rgba(238,248,241,.01) 36%, rgba(238,248,241,.22) 100%),
+    linear-gradient(0deg, rgba(238,248,241,.2), transparent 42%);
+}
+html[data-theme="light"] .site-refined .ml-artboard-head { border-color: rgba(22,93,55,.22); color: #1c4730; }
+html[data-theme="light"] .site-refined .ml-artboard-head small { color: #147a68; }
+html[data-theme="light"] .site-refined .ml-model-marker {
+  border-color: rgba(20,126,67,.34);
+  color: #143a26;
+  background: rgba(255,255,255,.8);
+  box-shadow: 0 12px 26px rgba(30,96,58,.12);
+}
+html[data-theme="light"] .site-refined .ml-model-marker small,
+html[data-theme="light"] .site-refined .ml-current-note { color: #456554; }
+html[data-theme="light"] .site-refined .ml-decision-panel {
+  border-color: rgba(22,93,55,.18);
+  color: #10251a;
+  background: rgba(248,251,248,.72);
+}
+html[data-theme="light"] .site-refined .ml-decision-head,
+html[data-theme="light"] .site-refined .ml-decision-panel > p { color: #53695d; }
+html[data-theme="light"] .site-refined .ml-decision-panel .ml-outputs > div { border-color: rgba(22,93,55,.16); color: #1b3d2a; }
+html[data-theme="light"] .site-refined .ml-boundary { color: #a25e2d; }
 html[data-theme="light"] .site-refined .sensor-orbit-ring { border-color: rgba(28,139,151,.3); background: radial-gradient(circle, rgba(36,200,117,.12), transparent 62%); }
 html[data-theme="light"] .site-refined .sensor-orbit-ring::before { border-color: rgba(24,145,75,.2); }
 html[data-theme="light"] .site-refined .sensor-detail {
   color: #10251a;
   background: transparent;
 }
+html[data-theme="light"] .site-refined .sensor-detail-viewport { background: transparent; }
+html[data-theme="light"] .site-refined .hardware-image--esp32 { background: transparent; }
+html[data-theme="light"] .site-refined .hardware-image--esp32 img { filter: drop-shadow(0 24px 34px rgba(30,96,58,.18)); }
 html[data-theme="light"] .site-refined .sensor-detail-model { color: #147a68; }
 html[data-theme="light"] .site-refined .sensor-detail > p { color: #50675b; }
 html[data-theme="light"] .site-refined .sensor-detail-reason p { color: #263f32; }
@@ -803,8 +949,8 @@ html[data-theme="light"] .site-refined .product-video-sticky,
 html[data-theme="light"] .site-refined .product-video-stage { background: #edf6f0; }
 html[data-theme="light"] .site-refined .product-video-sticky::before {
   background:
-    linear-gradient(90deg, rgba(242,248,244,.03) 0%, rgba(242,248,244,.12) 42%, rgba(242,248,244,.76) 58%, rgba(242,248,244,.98) 70%, #f2f8f4 100%),
-    linear-gradient(0deg, rgba(237,246,240,.78), transparent 38%, rgba(237,246,240,.2));
+    linear-gradient(90deg, rgba(242,248,244,.01) 0%, rgba(242,248,244,.04) 42%, rgba(242,248,244,.34) 61%, rgba(242,248,244,.82) 78%, #f2f8f4 100%),
+    linear-gradient(0deg, rgba(237,246,240,.28), transparent 44%, rgba(237,246,240,.06));
 }
 html[data-theme="light"] .site-refined .product-video-sticky::after {
   opacity: .5;
@@ -813,12 +959,12 @@ html[data-theme="light"] .site-refined .product-video-sticky::after {
     linear-gradient(90deg, rgba(24,96,56,.055) 1px, transparent 1px);
 }
 html[data-theme="light"] .site-refined .product-video-stage video {
-  filter: brightness(1.15) saturate(.72) contrast(.88);
+  filter: brightness(1.04) saturate(.92) contrast(.96);
 }
 html[data-theme="light"] .site-refined .product-video-shade {
   background:
-    radial-gradient(circle at 72% 45%, transparent 28%, rgba(241,248,244,.22) 100%),
-    linear-gradient(180deg, rgba(241,248,244,.2), transparent 24%, transparent 62%, rgba(237,246,240,.7));
+    radial-gradient(circle at 72% 45%, transparent 30%, rgba(241,248,244,.08) 100%),
+    linear-gradient(180deg, rgba(241,248,244,.06), transparent 26%, transparent 68%, rgba(237,246,240,.18));
 }
 html[data-theme="light"] .site-refined .product-video-copy h2,
 html[data-theme="light"] .site-refined .product-video-meta strong,
@@ -920,6 +1066,14 @@ html[data-theme="light"] .site-refined :is(
   pointer-events: none;
 }
 html[data-theme="light"] .site-refined .gallery-item::before { background: rgba(255,255,255,.22); }
+html[data-theme="light"] .site-refined .hardware-image--esp32::before {
+  z-index: 0;
+  inset: 7% 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(36,200,117,.12), transparent 68%);
+}
+/* Keep the ML concept readable in light mode; the artwork itself carries the story. */
+html[data-theme="light"] .site-refined .ml-artboard::before { background: rgba(255,255,255,.035); }
 
 @media (max-width: 1100px) and (min-width: 761px) {
   /* Keep the journey's columns inside the narrower content area. */
@@ -935,9 +1089,11 @@ html[data-theme="light"] .site-refined .gallery-item::before { background: rgba(
     background: linear-gradient(180deg, rgba(4,12,8,.34), rgba(4,12,8,.92) 38%, rgba(4,12,8,.99) 100%);
   }
   html[data-theme="light"] .site-refined .product-video-sticky::before {
-    background: linear-gradient(180deg, rgba(242,248,244,.28), rgba(242,248,244,.9) 38%, #f2f8f4 100%);
+    background: linear-gradient(180deg, rgba(242,248,244,.1), rgba(242,248,244,.54) 42%, #f2f8f4 100%);
   }
   .site-refined .sensor-story { height: auto; min-height: 0; overflow: hidden; }
+  .site-refined .hardware-hero { grid-template-columns: 1fr; gap: 12px; min-height: 0; }
+  .site-refined .hardware-image--esp32 { min-height: 390px; }
   .site-refined .sensor-story-layout { grid-template-columns: 1fr; height: auto; }
   .site-refined .sensor-orbit-stage { min-height: 360px; border: 0; }
   .site-refined .sensor-orbit-wheel {
@@ -1010,6 +1166,8 @@ html[data-theme="light"] .site-refined .gallery-item::before { background: rgba(
   .site-refined .mobile-dashboard-shots .mobile-shot-dark { opacity: 1; }
   html[data-theme="light"] .site-refined .mobile-dashboard-shots .mobile-shot-dark { opacity: 0; }
   html[data-theme="light"] .site-refined .mobile-dashboard-shots .mobile-shot-light { opacity: 1; }
+  .site-refined .pcb-feature figure img { animation: none; }
+  .site-refined .hardware-image--esp32 img { animation: none; }
 }
 
 @keyframes lightFieldDrift {
@@ -1021,4 +1179,14 @@ html[data-theme="light"] .site-refined .gallery-item::before { background: rgba(
   0%, 42% { opacity: 1; transform: translate3d(0,0,0) scale(1); }
   50%, 92% { opacity: 0; transform: translate3d(-10%,0,0) scale(.985); }
   100% { opacity: 1; transform: translate3d(0,0,0) scale(1); }
+}
+
+@keyframes hardwareVisualFloat {
+  0%, 100% { transform: translate3d(0,0,0) rotate(-.35deg); }
+  50% { transform: translate3d(0,-10px,0) rotate(.35deg); }
+}
+
+@keyframes controllerBoardFloat {
+  0%, 100% { transform: translate3d(0,0,0) rotate(-.4deg); }
+  50% { transform: translate3d(0,-9px,0) rotate(.4deg); }
 }
